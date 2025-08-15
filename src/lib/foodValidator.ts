@@ -113,13 +113,17 @@ export function validateAndNormalizeResponse(raw: string): string {
   const items = splitOnBlankLines(raw.trim());
   if (items.length === 0) throw new Error("No items found.");
 
+  console.log('Raw AI response:', raw); // Debug logging
+
   const normalizedItems = items.map((block, idx) => {
+    console.log(`Processing item ${idx + 1}:`, block); // Debug logging
     const fields = parseBlock(block);
     enforceRequired(fields, idx);
     normalizeIcon(fields, idx);
     normalizeServingSize(fields, idx);
     normalizeNumbers(fields, idx);
     normalizeHydration(fields);
+    console.log(`Normalized item ${idx + 1}:`, fields); // Debug logging
     return stringifyBlock(fields);
   });
 
@@ -180,22 +184,41 @@ function normalizeIcon(fields: Fields, idx: number) {
 function normalizeServingSize(fields: Fields, idx: number) {
   const raw = fields["Serving Size"]!;
   
-  // Handle special cases first
-  if (raw.toLowerCase().includes('serving')) {
-    // For "serving" units, just clean up the format
-    const cleanServing = raw.replace(/\s+/g, ' ').trim();
-    if (cleanServing.match(/^\d+\/\d+\s+serving$/i)) {
-      fields["Serving Size"] = cleanServing.toLowerCase();
+  // Fix common malformed patterns first
+  let cleaned = raw.replace(/\s+/g, ' ').trim();
+  
+  // Fix "1 2 serving" → "1/2 serving"
+  if (cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)) {
+    const num1 = parseInt(cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)![1]);
+    const num2 = parseInt(cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)![2]);
+    if (num1 === 1 && num2 === 2) {
+      fields["Serving Size"] = "1/2 serving";
       return;
     }
-    if (cleanServing.match(/^\d+\s+serving$/i)) {
-      fields["Serving Size"] = cleanServing.toLowerCase();
+  }
+  
+  // Fix "2 2 each" → "2 each"
+  if (cleaned.match(/^(\d+)\s+\1\s+each$/i)) {
+    const num = parseInt(cleaned.match(/^(\d+)\s+\1\s+each$/i)![1]);
+    fields["Serving Size"] = `${num} each`;
+    return;
+  }
+  
+  // Handle special cases
+  if (cleaned.toLowerCase().includes('serving')) {
+    // For "serving" units, just clean up the format
+    if (cleaned.match(/^\d+\/\d+\s+serving$/i)) {
+      fields["Serving Size"] = cleaned.toLowerCase();
+      return;
+    }
+    if (cleaned.match(/^\d+\s+serving$/i)) {
+      fields["Serving Size"] = cleaned.toLowerCase();
       return;
     }
   }
   
   // Accept patterns like "3 Each", "3.5 Each", "8 fluid ounces", "507 grams"
-  const m = raw.match(/^\s*([\d\s\/.-]+)\s+(.+?)\s*$/i);
+  const m = cleaned.match(/^\s*([\d\s\/.-]+)\s+(.+?)\s*$/i);
   if (!m) throw new Error(`Invalid Serving Size format in item ${idx + 1}. Use "<amount> <unit>".`);
   const amountStr = m[1].trim();
   const unitRaw = m[2].trim().toLowerCase();

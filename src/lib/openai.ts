@@ -102,6 +102,8 @@ Allowed serving guidance
 - When exact weight/measurement unknown: use "serving" with context
 - Examples: "1/2 serving", "1 serving", "2 servings"
 - Never use "Default" for Icon - pick the most appropriate one
+- CRITICAL: Serving Size must be exactly ONE number followed by ONE unit (e.g., "1/2 serving", "2 each", "8 fluid ounces")
+- NEVER use formats like "1 2 serving" or "2 2 each" - these are invalid
 
 Field order and exact schema
 Food Name: <short name, max 60 chars>

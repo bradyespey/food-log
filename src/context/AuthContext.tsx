@@ -2,14 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
-  User as FirebaseUser, 
+  type User as FirebaseUser, 
   signInWithPopup, 
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../lib/firebaseConfig';
-import { Session } from '../types';
+import type { Session } from '../types';
 
 interface AuthContextType {
   session: Session;

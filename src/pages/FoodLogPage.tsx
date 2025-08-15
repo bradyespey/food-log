@@ -1,12 +1,12 @@
 //src/pages/FoodLogPage.tsx
 
 import React, { useState, useCallback } from 'react';
-import { ChefHat, Sparkles, Clock, DollarSign, Copy, CheckCircle, AlertCircle, Camera, Droplets } from 'lucide-react';
+import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import ImageUpload from '../components/ui/ImageUpload';
-import type { AnalysisResponse, FoodAnalysis, FoodItem, FormData } from '../types';
+import type { FoodItem, FormData } from '../types';
 
 const FoodLogPage: React.FC = () => {
   // ── Form State ──────────────────────────────────────────────────
@@ -24,7 +24,7 @@ const FoodLogPage: React.FC = () => {
   const [isLogging, setIsLogging] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [questions, setQuestions] = useState<string[]>([]);
-  const [analysisResult, setAnalysisResult] = useState<FoodAnalysis | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [logResult, setLogResult] = useState<string>('');
 
   // ── Computed Values ─────────────────────────────────────────────
@@ -54,7 +54,7 @@ const FoodLogPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Mock response based on the ChatGPT Custom GPT format
-      const mockAnalysis: FoodAnalysis = {
+      const mockAnalysis = {
         date: formData.date.split('-').slice(1).join('/'), // Convert YYYY-MM-DD to MM/DD
         meal: formData.meal,
         items: [{
@@ -169,7 +169,7 @@ const FoodLogPage: React.FC = () => {
               </label>
               <select
                 value={formData.meal}
-                onChange={(e) => handleInputChange('meal', e.target.value as any)}
+                onChange={(e) => handleInputChange('meal', e.target.value as 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks')}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 required
               >
@@ -285,7 +285,7 @@ const FoodLogPage: React.FC = () => {
           <CardContent className="space-y-6">
             {/* Food Items */}
             <div className="space-y-4">
-              {analysisResult.items.map((item, index) => (
+              {analysisResult.items?.map((item: FoodItem, index: number) => (
                 <FoodItemCard key={index} item={item} />
               ))}
             </div>
@@ -317,7 +317,7 @@ const FoodLogPage: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               Logging Results
             </CardTitle>
           </CardHeader>

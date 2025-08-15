@@ -157,6 +157,19 @@ function enforceRequired(fields: Fields, idx: number) {
   if (!/^(Breakfast|Lunch|Dinner|Snacks)$/.test(fields["Meal"]!)) {
     throw new Error(`Invalid Meal in item ${idx + 1}. Must be Breakfast, Lunch, Dinner, or Snacks.`);
   }
+  // Force MM/DD date format (no year)
+  normalizeDateField(fields);
+}
+
+function normalizeDateField(fields: Fields) {
+  const d = fields["Date"];
+  if (!d) return;
+  const m = d.match(/^\s*(\d{1,2})[/-](\d{1,2})(?:[/-]\d{2,4})?\s*$/);
+  if (m) {
+    const month = Number(m[1]);
+    const day = Number(m[2]);
+    fields["Date"] = `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}`;
+  }
 }
 
 function normalizeIcon(fields: Fields, idx: number) {

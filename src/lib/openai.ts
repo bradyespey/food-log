@@ -171,9 +171,39 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
     const toolsPrimary = [{ type: "web_search" as const }];
     const toolsFallback = [{ type: "web_search_preview" as const }];
 
+    // Build the API request
+    const apiRequest = {
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: request.images.length > 0 
+                ? `Analyze the food shown in the images: ${request.prompt}`
+                : `Analyze this food description: ${request.prompt}`,
+            },
+            ...compressedImages.map(imageData => ({
+              type: 'image_url',
+              image_url: {
+                url: imageData,
+              },
+            })),
+          ],
+        },
+      ],
+      max_tokens: 1500,
+      temperature: 0.2,
+    };
+
+    // Try with web search first
     let resp;
     try {
-      // Try the stable web_search tool first
       resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -181,72 +211,49 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model,
-          messages: [
+          ...apiRequest,
+          functions: [
             {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: request.images.length > 0 
-                    ? `Analyze the food shown in the images: ${request.prompt}`
-                    : `Analyze this food description: ${request.prompt}`,
+              name: "web_search",
+              description: "Search the web for real-time information",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description: "The search query"
+                  }
                 },
-                ...compressedImages.map(imageData => ({
-                  type: 'image_url',
-                  image_url: {
-                    url: imageData,
-                  },
-                })),
-              ],
-            },
+                required: ["query"]
+              }
+            }
           ],
-          tools: [{ type: "web_search" }],
-          tool_choice: "auto",
-          max_tokens: 1500,
-          temperature: 0.2,
+          function_call: "auto"
         }),
       });
+
+      // If web search fails, try standard completion
+      if (!resp.ok && resp.status === 400) {
+        console.warn('Web search failed, falling back to standard completion');
+        resp = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(apiRequest),
+        });
+      }
     } catch (e: any) {
-      // Fallback to standard completion if web search fails
+      // If any error occurs, try standard completion
+      console.warn('API error, falling back to standard completion:', e);
       resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: request.images.length > 0 
-                    ? `Analyze the food shown in the images: ${request.prompt}`
-                    : `Analyze this food description: ${request.prompt}`,
-                },
-                ...compressedImages.map(imageData => ({
-                  type: 'image_url',
-                  image_url: {
-                    url: imageData,
-                  },
-                })),
-              ],
-            },
-          ],
-          max_tokens: 1500,
-          temperature: 0.2,
-        }),
+        body: JSON.stringify(apiRequest),
       });
     }
 

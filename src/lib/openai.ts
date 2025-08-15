@@ -56,7 +56,7 @@ const buildPrompt = (request: OpenAIAnalysisRequest): string => {
   const { prompt, date, meal, brand } = request;
   const formattedDate = new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
   
-  return `You are a nutritional analysis expert. Analyze this food and provide nutritional information in the exact format specified.
+  return `You are a nutritional analysis expert. Analyze this food and provide nutritional information in the EXACT format specified below.
 
 Context:
 Date: ${formattedDate}
@@ -65,24 +65,32 @@ Brand/Restaurant: ${brand}
 
 Food Description: ${prompt}
 
-IMPORTANT INSTRUCTIONS:
-1. **ESTIMATE PORTIONS VISUALLY** - Use the photos to estimate serving sizes. Don't ask for exact measurements.
-2. **RESTAURANT STANDARDS** - Use typical restaurant portion sizes when photos don't show clear measurements.
-3. **VISUAL ANALYSIS** - Analyze the plate, glass size, and food proportions in the images.
-4. **ONLY ASK QUESTIONS** if the description is completely unclear (e.g., "some food" without photos).
-5. **PROVIDE ESTIMATES** for:
-   - Use visual cues from photos to estimate portion sizes
-   - Apply typical restaurant serving standards when photos don't show clear measurements
-   - Analyze plate dimensions, glass sizes, and food proportions
-   - Make reasonable estimates rather than asking for precision
+CRITICAL INSTRUCTIONS:
+1. **ANALYZE PHOTOS VISUALLY** - Use the photos to estimate serving sizes and portions
+2. **USE RESTAURANT STANDARDS** - Apply typical restaurant portion sizes when photos don't show clear measurements
+3. **BE CONFIDENT** - Make reasonable estimates rather than asking for precision
+4. **FOLLOW FORMAT EXACTLY** - Use the format below for each food item
 
-6. **FORMAT OUTPUT** exactly as specified in the ChatGPT Custom GPT format.
+REQUIRED OUTPUT FORMAT (follow exactly):
+Food Name: [Food Name]
+Date: ${formattedDate}
+Meal: ${meal}
+Brand: ${brand}
+Icon: [Select from: Default, Mixed Drink, Chicken, Beef, Bread, Dip, etc.]
+Serving Size: [amount] [unit]
+Calories: [number]
+Fat (g): [number]
+Saturated Fat (g): [number]
+Cholesterol (mg): [number]
+Sodium (mg): [number]
+Carbs (g): [number]
+Fiber (g): [number]
+Sugar (g): [number]
+Protein (g): [number]
 
-7. **BE CONFIDENT** - Make reasonable estimates rather than asking for precision.
+For drinks, add: Hydration: [fluid ounces] fluid ounces
 
-Respond with either:
-- Clarifying questions ONLY if description is completely vague with no photos
-- Detailed nutritional breakdown with estimated portions based on visual analysis`;
+IMPORTANT: Provide nutritional breakdown for each food item separately. Do not ask questions unless the description is completely vague with no photos.`;
 };
 
 export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenAIResponse> => {
@@ -190,18 +198,31 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
   // Try to parse structured food data
   try {
     const items = parseNutritionalData(aiResponse, request);
+    
+    // If parsing failed and we got 0 values, use fallback
+    if (items.length > 0 && items.every(item => item.calories === 0)) {
+      console.log('AI returned 0 values, using fallback parsing');
+      const fallbackItems = createFallbackItems(aiResponse, request);
+      return {
+        items: fallbackItems,
+        plainText: aiResponse,
+        needsMoreInfo: false,
+      };
+    }
+    
     return {
       items,
       plainText: aiResponse,
       needsMoreInfo: false,
     };
   } catch (error) {
-    // If parsing fails, treat as questions
+    console.error('Parsing error, using fallback:', error);
+    // If parsing fails, use fallback items
+    const fallbackItems = createFallbackItems(aiResponse, request);
     return {
-      items: [],
+      items: fallbackItems,
       plainText: aiResponse,
-      needsMoreInfo: true,
-      questions: ['Could you provide more specific details about the portions and preparation?'],
+      needsMoreInfo: false,
     };
   }
 };

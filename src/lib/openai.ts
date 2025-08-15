@@ -303,27 +303,13 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
     const fixedResponse = fixServingSizes(aiResponse);
     console.log('Fixed response:', fixedResponse);
 
-    // Try validation on the fixed response
-    try {
-      const normalizedText = validateAndNormalizeResponse(fixedResponse);
-      console.log('Validation successful, using normalized text');
-      const parsedResult = parseOpenAIResponse(normalizedText, request);
-      
-      return {
-        success: true,
-        data: parsedResult,
-      };
-    } catch (validationError) {
-      console.warn('Validation failed, using fixed response directly:', validationError);
-      
-      // Use the fixed response directly if validation still fails
-      const parsedResult = parseOpenAIResponse(fixedResponse, request);
-      
-      return {
-        success: true,
-        data: parsedResult,
-      };
-    }
+    // Parse the fixed response directly - skip validation for now
+    const parsedResult = parseOpenAIResponse(fixedResponse, request);
+    
+    return {
+      success: true,
+      data: parsedResult,
+    };
 
   } catch (error) {
     console.error('OpenAI Analysis Error:', error);
@@ -394,29 +380,33 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
 
 // Parse the nutritional data format from ChatGPT Custom GPT
 const parseNutritionalData = (response: string, request: OpenAIAnalysisRequest): FoodItem[] => {
+  // Apply serving size fixes again at parsing level
+  const cleanedResponse = fixServingSizes(response);
+  console.log('Response after parsing-level fix:', cleanedResponse);
+  
   const items: FoodItem[] = [];
   
   // Try multiple splitting strategies for different response formats
   let itemSections: string[] = [];
   
   // Strategy 1: Look for "Food Name:" patterns
-  if (response.includes('Food Name:')) {
-    itemSections = response.split(/(?=Food Name:)/gi).filter(s => s.trim());
+  if (cleanedResponse.includes('Food Name:')) {
+    itemSections = cleanedResponse.split(/(?=Food Name:)/gi).filter(s => s.trim());
   }
   
   // Strategy 2: Look for numbered items (1., 2., etc.)
-  if (itemSections.length === 0 && /^\d+\./m.test(response)) {
-    itemSections = response.split(/(?=^\d+\.)/m).filter(s => s.trim());
+  if (itemSections.length === 0 && /^\d+\./m.test(cleanedResponse)) {
+    itemSections = cleanedResponse.split(/(?=^\d+\.)/m).filter(s => s.trim());
   }
   
   // Strategy 3: Split by double newlines if multiple clear sections
-  if (itemSections.length === 0 && response.split('\n\n').length > 2) {
-    itemSections = response.split('\n\n').filter(s => s.trim());
+  if (itemSections.length === 0 && cleanedResponse.split('\n\n').length > 2) {
+    itemSections = cleanedResponse.split('\n\n').filter(s => s.trim());
   }
   
   // Strategy 4: Single item response
   if (itemSections.length === 0) {
-    itemSections = [response];
+    itemSections = [cleanedResponse];
   }
   
   for (const section of itemSections) {

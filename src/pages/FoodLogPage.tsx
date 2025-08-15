@@ -2,10 +2,13 @@
 
 import React, { useState, useCallback } from 'react';
 import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Textarea } from '../components/ui/Textarea';
 import ImageUpload from '../components/ui/ImageUpload';
+import { analyzeFood, estimateCost } from '../lib/openai';
 import type { FoodItem, FormData } from '../types';
 
 const FoodLogPage: React.FC = () => {
@@ -28,7 +31,7 @@ const FoodLogPage: React.FC = () => {
   const [logResult, setLogResult] = useState<string>('');
 
   // ── Computed Values ─────────────────────────────────────────────
-  const estimatedCost = 0.003 + (formData.images.length * 0.00085); // Rough estimate
+  const estimatedCost = estimateCost(formData.prompt, formData.images.length);
   const isFormValid = formData.date && formData.meal && formData.brand && formData.prompt;
 
   // ── Handlers ────────────────────────────────────────────────────
@@ -47,41 +50,48 @@ const FoodLogPage: React.FC = () => {
     setQuestions([]);
     setAnalysisResult(null);
     setShowResults(false);
+    toast.dismiss();
     
     try {
-      // TODO: Call OpenAI API with the formData
-      // For now, simulate the analysis
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock response based on the ChatGPT Custom GPT format
-      const mockAnalysis = {
-        date: formData.date.split('-').slice(1).join('/'), // Convert YYYY-MM-DD to MM/DD
+      const response = await analyzeFood({
+        prompt: formData.prompt,
+        images: formData.images,
+        date: formData.date,
         meal: formData.meal,
-        items: [{
-          foodName: "Mock Food Item",
-          brand: formData.brand,
-          icon: "Default",
-          serving: {
-            amount: 1,
-            unit: "Each",
-          },
-          calories: 350,
-          fatG: 15,
-          satFatG: 5,
-          cholesterolMg: 25,
-          sodiumMg: 400,
-          carbsG: 35,
-          fiberG: 3,
-          sugarG: 8,
-          proteinG: 20,
-        }]
-      };
+        brand: formData.brand,
+      });
 
-      setAnalysisResult(mockAnalysis);
-      setShowResults(true);
+      if (!response.success) {
+        throw new Error(response.error || 'Analysis failed');
+      }
+
+      const { data } = response;
+      
+      if (data?.needsMoreInfo && data.questions) {
+        // AI needs more information
+        setQuestions(data.questions);
+        toast.error('AI needs more information to provide accurate analysis');
+      } else if (data?.items && data.items.length > 0) {
+        // Successful analysis
+        const analysisData = {
+          date: formData.date.split('-').slice(1).join('/'), // Convert YYYY-MM-DD to MM/DD
+          meal: formData.meal,
+          items: data.items,
+          plainText: data.plainText || '',
+        };
+        
+        setAnalysisResult(analysisData);
+        setShowResults(true);
+        toast.success(`Analysis complete! Found ${data.items.length} food item(s)`);
+      } else {
+        throw new Error('No food items could be identified');
+      }
+      
     } catch (error) {
       console.error('Analysis failed:', error);
-      setQuestions(['Sorry, there was an error analyzing your food. Please try again.']);
+      const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
+      toast.error(errorMessage);
+      setQuestions([`Sorry, there was an error: ${errorMessage}. Please try again with more details.`]);
     } finally {
       setIsAnalyzing(false);
     }
@@ -126,14 +136,32 @@ const FoodLogPage: React.FC = () => {
   const copyToClipboard = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      // TODO: Add toast notification
+      toast.success('Copied to clipboard!');
     } catch (error) {
       console.error('Failed to copy:', error);
+      toast.error('Failed to copy to clipboard');
     }
   }, []);
 
+  const handleAnswerQuestions = useCallback(() => {
+    // Clear questions and re-analyze with the updated prompt
+    setQuestions([]);
+    handleAnalyze();
+  }, [handleAnalyze]);
+
   return (
     <div className="space-y-8 px-4 max-w-5xl mx-auto">
+      <Toaster 
+        position="top-center" 
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--toast-bg)',
+            color: 'var(--toast-color)',
+          },
+        }}
+      />
+      
       {/* Page Header */}
       <div className="text-center space-y-2 py-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-3">
@@ -189,11 +217,13 @@ const FoodLogPage: React.FC = () => {
           </div>
 
           {/* What did you eat */}
-          <Input
+          <Textarea
             label="What did you eat? *"
-            placeholder="Describe your food in detail..."
+            placeholder="Describe your food in detail, including portions, preparation, and any sides or drinks..."
             value={formData.prompt}
             onChange={(e) => handleInputChange('prompt', e.target.value)}
+            rows={4}
+            helperText="Be as specific as possible for accurate nutritional analysis"
             required
           />
 
@@ -258,16 +288,31 @@ const FoodLogPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              AI Questions
+              AI Needs More Information
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {questions.map((question, index) => (
-                <p key={index} className="text-gray-700 dark:text-gray-300">
-                  {question}
-                </p>
-              ))}
+          <CardContent className="space-y-4">
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+              <div className="space-y-2">
+                {questions.map((question, index) => (
+                  <p key={index} className="text-orange-800 dark:text-orange-200">
+                    • {question}
+                  </p>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Please update your description above with more details, then try again.
+              </p>
+              <Button
+                onClick={handleAnswerQuestions}
+                disabled={isAnalyzing || !isFormValid}
+                isLoading={isAnalyzing}
+                leftIcon={<Sparkles className="w-4 h-4" />}
+              >
+                Try Again
+              </Button>
             </div>
           </CardContent>
         </Card>

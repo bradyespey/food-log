@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
 import ImageUpload from '../components/ui/ImageUpload';
 import { analyzeFood, estimateCost } from '../lib/openai';
+import { logFoodToBackend } from '../lib/api';
 import type { FoodItem, FormData } from '../types';
 
 const FoodLogPage: React.FC = () => {
@@ -101,18 +102,27 @@ const FoodLogPage: React.FC = () => {
     if (!analysisResult) return;
 
     setIsLogging(true);
+    setLogResult('');
+    toast.dismiss();
     
     try {
-      // TODO: Call the api.theespeys.com endpoint
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const result = await logFoodToBackend(analysisResult, formData.logWater);
       
-      setLogResult('✅ Food successfully logged to Lose It!');
-      if (formData.logWater) {
-        setLogResult(prev => prev + '\n💧 Water intake logged');
+      if (result.success) {
+        setLogResult(`✅ ${result.message}\n\n${result.output || ''}`);
+        toast.success('Food logged successfully!');
+        
+        if (formData.logWater) {
+          setLogResult(prev => prev + '\n💧 Water intake also logged');
+        }
+      } else {
+        throw new Error(result.message);
       }
     } catch (error) {
       console.error('Logging failed:', error);
-      setLogResult('❌ Failed to log food. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to log food';
+      setLogResult(`❌ ${errorMessage}`);
+      toast.error(errorMessage);
     } finally {
       setIsLogging(false);
     }

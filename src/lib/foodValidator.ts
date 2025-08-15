@@ -187,6 +187,13 @@ function normalizeServingSize(fields: Fields, idx: number) {
   // Fix common malformed patterns first
   let cleaned = raw.replace(/\s+/g, ' ').trim();
   
+  // Fix "0.5 5 serving" → "0.5 serving"
+  if (cleaned.match(/^(\d+\.?\d*)\s+\d+\s+serving$/i)) {
+    const amount = parseFloat(cleaned.match(/^(\d+\.?\d*)\s+\d+\s+serving$/i)![1]);
+    fields["Serving Size"] = `${amount} serving`;
+    return;
+  }
+  
   // Fix "1 2 serving" → "0.5 serving"
   if (cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)) {
     const num1 = parseInt(cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)![1]);
@@ -227,7 +234,15 @@ function normalizeServingSize(fields: Fields, idx: number) {
   // Accept patterns like "3 Each", "3.5 Each", "8 fluid ounces", "507 grams"
   const m = cleaned.match(/^\s*([\d\s\/.-]+)\s+(.+?)\s*$/i);
   if (!m) throw new Error(`Invalid Serving Size format in item ${idx + 1}. Use "<amount> <unit>".`);
-  const amountStr = m[1].trim();
+  
+  // Additional check: if we have multiple numbers, take the first one
+  let amountStr = m[1].trim();
+  if (amountStr.includes(' ')) {
+    // Multiple numbers detected, take the first one
+    amountStr = amountStr.split(' ')[0];
+    console.warn(`Multiple numbers in serving size detected: "${m[1]}", using first: "${amountStr}"`);
+  }
+  
   const unitRaw = m[2].trim().toLowerCase();
 
   const amount = parseNumberOrFraction(amountStr);

@@ -103,6 +103,8 @@ Allowed serving guidance
 - Examples: "0.5 serving", "1 serving", "2 servings"
 - Never use "Default" for Icon - pick the most appropriate one
 - CRITICAL: Use DECIMALS only - no fractions like "1/2" or "1 2"
+- CRITICAL: Serving Size must be EXACTLY ONE number followed by ONE unit
+- NEVER use formats like "0.5 5 serving" or "1 1 serving" - these are invalid
 - Serving Size examples: "0.5 serving", "2 each", "8 fluid ounces"
 - Nutritional values: Use decimals (e.g., 12.5, 3.25) or whole numbers (e.g., 2, 0)
 

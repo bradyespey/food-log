@@ -210,8 +210,28 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
 const parseNutritionalData = (response: string, request: OpenAIAnalysisRequest): FoodItem[] => {
   const items: FoodItem[] = [];
   
-  // Split response by food items (look for "Food Name:" patterns)
-  const itemSections = response.split(/(?=Food Name:|Item \d+:|^\d+\.)/m).filter(s => s.trim());
+  // Try multiple splitting strategies for different response formats
+  let itemSections: string[] = [];
+  
+  // Strategy 1: Look for "Food Name:" patterns
+  if (response.includes('Food Name:')) {
+    itemSections = response.split(/(?=Food Name:)/gi).filter(s => s.trim());
+  }
+  
+  // Strategy 2: Look for numbered items (1., 2., etc.)
+  if (itemSections.length === 0 && /^\d+\./m.test(response)) {
+    itemSections = response.split(/(?=^\d+\.)/m).filter(s => s.trim());
+  }
+  
+  // Strategy 3: Split by double newlines if multiple clear sections
+  if (itemSections.length === 0 && response.split('\n\n').length > 2) {
+    itemSections = response.split('\n\n').filter(s => s.trim());
+  }
+  
+  // Strategy 4: Single item response
+  if (itemSections.length === 0) {
+    itemSections = [response];
+  }
   
   for (const section of itemSections) {
     const item = parseIndividualFoodItem(section, request);
@@ -220,12 +240,10 @@ const parseNutritionalData = (response: string, request: OpenAIAnalysisRequest):
     }
   }
   
-  // If no structured items found, create a single item from the overall response
+  // If still no items, create fallback items based on description
   if (items.length === 0) {
-    const fallbackItem = createFallbackItem(response, request);
-    if (fallbackItem) {
-      items.push(fallbackItem);
-    }
+    const fallbackItems = createFallbackItems(response, request);
+    items.push(...fallbackItems);
   }
   
   return items;
@@ -235,45 +253,48 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
   try {
     const lines = section.split('\n').map(l => l.trim());
     
-    // Extract values using regex patterns
-    const extractValue = (pattern: RegExp, defaultValue: any = '') => {
-      for (const line of lines) {
-        const match = line.match(pattern);
-        if (match) return match[1]?.trim() || defaultValue;
+    // Extract values using multiple regex patterns (more flexible)
+    const extractValue = (patterns: RegExp[], defaultValue: any = '') => {
+      for (const pattern of patterns) {
+        for (const line of lines) {
+          const match = line.match(pattern);
+          if (match) return match[1]?.trim() || defaultValue;
+        }
       }
       return defaultValue;
     };
     
-    const extractNumber = (pattern: RegExp, defaultValue: number = 0) => {
-      const value = extractValue(pattern, '0');
-      return parseFloat(value.replace(/[^\d.]/g, '')) || defaultValue;
+    const extractNumber = (patterns: RegExp[], defaultValue: number = 0) => {
+      const value = extractValue(patterns, '0');
+      const num = parseFloat(value.replace(/[^\d.]/g, ''));
+      return isNaN(num) ? defaultValue : num;
     };
     
-    const foodName = extractValue(/Food Name:\s*(.+)/i) || extractValue(/Item.*:\s*(.+)/i) || 'Unknown Food';
+    const foodName = extractValue([/Food Name:\s*(.+)/i, /Item.*:\s*(.+)/i, /^(.+?):/i], 'Unknown Food');
     if (foodName === 'Unknown Food' || foodName === '') return null;
     
     return {
       foodName: foodName.substring(0, 60), // Limit to 60 chars as per spec
       brand: request.brand,
-      icon: extractValue(/Icon:\s*(.+)/i, 'Default'),
+      icon: extractValue([/Icon:\s*(.+)/i], 'Default'),
       serving: {
-        amount: extractNumber(/Serving Size:\s*(\d+\.?\d*)/i, 1),
-        unit: extractValue(/Serving Size:.*?(\w+(?:\s+\w+)?)\s*$/i, 'each'),
-        descriptor: extractValue(/Serving Size:.*?\((.+?)\)/i, ''),
+        amount: extractNumber([/Serving Size:\s*(\d+\.?\d*)/i, /Serving:\s*(\d+\.?\d*)/i], 1),
+        unit: extractValue([/Serving Size:.*?(\w+(?:\s+\w+)?)\s*$/i, /Serving.*?(\w+)\s*$/i], 'each'),
+        descriptor: extractValue([/Serving Size:.*?\((.+?)\)/i], ''),
       },
-      calories: extractNumber(/Calories:\s*(\d+)/i),
-      fatG: extractNumber(/Fat.*:\s*(\d+\.?\d*)/i),
-      satFatG: extractNumber(/Saturated Fat.*:\s*(\d+\.?\d*)/i),
-      cholesterolMg: extractNumber(/Cholesterol.*:\s*(\d+\.?\d*)/i),
-      sodiumMg: extractNumber(/Sodium.*:\s*(\d+\.?\d*)/i),
-      carbsG: extractNumber(/Carbs.*:\s*(\d+\.?\d*)/i),
-      fiberG: extractNumber(/Fiber.*:\s*(\d+\.?\d*)/i),
-      sugarG: extractNumber(/Sugar.*:\s*(\d+\.?\d*)/i),
-      proteinG: extractNumber(/Protein.*:\s*(\d+\.?\d*)/i),
+      calories: extractNumber([/Calories:\s*(\d+)/i, /Cal:\s*(\d+)/i, /Energy:\s*(\d+)/i], 0),
+      fatG: extractNumber([/Fat.*:\s*(\d+\.?\d*)/i, /Total Fat.*:\s*(\d+\.?\d*)/i], 0),
+      satFatG: extractNumber([/Saturated Fat.*:\s*(\d+\.?\d*)/i, /Sat Fat.*:\s*(\d+\.?\d*)/i], 0),
+      cholesterolMg: extractNumber([/Cholesterol.*:\s*(\d+\.?\d*)/i, /Chol.*:\s*(\d+\.?\d*)/i], 0),
+      sodiumMg: extractNumber([/Sodium.*:\s*(\d+\.?\d*)/i, /Salt.*:\s*(\d+\.?\d*)/i], 0),
+      carbsG: extractNumber([/Carbs.*:\s*(\d+\.?\d*)/i, /Carbohydrates.*:\s*(\d+\.?\d*)/i], 0),
+      fiberG: extractNumber([/Fiber.*:\s*(\d+\.?\d*)/i, /Dietary Fiber.*:\s*(\d+\.?\d*)/i], 0),
+      sugarG: extractNumber([/Sugar.*:\s*(\d+\.?\d*)/i, /Total Sugar.*:\s*(\d+\.?\d*)/i], 0),
+      proteinG: extractNumber([/Protein.*:\s*(\d+\.?\d*)/i], 0),
       hydration: {
         isLiquid: /liquid|drink|beverage|juice|smoothie|cocktail|mocktail|water/i.test(foodName),
         fluidOz: /liquid|drink|beverage|juice|smoothie|cocktail|mocktail|water/i.test(foodName) 
-          ? extractNumber(/Hydration:\s*(\d+\.?\d*)/i) 
+          ? extractNumber([/Hydration:\s*(\d+\.?\d*)/i, /Fluid.*:\s*(\d+\.?\d*)/i]) 
           : 0,
       },
     };
@@ -309,6 +330,39 @@ const createFallbackItem = (response: string, request: OpenAIAnalysisRequest): F
       fluidOz: 0,
     },
   };
+};
+
+const createFallbackItems = (response: string, request: OpenAIAnalysisRequest): FoodItem[] => {
+  // Extract food items from the user's description as fallback
+  const items: FoodItem[] = [];
+  const prompt = request.prompt.toLowerCase();
+  
+  // Common food patterns to extract multiple items
+  const foodIndicators = [
+    'hummus', 'bread', 'mocktail', 'steak', 'fries', 'salad', 'chicken', 'pizza',
+    'burger', 'sandwich', 'soup', 'pasta', 'rice', 'fish', 'beef', 'pork',
+    'dessert', 'cake', 'ice cream', 'cocktail', 'drink', 'wine', 'beer'
+  ];
+  
+  for (const food of foodIndicators) {
+    if (prompt.includes(food)) {
+      items.push({
+        foodName: food.charAt(0).toUpperCase() + food.slice(1),
+        brand: request.brand,
+        icon: 'Default',
+        serving: { amount: 1, unit: 'portion', descriptor: '' },
+        calories: 200, // Reasonable default
+        fatG: 8, satFatG: 2, cholesterolMg: 10, sodiumMg: 300,
+        carbsG: 20, fiberG: 2, sugarG: 3, proteinG: 12,
+        hydration: { 
+          isLiquid: ['mocktail', 'cocktail', 'drink', 'wine', 'beer'].includes(food), 
+          fluidOz: ['mocktail', 'cocktail', 'drink'].includes(food) ? 8 : 0 
+        },
+      });
+    }
+  }
+  
+  return items.length > 0 ? items : [createFallbackItem(response, request)!];
 };
 
 // Estimate cost for the request

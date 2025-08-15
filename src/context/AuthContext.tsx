@@ -40,7 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS?.split(',') || [];
 
   useEffect(() => {
-    // Defer Firebase initialization to improve page load
+    // Set loading to false immediately to show UI faster
+    setLoading(false);
+    
+    // Initialize Firebase auth after a larger delay
     const timer = setTimeout(() => {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user && allowedEmails.includes(user.email || '')) {
@@ -61,11 +64,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await firebaseSignOut(auth);
           }
         }
-        setLoading(false);
       });
 
       return unsubscribe;
-    }, 100); // Small delay to let page render first
+    }, 1000); // Larger delay to let page fully render
 
     return () => clearTimeout(timer);
   }, []);

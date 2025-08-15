@@ -1,5 +1,6 @@
-// OpenAI API client for food analysis
+// OpenAI API client for food analysis with system/user message separation
 import type { FoodItem } from '../types';
+import { validateAndNormalizeResponse } from './foodValidator';
 
 interface OpenAIAnalysisRequest {
   prompt: string;
@@ -19,6 +20,11 @@ interface OpenAIResponse {
   };
   error?: string;
 }
+
+// Keep these centralized so you can edit without touching the prompt text
+const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams, Ounces, Pounds; Serving Volume: Cups, Dessertspoons, Fluid Ounce, Gallons, Imperial Fluid Ounces, Imperial Pints, Imperial Quarts, Liters, Metric Cups, Milliliters, Pints, Quarts, Tablespoons, Teaspoons; Serving Amount: Bottle, Box, Can, Container, Cube, Dry Cup, Each, Jar, Package, Piece, Pot, Pouch, Punnet, Scoop, Serving, Slice, Stick, Tablet";
+
+const ICON_LIST = "Alcohol; Alcohol, White; Almond; Almond Butter; Apple; Apple Sauce; Apple, Gala; Apple, Granny Smith; Apple, Honey Crisp; Apple, Macintosh; Artichoke; Asparagus; Avocado; Bacon; Bagel; Bagel, Blueberry; Bagel, Chocolate Chip; Bagel, Sesame; Baguette; Baked Beans; Balsamic Vinaigrette; Bamboo; Banana; Banana Pepper; Bar; Bean, Black; Bean, Green; Bean, Red; Bean, White; Beef; Beer; BeerDark; Beet; Bell Pepper, Green; Bell Pepper, Red; Bell Pepper, Yellow; Biscuit; Biscuit Cracker; Blackberry; Blueberry; Breadsticks; Breakfast; Breakfast Sandwich; Broccoli; Brownie; Brussels Sprout; Burrito; Butter; Cabbage; Cake; CakeDark; CakeWhite; CakeWhiteDark; Calamari; Calories; Can; Candy; Candy Bar; Carrot; Carrots; Cashew; Casserole; Cauliflower; Celery; Cereal; Cereal Bar; CerealCheerios; CerealCornFlakes; CerealFruitLoops; Cheese; CheeseAmerican; CheeseBlue; CheeseBrie; Cheeseburger; Cheesecake; CheeseCheddar; CheeseGouda; CheesePepperjack; Cherry; CherryMaraschino; Chestnut; Chicken; Chicken Tenders; ChickenGrilled; ChickenWing; Chickpea; Chocolate; Chocolate Chip; Chocolate Chips; ChocolateDark; Churro; Cider; Cinnamon Roll; Clam; Coconut; Coffee; Coleslaw; Com; Combread; Cookie; Cookie, Christmas; Cookie, Molasses; Cookie, Red Velvet; Cookie, Sugar; Cottage Cheese; Crab; Cracker; Cranberry; Cream; Croissant; Crouton; Crumpet; Cucumber; Cupcake; Cupcake, Carrot; Cupcake, Vanilla; Curry; Date; Default; Deli Meat; Dinner Roll; Dip, Green; Dip, Red; Dish; Donut; Donut, Chocolate Iced; Donut, Strawberry Iced; DoubleCheeseburger; Dressing, Ranch; Dumpling; Eclair; Egg; Egg McMuffin; Egg Roll; Eggplant; Enchilada; Falafel; Fern; Fig; Filbert; Fish; Food, Can; Fowl; French Fries; French Toast; Fritter; Frosting, Chocolate; Frosting, Yellow; Fruit Cocktail; Fruit Leather; FruitCake; Game; Garlic; Gobo Root; Gourd; Graham Cracker; Grain; Grapefruit; Grapes; Grilled Cheese; Guava; Gummy Bear; Hamburger; Hamburger Bun; Hamburger Patty; Hamburger, Double; Hash; Hazelnut; Honey; Horseradish; Hot Dog; Hot Dog Bun; Hot Pot; Ice Cream; Ice Cream Bar; Ice Cream Sandwich; Ice Cream, Chocolate; Ice Cream, Strawberry; Iced Coffee; Iced Tea; Jam; Jicama; Juice; Kale; Kebab; Ketchup; Kiwi; Lamb; Lasagna; Latte; Leeks; Lemon; Lemonade; Lime; Liquid; Lobster; Mac And Cheese; Macadamia; Mango; Marshmallow; Mayonnaise; Meatballs; Melon; Milk; Milk Shake; Milk Shake, Chocolate; Milk Shake, Strawberry; Mixed Drink; Mixed Drink, Martini; Mixed Nuts; Muffin; Mushroom; Mustard; Nigiri Sushi; Oatmeal; Octopus; Oil; Okra; Olive, Black; Olive, Green; Omelette; Onion; Orange; Orange Chicken; Orange Juice; Pancakes; Papaya; Parfait; Parsley; Parsnip; Pasta; Pastry; Patty Sandwich; Pavlova; Peach; Peanut; Peanut Butter; Pear; Peas; Pecan; Peppers; Persimmon; Pickle; Pie; Pie, Apple; Pill; Pine Nut; Pineapple; Pistachio; Pita Sandwich; Pizza; Plum; Pocky; Pomegranate; Popcom; Popsicle; Pork; Pork Chop; Pot Pie; Potato; Potato Chip; Potato Salad; Powdered Drink; Prawn; Pretzel; Prune; Pudding; Pumpkin; Quesadilla; Quiche; Radish; Raisin; Raspberry; Ravioli; Recipe; Relish; Rhubarb; Ribs; Rice; Rice Cake; Roll; Romaine Lettuce; Salad; Salad Dressing, Balsamic; Salt; Sandwich; Sauce; Sausage; Seaweed; Seed; Shallot; Shrimp; Smoothie; Snack; Snap Bean; Soft Drink; SoftServeChocolate; SoftServeSwirl; SoftServeVanilla; Souffle; Soup; Sour Cream; Soy Nut; Soy Sauce; Spice, Brown; Spice, Green; Spice, Red; Spice, Yellow; Spinach; Spring Roll; Sprouts; Squash; Squash, Spaghetti; Starfruit; Stew, Brown; Stew, Yellow; Stir Fry; Stir Fry Noodles; Strawberry; Stuffing; Sub Sandwich; Sugar Cookie; Sugar, Brown; Sugar, White; Sushi; Syrup; Taco; Taro; Tater Tots; Tea; Tempura; Toast; Toaster Pastry; Tofu; Tomato; Tomato Soup; Tortilla; Tortilla Chip; Tostada; Turkey; Turnip; Turnover; Vegetable; Waffles; Walnut; Water; Water Chestnut; Watermelon; White Bread; Wine, Red; Wine, White; Wrap; Yam; Yogurt; Zucchini";
 
 // Image compression utility
 const compressImage = async (file: File): Promise<string> => {
@@ -51,47 +57,74 @@ const compressImage = async (file: File): Promise<string> => {
   });
 };
 
-// Build the prompt following ChatGPT Custom GPT format
-const buildPrompt = (request: OpenAIAnalysisRequest): string => {
-  const { prompt, date, meal, brand } = request;
-  const formattedDate = new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
-  
-  return `You are a nutritional analysis expert. Analyze this food and provide nutritional information in the EXACT format specified below.
+// Build the system prompt with exact ChatGPT Custom GPT format
+function buildSystemPrompt(params: {
+  formatted_date: string;
+  meal: string;
+  brand: string;
+  user_prompt: string;
+  photos_present_boolean: string;
+}): string {
+  return `
+You are a nutritional analysis expert. Analyze the food shown or described and return a single plain-text block per item using the exact field order and formatting below. Do not include any extra commentary.
 
-Context:
-Date: ${formattedDate}
-Meal: ${meal}
-Brand/Restaurant: ${brand}
+Context provided by the app:
+Date: ${params.formatted_date}
+Meal: ${params.meal}
+Brand/Restaurant: ${params.brand}
+Food Description: ${params.user_prompt}
+Photos available: ${params.photos_present_boolean}
 
-Food Description: ${prompt}
+Behavior
+- Use the provided Date, Meal, and Brand/Restaurant as given.
+- Only ask for clarification if both of these are true:
+  1) the description is very unclear or contradictory, and
+  2) the photos do not add enough context to identify the item or a reasonable serving estimate.
+- Otherwise, make confident, reasonable estimates. Do not ask for exact measurements.
+- Prefer visual estimation from photos. When unclear, use typical restaurant standards.
+- Base serving size and calories on what is shown. If you scale calories up or down, scale macros proportionally.
+- Drinks, smoothies, soups: report serving in Fluid Ounce. Account for ice volume in the estimate.
+- Names: proper case, max 60 chars, shorten where possible (e.g., "w/" for "with").
+- Output must be plain text only. No bullets, numbering, bold, or extra notes.
+- List each food item as a separate full block. Separate items with a single blank line.
+- Serving Size must use exactly one allowed serving type from the SERVING_TYPES list.
+- Icon must be exactly one value from the ICON_LIST. If unsure, use Default.
+- Fields must never be empty for Food Name, Date, Meal, Brand, Serving Size, Calories.
+- Values must be numbers only, with units exactly as shown in the schema labels. No parentheticals or extra words.
 
-CRITICAL INSTRUCTIONS:
-1. **ANALYZE PHOTOS VISUALLY** - Use the photos to estimate serving sizes and portions
-2. **USE RESTAURANT STANDARDS** - Apply typical restaurant portion sizes when photos don't show clear measurements
-3. **BE CONFIDENT** - Make reasonable estimates rather than asking for precision
-4. **FOLLOW FORMAT EXACTLY** - Use the format below for each food item
+Allowed serving guidance
+- Countable items: use Each
+- Beverages or soups: use Fluid Ounce
+- Weight-based foods: use Grams or Ounces as appropriate
+- Fractions must be decimals (e.g., 4 1/2 -> 4.5)
 
-REQUIRED OUTPUT FORMAT (follow exactly):
-Food Name: [Food Name]
-Date: ${formattedDate}
-Meal: ${meal}
-Brand: ${brand}
-Icon: [Select from: Default, Mixed Drink, Chicken, Beef, Bread, Dip, etc.]
-Serving Size: [amount] [unit]
-Calories: [number]
-Fat (g): [number]
-Saturated Fat (g): [number]
-Cholesterol (mg): [number]
-Sodium (mg): [number]
-Carbs (g): [number]
-Fiber (g): [number]
-Sugar (g): [number]
-Protein (g): [number]
+Field order and exact schema
+Food Name: <short name, max 60 chars>
+Date: <MM/DD>
+Meal: <Breakfast|Lunch|Dinner|Snacks>
+Brand: <brand or restaurant>
+Icon: <one from ICON_LIST>
+Serving Size: <number + single serving type, e.g., "3.5 Each" or "16 Fluid Ounce">
+Calories: <number>
+Fat (g): <number>
+Saturated Fat (g): <number>
+Cholesterol (mg): <number>
+Sodium (mg): <number>
+Carbs (g): <number>
+Fiber (g): <number>
+Sugar (g): <number>
+Protein (g): <number>
 
-For drinks, add: Hydration: [fluid ounces] fluid ounces
+If fluid ounces are present, append this line:
+Hydration: <total beverage fluid ounces as number> Fluid Ounce
 
-IMPORTANT: Provide nutritional breakdown for each food item separately. Do not ask questions unless the description is completely vague with no photos.`;
-};
+SERVING_TYPES:
+${SERVING_TYPES}
+
+ICON_LIST:
+${ICON_LIST}
+`.trim();
+}
 
 export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenAIResponse> => {
   try {
@@ -102,19 +135,36 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       throw new Error('OpenAI API key not configured');
     }
 
+    const formattedDate = new Date(request.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
+    
+    // Build system prompt with exact parameters
+    const systemPrompt = buildSystemPrompt({
+      formatted_date: formattedDate,
+      meal: request.meal,
+      brand: request.brand,
+      user_prompt: request.prompt,
+      photos_present_boolean: request.images.length > 0 ? 'true' : 'false',
+    });
+
     // Compress images
     const compressedImages = await Promise.all(
       request.images.map(compressImage)
     );
 
-    // Build the messages
+    // Build messages with system/user separation
     const messages: any[] = [
+      {
+        role: 'system',
+        content: systemPrompt,
+      },
       {
         role: 'user',
         content: [
           {
             type: 'text',
-            text: buildPrompt(request),
+            text: request.images.length > 0 
+              ? `Analyze the food shown in the images: ${request.prompt}`
+              : `Analyze this food description: ${request.prompt}`,
           },
           ...compressedImages.map(imageData => ({
             type: 'image_url',
@@ -137,7 +187,7 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
         model,
         messages,
         max_tokens: 1500,
-        temperature: 0.1,
+        temperature: 0.2, // Slightly higher for better variety
       }),
     });
 
@@ -152,13 +202,25 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       throw new Error('No response from OpenAI');
     }
 
-    // Parse the response
-    const parsedResult = parseOpenAIResponse(aiResponse, request);
-    
-    return {
-      success: true,
-      data: parsedResult,
-    };
+    // Validate and normalize the response using the validator
+    try {
+      const normalizedText = validateAndNormalizeResponse(aiResponse);
+      const parsedResult = parseOpenAIResponse(normalizedText, request);
+      
+      return {
+        success: true,
+        data: parsedResult,
+      };
+    } catch (validationError) {
+      console.warn('Validation failed, falling back to original parsing:', validationError);
+      // Fallback to original parsing if validation fails
+      const parsedResult = parseOpenAIResponse(aiResponse, request);
+      
+      return {
+        success: true,
+        data: parsedResult,
+      };
+    }
 
   } catch (error) {
     console.error('OpenAI Analysis Error:', error);

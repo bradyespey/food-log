@@ -90,15 +90,18 @@ Behavior
 - Output must be plain text only. No bullets, numbering, bold, or extra notes.
 - List each food item as a separate full block. Separate items with a single blank line.
 - Serving Size must use exactly one allowed serving type from the SERVING_TYPES list.
-- Icon must be exactly one value from the ICON_LIST. If unsure, use Default.
+- Icon must be exactly one value from the ICON_LIST. Never use "Default" - pick the most appropriate icon based on the food type.
+- Icon suggestions: Hummus → "Dip", Bread → "Bread", Steak → "Beef", Mocktail → "Mixed Drink", Salad → "Salad", etc.
 - Fields must never be empty for Food Name, Date, Meal, Brand, Serving Size, Calories.
 - Values must be numbers only, with units exactly as shown in the schema labels. No parentheticals or extra words.
 
 Allowed serving guidance
-- Countable items: use Each
+- Countable items: use Each (e.g., "3 tacos" = "3 each")
 - Beverages or soups: use Fluid Ounce
 - Weight-based foods: use Grams or Ounces as appropriate
-- Fractions must be decimals (e.g., 4 1/2 -> 4.5)
+- When exact weight/measurement unknown: use "serving" with context
+- Examples: "1/2 serving", "1 serving", "2 servings"
+- Never use "Default" for Icon - pick the most appropriate one
 
 Field order and exact schema
 Food Name: <short name, max 60 chars>
@@ -106,7 +109,7 @@ Date: <MM/DD>
 Meal: <Breakfast|Lunch|Dinner|Snacks>
 Brand: <brand or restaurant>
 Icon: <one from ICON_LIST>
-Serving Size: <number> <unit> (<optional descriptor>)
+Serving Size: <amount> <unit> (e.g., "1/2 serving", "3 each", "8 fluid ounces")
 Calories: <number>
 Fat (g): <number>
 Saturated Fat (g): <number>

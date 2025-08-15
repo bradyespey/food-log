@@ -59,11 +59,24 @@ const compressImage = async (file: File): Promise<string> => {
 
 // Simple post-processing to fix common serving size issues
 function fixServingSizes(text: string): string {
-  return text
-    .replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\s+serving/gi, 'Serving Size: $1 serving')
-    .replace(/Serving Size:\s*(\d+)\s+\1\s+serving/gi, 'Serving Size: $1 serving')
-    .replace(/Serving Size:\s*(\d+)\s+\1\s+each/gi, 'Serving Size: $1 each')
-    .replace(/Serving Size:\s*1\s+2\s+serving/gi, 'Serving Size: 0.5 serving');
+  let fixed = text;
+  
+  // Fix "0.5 5 serving" → "0.5 serving"
+  fixed = fixed.replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\s+serving/gi, 'Serving Size: $1 serving');
+  
+  // Fix "1 1 serving" → "1 serving"
+  fixed = fixed.replace(/Serving Size:\s*(\d+)\s+\1\s+serving/gi, 'Serving Size: $1 serving');
+  
+  // Fix "2 2 each" → "2 each"
+  fixed = fixed.replace(/Serving Size:\s*(\d+)\s+\1\s+each/gi, 'Serving Size: $1 each');
+  
+  // Fix "1 2 serving" → "0.5 serving"
+  fixed = fixed.replace(/Serving Size:\s*1\s+2\s+serving/gi, 'Serving Size: 0.5 serving');
+  
+  // Fix any other double number patterns
+  fixed = fixed.replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\.?\d*\s+(serving|each|ounces?|grams?)/gi, 'Serving Size: $1 $2');
+  
+  return fixed;
 }
 
 // Build the system prompt with exact ChatGPT Custom GPT format
@@ -285,9 +298,14 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       throw new Error('No response from OpenAI');
     }
 
-    // Try validation first, but always fall back gracefully
+    // ALWAYS apply serving size fixes first, before any parsing
+    console.log('Raw AI response:', aiResponse);
+    const fixedResponse = fixServingSizes(aiResponse);
+    console.log('Fixed response:', fixedResponse);
+
+    // Try validation on the fixed response
     try {
-      const normalizedText = validateAndNormalizeResponse(aiResponse);
+      const normalizedText = validateAndNormalizeResponse(fixedResponse);
       console.log('Validation successful, using normalized text');
       const parsedResult = parseOpenAIResponse(normalizedText, request);
       
@@ -296,10 +314,9 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
         data: parsedResult,
       };
     } catch (validationError) {
-      console.warn('Validation failed, using post-processing fix:', validationError);
+      console.warn('Validation failed, using fixed response directly:', validationError);
       
-      // Post-process the raw AI response to fix serving sizes before parsing
-      const fixedResponse = fixServingSizes(aiResponse);
+      // Use the fixed response directly if validation still fails
       const parsedResult = parseOpenAIResponse(fixedResponse, request);
       
       return {

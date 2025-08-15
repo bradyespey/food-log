@@ -82,6 +82,8 @@ Behavior
   2) the photos do not add enough context to identify the item or a reasonable serving estimate.
 - Otherwise, make confident, reasonable estimates. Do not ask for exact measurements.
 - Prefer visual estimation from photos. When unclear, use typical restaurant standards.
+- For restaurant items, use your knowledge of standard menu portions and nutritional data from that restaurant.
+- You may use web search to look up restaurant menus and nutrition references, but never include links, citations, or notes in the output. Return only the schema fields.
 - Base serving size and calories on what is shown. If you scale calories up or down, scale macros proportionally.
 - Drinks, smoothies, soups: report serving in Fluid Ounce. Account for ice volume in the estimate.
 - Names: proper case, max 60 chars, shorten where possible (e.g., "w/" for "with").
@@ -104,7 +106,7 @@ Date: <MM/DD>
 Meal: <Breakfast|Lunch|Dinner|Snacks>
 Brand: <brand or restaurant>
 Icon: <one from ICON_LIST>
-Serving Size: <number + single serving type, e.g., "3.5 Each" or "16 Fluid Ounce">
+Serving Size: <number> <unit> (<optional descriptor>)
 Calories: <number>
 Fat (g): <number>
 Saturated Fat (g): <number>
@@ -151,51 +153,108 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       request.images.map(compressImage)
     );
 
-    // Build messages with system/user separation
-    const messages: any[] = [
+    // Build input for Responses API with web search
+    const input = [
       {
         role: 'system',
         content: systemPrompt,
       },
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: request.images.length > 0 
-              ? `Analyze the food shown in the images: ${request.prompt}`
-              : `Analyze this food description: ${request.prompt}`,
-          },
-          ...compressedImages.map(imageData => ({
-            type: 'image_url',
-            image_url: {
-              url: imageData,
+        content: request.images.length > 0 
+          ? `Analyze the food shown in the images: ${request.prompt}`
+          : `Analyze this food description: ${request.prompt}`,
+      },
+    ] as const;
+
+    // Try with web search enabled (primary and fallback)
+    const toolsPrimary = [{ type: "web_search" as const }];
+    const toolsFallback = [{ type: "web_search_preview" as const }];
+
+    let resp;
+    try {
+      // Try the stable web_search tool first
+      resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
             },
-          })),
-        ],
-      },
-    ];
-
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: 1500,
-        temperature: 0.2, // Slightly higher for better variety
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: request.images.length > 0 
+                    ? `Analyze the food shown in the images: ${request.prompt}`
+                    : `Analyze this food description: ${request.prompt}`,
+                },
+                ...compressedImages.map(imageData => ({
+                  type: 'image_url',
+                  image_url: {
+                    url: imageData,
+                  },
+                })),
+              ],
+            },
+          ],
+          tools: [{ type: "web_search" }],
+          tool_choice: "auto",
+          max_tokens: 1500,
+          temperature: 0.2,
+        }),
+      });
+    } catch (e: any) {
+      // Fallback to standard completion if web search fails
+      resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: request.images.length > 0 
+                    ? `Analyze the food shown in the images: ${request.prompt}`
+                    : `Analyze this food description: ${request.prompt}`,
+                },
+                ...compressedImages.map(imageData => ({
+                  type: 'image_url',
+                  image_url: {
+                    url: imageData,
+                  },
+                })),
+              ],
+            },
+          ],
+          max_tokens: 1500,
+          temperature: 0.2,
+        }),
+      });
     }
 
-    const data = await response.json();
+    if (!resp.ok) {
+      throw new Error(`OpenAI API error: ${resp.status}`);
+    }
+
+    const data = await resp.json();
     const aiResponse = data.choices?.[0]?.message?.content;
 
     if (!aiResponse) {

@@ -179,9 +179,24 @@ function normalizeIcon(fields: Fields, idx: number) {
 
 function normalizeServingSize(fields: Fields, idx: number) {
   const raw = fields["Serving Size"]!;
+  
+  // Handle special cases first
+  if (raw.toLowerCase().includes('serving')) {
+    // For "serving" units, just clean up the format
+    const cleanServing = raw.replace(/\s+/g, ' ').trim();
+    if (cleanServing.match(/^\d+\/\d+\s+serving$/i)) {
+      fields["Serving Size"] = cleanServing.toLowerCase();
+      return;
+    }
+    if (cleanServing.match(/^\d+\s+serving$/i)) {
+      fields["Serving Size"] = cleanServing.toLowerCase();
+      return;
+    }
+  }
+  
   // Accept patterns like "3 Each", "3.5 Each", "8 fluid ounces", "507 grams"
   const m = raw.match(/^\s*([\d\s\/.-]+)\s+(.+?)\s*$/i);
-  if (!m) throw new Error(`Invalid Serving Size format in item ${idx + 1}. Use "<number> <unit>".`);
+  if (!m) throw new Error(`Invalid Serving Size format in item ${idx + 1}. Use "<amount> <unit>".`);
   const amountStr = m[1].trim();
   const unitRaw = m[2].trim().toLowerCase();
 

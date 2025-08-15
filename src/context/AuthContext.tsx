@@ -40,29 +40,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS?.split(',') || [];
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && allowedEmails.includes(user.email || '')) {
-        setSession({
-          user: {
-            id: user.uid,
-            email: user.email || '',
-          },
-          isAuthenticated: true,
-        });
-        await handleUserDocument(user);
-      } else {
-        setSession(defaultSession);
-        setUserRole(null);
-        if (user) {
-          // User not authorized
-          alert('Access denied. You are not authorized to use this application.');
-          await firebaseSignOut(auth);
+    // Defer Firebase initialization to improve page load
+    const timer = setTimeout(() => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user && allowedEmails.includes(user.email || '')) {
+          setSession({
+            user: {
+              id: user.uid,
+              email: user.email || '',
+            },
+            isAuthenticated: true,
+          });
+          await handleUserDocument(user);
+        } else {
+          setSession(defaultSession);
+          setUserRole(null);
+          if (user) {
+            // User not authorized
+            alert('Access denied. You are not authorized to use this application.');
+            await firebaseSignOut(auth);
+          }
         }
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      });
 
-    return unsubscribe;
+      return unsubscribe;
+    }, 100); // Small delay to let page render first
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleUserDocument = async (user: FirebaseUser) => {

@@ -159,6 +159,39 @@ const FoodLogPage: React.FC = () => {
     handleAnalyze();
   }, [handleAnalyze]);
 
+  const formatForChatGPT = useCallback((result: any) => {
+    if (!result?.items) return '';
+    
+    const formattedItems = result.items.map((item: FoodItem) => {
+      const lines = [
+        `Food Name: ${item.foodName}`,
+        `Date: ${result.date}`,
+        `Meal: ${result.meal}`,
+        `Brand: ${item.brand}`,
+        `Icon: ${item.icon}`,
+        `Serving Size: ${item.serving.amount} ${item.serving.unit}`,
+        `Calories: ${item.calories}`,
+        `Fat (g): ${item.fatG}`,
+        `Saturated Fat (g): ${item.satFatG}`,
+        `Cholesterol (mg): ${item.cholesterolMg}`,
+        `Sodium (mg): ${item.sodiumMg}`,
+        `Carbs (g): ${item.carbsG}`,
+        `Fiber (g): ${item.fiberG}`,
+        `Sugar (g): ${item.sugarG}`,
+        `Protein (g): ${item.proteinG}`,
+      ];
+      
+      // Add hydration for drinks
+      if (item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0) {
+        lines.push(`Hydration: ${item.hydration.fluidOz} fluid ounces`);
+      }
+      
+      return lines.join('\n');
+    });
+    
+    return formattedItems.join('\n\n');
+  }, []);
+
   return (
     <div className="space-y-8 px-4 max-w-5xl mx-auto">
       <Toaster 
@@ -349,7 +382,7 @@ const FoodLogPage: React.FC = () => {
             <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button
                 variant="outline"
-                onClick={() => copyToClipboard(JSON.stringify(analysisResult, null, 2))}
+                onClick={() => copyToClipboard(formatForChatGPT(analysisResult))}
                 leftIcon={<Copy className="w-4 h-4" />}
               >
                 Copy Results

@@ -32,9 +32,9 @@ const formatFoodItemForLogging = (item: FoodItem, date: string, meal: string): s
     `Protein (g): ${item.proteinG}`,
   ];
 
-  // Add hydration if it's a liquid
-  if (item.hydration?.isLiquid && item.hydration.fluidOz > 0) {
-    lines.push(`Hydration: ${item.hydration.fluidOz} fluid ounces`);
+  // Add hydration if it's a liquid with fluid ounces
+  if (item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0) {
+    lines.push(`Hydration: ${item.hydration.fluidOz || 0} fluid ounces`);
   }
 
   return lines.join('\n');

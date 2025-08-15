@@ -444,6 +444,12 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item }) => {
           <span className="text-gray-500 dark:text-gray-400">Sugar:</span>
           <span className="ml-1 font-medium">{item.sugarG}g</span>
         </div>
+        {item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0 && (
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">Hydration:</span>
+            <span className="ml-1 font-medium">{item.hydration.fluidOz || 0} fl oz</span>
+          </div>
+        )}
       </div>
     </div>
   );

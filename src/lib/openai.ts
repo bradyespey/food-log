@@ -71,11 +71,10 @@ IMPORTANT INSTRUCTIONS:
 3. **VISUAL ANALYSIS** - Analyze the plate, glass size, and food proportions in the images.
 4. **ONLY ASK QUESTIONS** if the description is completely unclear (e.g., "some food" without photos).
 5. **PROVIDE ESTIMATES** for:
-   - Hummus: Estimate based on typical restaurant serving (usually 2-4 oz)
-   - Bread: Count visible pieces and estimate size
-   - Drinks: Estimate based on glass size and ice content
-   - Steak: Estimate based on plate size and visual proportion
-   - Fries: Estimate based on pile size and plate dimensions
+   - Use visual cues from photos to estimate portion sizes
+   - Apply typical restaurant serving standards when photos don't show clear measurements
+   - Analyze plate dimensions, glass sizes, and food proportions
+   - Make reasonable estimates rather than asking for precision
 
 6. **FORMAT OUTPUT** exactly as specified in the ChatGPT Custom GPT format.
 
@@ -273,7 +272,9 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
       proteinG: extractNumber(/Protein.*:\s*(\d+\.?\d*)/i),
       hydration: {
         isLiquid: /liquid|drink|beverage|juice|smoothie|cocktail|mocktail|water/i.test(foodName),
-        fluidOz: extractNumber(/Hydration:\s*(\d+\.?\d*)/i),
+        fluidOz: /liquid|drink|beverage|juice|smoothie|cocktail|mocktail|water/i.test(foodName) 
+          ? extractNumber(/Hydration:\s*(\d+\.?\d*)/i) 
+          : 0,
       },
     };
     

@@ -113,17 +113,13 @@ export function validateAndNormalizeResponse(raw: string): string {
   const items = splitOnBlankLines(raw.trim());
   if (items.length === 0) throw new Error("No items found.");
 
-  console.log('Raw AI response:', raw); // Debug logging
-
   const normalizedItems = items.map((block, idx) => {
-    console.log(`Processing item ${idx + 1}:`, block); // Debug logging
     const fields = parseBlock(block);
     enforceRequired(fields, idx);
     normalizeIcon(fields, idx);
     normalizeServingSize(fields, idx);
     normalizeNumbers(fields, idx);
     normalizeHydration(fields);
-    console.log(`Normalized item ${idx + 1}:`, fields); // Debug logging
     return stringifyBlock(fields);
   });
 

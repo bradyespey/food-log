@@ -100,10 +100,11 @@ Allowed serving guidance
 - Beverages or soups: use Fluid Ounce
 - Weight-based foods: use Grams or Ounces as appropriate
 - When exact weight/measurement unknown: use "serving" with context
-- Examples: "1/2 serving", "1 serving", "2 servings"
+- Examples: "0.5 serving", "1 serving", "2 servings"
 - Never use "Default" for Icon - pick the most appropriate one
-- CRITICAL: Serving Size must be exactly ONE number followed by ONE unit (e.g., "1/2 serving", "2 each", "8 fluid ounces")
-- NEVER use formats like "1 2 serving" or "2 2 each" - these are invalid
+- CRITICAL: Use DECIMALS only - no fractions like "1/2" or "1 2"
+- Serving Size examples: "0.5 serving", "2 each", "8 fluid ounces"
+- Nutritional values: Use decimals (e.g., 12.5, 3.25) or whole numbers (e.g., 2, 0)
 
 Field order and exact schema
 Food Name: <short name, max 60 chars>
@@ -111,7 +112,7 @@ Date: <MM/DD>
 Meal: <Breakfast|Lunch|Dinner|Snacks>
 Brand: <brand or restaurant>
 Icon: <one from ICON_LIST>
-Serving Size: <amount> <unit> (e.g., "1/2 serving", "3 each", "8 fluid ounces")
+Serving Size: <amount> <unit> (e.g., "0.5 serving", "3 each", "8 fluid ounces")
 Calories: <number>
 Fat (g): <number>
 Saturated Fat (g): <number>

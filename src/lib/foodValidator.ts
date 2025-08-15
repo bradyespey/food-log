@@ -187,14 +187,21 @@ function normalizeServingSize(fields: Fields, idx: number) {
   // Fix common malformed patterns first
   let cleaned = raw.replace(/\s+/g, ' ').trim();
   
-  // Fix "1 2 serving" → "1/2 serving"
+  // Fix "1 2 serving" → "0.5 serving"
   if (cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)) {
     const num1 = parseInt(cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)![1]);
     const num2 = parseInt(cleaned.match(/^(\d+)\s+(\d+)\s+serving$/i)![2]);
     if (num1 === 1 && num2 === 2) {
-      fields["Serving Size"] = "1/2 serving";
+      fields["Serving Size"] = "0.5 serving";
       return;
     }
+  }
+  
+  // Fix "1 1 serving" → "1 serving"
+  if (cleaned.match(/^(\d+)\s+\1\s+serving$/i)) {
+    const num = parseInt(cleaned.match(/^(\d+)\s+\1\s+serving$/i)![1]);
+    fields["Serving Size"] = `${num} serving`;
+    return;
   }
   
   // Fix "2 2 each" → "2 each"
@@ -207,7 +214,7 @@ function normalizeServingSize(fields: Fields, idx: number) {
   // Handle special cases
   if (cleaned.toLowerCase().includes('serving')) {
     // For "serving" units, just clean up the format
-    if (cleaned.match(/^\d+\/\d+\s+serving$/i)) {
+    if (cleaned.match(/^\d+\.\d+\s+serving$/i)) {
       fields["Serving Size"] = cleaned.toLowerCase();
       return;
     }
@@ -301,7 +308,12 @@ function parseNumberOrFraction(s: string): number {
 }
 
 function toTrimmed(n: number): string {
-  return Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(3))).replace(/\.?0+$/, "");
+  if (Number.isInteger(n)) {
+    return String(n);
+  }
+  // For decimals, show up to 2 decimal places but remove trailing zeros
+  const formatted = n.toFixed(2);
+  return formatted.replace(/\.?0+$/, "");
 }
 
 function singularize(u: string): string {

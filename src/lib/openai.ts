@@ -56,7 +56,7 @@ const buildPrompt = (request: OpenAIAnalysisRequest): string => {
   const { prompt, date, meal, brand } = request;
   const formattedDate = new Date(date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
   
-  return `Please analyze this food and provide nutritional information in the exact format specified.
+  return `You are a nutritional analysis expert. Analyze this food and provide nutritional information in the exact format specified.
 
 Context:
 Date: ${formattedDate}
@@ -65,16 +65,25 @@ Brand/Restaurant: ${brand}
 
 Food Description: ${prompt}
 
-Instructions:
-1. If the description is too vague or you need more information, ask clarifying questions
-2. Otherwise, provide detailed nutritional breakdown following the ChatGPT Custom GPT format
-3. Be accurate with portion sizes and nutritional values
-4. For restaurant items, research typical serving sizes and nutritional data
-5. If multiple items are described, provide separate entries for each
+IMPORTANT INSTRUCTIONS:
+1. **ESTIMATE PORTIONS VISUALLY** - Use the photos to estimate serving sizes. Don't ask for exact measurements.
+2. **RESTAURANT STANDARDS** - Use typical restaurant portion sizes when photos don't show clear measurements.
+3. **VISUAL ANALYSIS** - Analyze the plate, glass size, and food proportions in the images.
+4. **ONLY ASK QUESTIONS** if the description is completely unclear (e.g., "some food" without photos).
+5. **PROVIDE ESTIMATES** for:
+   - Hummus: Estimate based on typical restaurant serving (usually 2-4 oz)
+   - Bread: Count visible pieces and estimate size
+   - Drinks: Estimate based on glass size and ice content
+   - Steak: Estimate based on plate size and visual proportion
+   - Fries: Estimate based on pile size and plate dimensions
+
+6. **FORMAT OUTPUT** exactly as specified in the ChatGPT Custom GPT format.
+
+7. **BE CONFIDENT** - Make reasonable estimates rather than asking for precision.
 
 Respond with either:
-- Clarifying questions if more info is needed
-- Detailed nutritional breakdown in the specified format`;
+- Clarifying questions ONLY if description is completely vague with no photos
+- Detailed nutritional breakdown with estimated portions based on visual analysis`;
 };
 
 export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenAIResponse> => {

@@ -13,10 +13,37 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+// Lazy initialize Firebase to improve initial load time
+let app: any = null;
+let auth: any = null;
+let googleProvider: any = null;
+let db: any = null;
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
+export const initializeFirebase = () => {
+  if (!app) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    googleProvider = new GoogleAuthProvider();
+    db = getFirestore(app);
+  }
+  return { app, auth, googleProvider, db };
+};
 
+export const getAuthInstance = () => {
+  if (!auth) initializeFirebase();
+  return auth;
+};
+
+export const getGoogleProvider = () => {
+  if (!googleProvider) initializeFirebase();
+  return googleProvider;
+};
+
+export const getDbInstance = () => {
+  if (!db) initializeFirebase();
+  return db;
+};
+
+// For backward compatibility
+export { auth, googleProvider, db };
 export default app;

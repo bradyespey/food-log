@@ -57,6 +57,15 @@ const compressImage = async (file: File): Promise<string> => {
   });
 };
 
+// Simple post-processing to fix common serving size issues
+function fixServingSizes(text: string): string {
+  return text
+    .replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\s+serving/gi, 'Serving Size: $1 serving')
+    .replace(/Serving Size:\s*(\d+)\s+\1\s+serving/gi, 'Serving Size: $1 serving')
+    .replace(/Serving Size:\s*(\d+)\s+\1\s+each/gi, 'Serving Size: $1 each')
+    .replace(/Serving Size:\s*1\s+2\s+serving/gi, 'Serving Size: 0.5 serving');
+}
+
 // Build the system prompt with exact ChatGPT Custom GPT format
 function buildSystemPrompt(params: {
   formatted_date: string;
@@ -276,9 +285,10 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       throw new Error('No response from OpenAI');
     }
 
-    // Validate and normalize the response using the validator
+    // Try validation first, but always fall back gracefully
     try {
       const normalizedText = validateAndNormalizeResponse(aiResponse);
+      console.log('Validation successful, using normalized text');
       const parsedResult = parseOpenAIResponse(normalizedText, request);
       
       return {
@@ -286,9 +296,11 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
         data: parsedResult,
       };
     } catch (validationError) {
-      console.warn('Validation failed, falling back to original parsing:', validationError);
-      // Fallback to original parsing if validation fails
-      const parsedResult = parseOpenAIResponse(aiResponse, request);
+      console.warn('Validation failed, using post-processing fix:', validationError);
+      
+      // Post-process the raw AI response to fix serving sizes before parsing
+      const fixedResponse = fixServingSizes(aiResponse);
+      const parsedResult = parseOpenAIResponse(fixedResponse, request);
       
       return {
         success: true,

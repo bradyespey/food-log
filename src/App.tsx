@@ -1,8 +1,39 @@
-import React from 'react';
-import FoodLog from './pages/FoodLog';
+//src/App.tsx
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { RequireAuth } from './components/Layout/RequireAuth'
+import { Layout } from './components/Layout/Layout'
+import { LoginPage } from './pages/LoginPage'
+import { AuthCallback } from './pages/AuthCallback'
+import FoodLogPage from './pages/FoodLogPage'
 
 function App() {
-  return <FoodLog />;
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+
+          {/* Protected */}
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Layout><FoodLogPage /></Layout>
+              </RequireAuth>
+            }
+          />
+
+          {/* Redirects */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to={window.location.pathname.toLowerCase()} replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  )
 }
 
-export default App;
+export default App

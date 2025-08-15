@@ -1,7 +1,7 @@
+//src/components/ui/ImageUpload.tsx
+
 import React, { useCallback, useState } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { cn } from '../../utils/cn';
-import Button from './Button';
 
 interface ImageUploadProps {
   onImagesChange: (images: File[]) => void;
@@ -12,37 +12,29 @@ interface ImageUploadProps {
   disabled?: boolean;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({
-  onImagesChange,
-  images,
-  maxImages = 5,
-  maxSizeBytes = 10 * 1024 * 1024, // 10MB
-  className,
-  disabled = false,
+const ImageUpload: React.FC<ImageUploadProps> = ({ 
+  onImagesChange, 
+  images, 
+  maxImages = 5, 
+  maxSizeBytes = 10 * 1024 * 1024, 
+  className = '', 
+  disabled = false 
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
 
-  const validateFile = useCallback((file: File): string | null => {
-    if (!file.type.startsWith('image/')) {
-      return 'Please select only image files';
-    }
-    if (file.size > maxSizeBytes) {
-      return `File size must be less than ${Math.round(maxSizeBytes / (1024 * 1024))}MB`;
-    }
-    return null;
-  }, [maxSizeBytes]);
-
-  const handleFiles = useCallback((files: FileList | File[]) => {
-    setError(null);
+  const validateFiles = useCallback((files: FileList | File[]): File[] => {
     const fileArray = Array.from(files);
     const validFiles: File[] = [];
     
     for (const file of fileArray) {
-      const error = validateFile(file);
-      if (error) {
-        setError(error);
-        return;
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload only image files');
+        continue;
+      }
+      
+      if (file.size > maxSizeBytes) {
+        setError(`File ${file.name} is too large. Maximum size is ${Math.round(maxSizeBytes / 1024 / 1024)}MB`);
+        continue;
       }
       
       if (images.length + validFiles.length >= maxImages) {
@@ -53,163 +45,106 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       validFiles.push(file);
     }
     
+    return validFiles;
+  }, [images.length, maxImages, maxSizeBytes]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    setError('');
+    const validFiles = validateFiles(files);
     if (validFiles.length > 0) {
       onImagesChange([...images, ...validFiles]);
     }
-  }, [images, maxImages, onImagesChange, validateFile]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
     
-    if (disabled) return;
-    
-    const files = e.dataTransfer.files;
-    handleFiles(files);
-  }, [disabled, handleFiles]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    if (!disabled) {
-      setIsDragOver(true);
-    }
-  }, [disabled]);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      handleFiles(e.target.files);
-    }
-  }, [handleFiles]);
+    // Reset input
+    e.target.value = '';
+  }, [images, onImagesChange, validateFiles]);
 
   const removeImage = useCallback((index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
+    setError('');
   }, [images, onImagesChange]);
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={`space-y-4 ${className}`}>
       {/* Upload Area */}
-      <div
-        className={cn(
-          'relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 cursor-pointer',
-          isDragOver
-            ? 'border-primary-500 bg-primary-50'
-            : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50',
-          disabled && 'opacity-50 cursor-not-allowed',
-          error && 'border-red-300 bg-red-50'
-        )}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => !disabled && document.getElementById('image-input')?.click()}
-      >
+      <div className="relative">
         <input
-          id="image-input"
           type="file"
           multiple
           accept="image/*"
-          onChange={handleFileInput}
-          className="hidden"
-          disabled={disabled}
+          onChange={handleFileSelect}
+          disabled={disabled || images.length >= maxImages}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         />
-        
-        <div className="space-y-2">
-          <Upload className={cn(
-            'mx-auto h-8 w-8',
-            isDragOver ? 'text-primary-600' : 'text-gray-400'
-          )} />
-          <div>
-            <p className="text-sm font-medium text-gray-900">
-              Click to upload or drag and drop
-            </p>
-            <p className="text-xs text-gray-500">
-              PNG, JPG, WebP up to {Math.round(maxSizeBytes / (1024 * 1024))}MB each (max {maxImages} photos)
-            </p>
-          </div>
+        <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          disabled || images.length >= maxImages
+            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+        }`}>
+          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+          <p className="mt-2 text-sm text-gray-600">
+            {images.length >= maxImages 
+              ? `Maximum ${maxImages} images reached`
+              : 'Drop images here or click to select'
+            }
+          </p>
+          <p className="text-xs text-gray-500">
+            Max {maxImages} images, up to {Math.round(maxSizeBytes / 1024 / 1024)}MB each
+          </p>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
-          {error}
+        <div className="rounded-md bg-red-50 p-3">
+          <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
 
       {/* Image Preview Grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {images.map((file, index) => (
-            <ImagePreview
-              key={`${file.name}-${index}`}
-              file={file}
-              onRemove={() => removeImage(index)}
-              formatFileSize={formatFileSize}
-            />
+            <div key={index} className="relative group">
+              <div className="aspect-square rounded-lg overflow-hidden border border-gray-200">
+                {file.type.startsWith('image/') ? (
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <ImageIcon className="w-8 h-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => removeImage(index)}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+              <p className="mt-1 text-xs text-gray-500 truncate">
+                {file.name} ({formatFileSize(file.size)})
+              </p>
+            </div>
           ))}
         </div>
       )}
-    </div>
-  );
-};
-
-interface ImagePreviewProps {
-  file: File;
-  onRemove: () => void;
-  formatFileSize: (bytes: number) => string;
-}
-
-const ImagePreview: React.FC<ImagePreviewProps> = ({ file, onRemove, formatFileSize }) => {
-  const [imageUrl, setImageUrl] = useState<string>('');
-
-  React.useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setImageUrl(url);
-    
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-
-  return (
-    <div className="relative group animate-fade-in">
-      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={file.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon className="h-8 w-8 text-gray-400" />
-          </div>
-        )}
-      </div>
-      
-      {/* Remove Button */}
-      <Button
-        variant="danger"
-        size="sm"
-        className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={onRemove}
-      >
-        <X className="h-3 w-3" />
-      </Button>
-      
-      {/* File Info */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg">
-        <div className="truncate">{formatFileSize(file.size)}</div>
-      </div>
     </div>
   );
 };

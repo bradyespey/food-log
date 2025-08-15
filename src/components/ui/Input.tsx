@@ -1,5 +1,6 @@
+//src/components/ui/Input.tsx
+
 import React from 'react';
-import { cn } from '../../utils/cn';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -7,38 +8,28 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   helperText?: string;
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
-    
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className = '', label, error, helperText, id, ...props }, ref) => {
+    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+
     return (
       <div className="space-y-1">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         )}
         <input
           id={inputId}
-          className={cn(
-            'block w-full rounded-lg border-gray-300 shadow-sm transition-colors duration-200',
-            'focus:border-primary-500 focus:ring-primary-500',
-            'placeholder:text-gray-400',
-            'disabled:bg-gray-50 disabled:text-gray-500',
-            error && 'border-red-300 focus:border-red-500 focus:ring-red-500',
-            className
-          )}
+          className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''} ${className}`}
           ref={ref}
           {...props}
         />
         {error && (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         )}
         {helperText && !error && (
-          <p className="text-sm text-gray-500">{helperText}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{helperText}</p>
         )}
       </div>
     );

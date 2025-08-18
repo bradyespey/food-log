@@ -1,6 +1,6 @@
 // OpenAI API client for food analysis with system/user message separation
 import type { FoodItem } from '../types';
-import { validateAndNormalizeResponse } from './foodValidator';
+// import { validateAndNormalizeResponse } from './foodValidator';
 
 interface OpenAIAnalysisRequest {
   prompt: string;
@@ -215,22 +215,22 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
     );
 
     // Build input for Responses API with web search
-    const input = [
-      {
-        role: 'system',
-        content: systemPrompt,
-      },
-      {
-        role: 'user',
-        content: request.images.length > 0 
-          ? `Analyze the food shown in the images: ${request.prompt}`
-          : `Analyze this food description: ${request.prompt}`,
-      },
-    ] as const;
+    // const input = [
+    //   {
+    //     role: 'system',
+    //     content: systemPrompt,
+    //   },
+    //   {
+    //     role: 'user',
+    //     content: request.images.length > 0 
+    //       ? `Analyze the food shown in the images: ${request.prompt}`
+    //       : `Analyze this food description: ${request.prompt}`,
+    //   },
+    // ] as const;
 
     // Try with web search enabled (primary and fallback)
-    const toolsPrimary = [{ type: "web_search" as const }];
-    const toolsFallback = [{ type: "web_search_preview" as const }];
+    // const toolsPrimary = [{ type: "web_search" as const }];
+    // const toolsFallback = [{ type: "web_search_preview" as const }];
 
     // Build the API request
     const apiRequest = {
@@ -528,7 +528,7 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
   }
 };
 
-const createFallbackItem = (response: string, request: OpenAIAnalysisRequest): FoodItem | null => {
+const createFallbackItem = (_response: string, request: OpenAIAnalysisRequest): FoodItem | null => {
   // Create a basic item from whatever information we can extract
   return {
     foodName: request.prompt.substring(0, 60) || 'Unknown Food',
@@ -555,7 +555,7 @@ const createFallbackItem = (response: string, request: OpenAIAnalysisRequest): F
   };
 };
 
-const createFallbackItems = (response: string, request: OpenAIAnalysisRequest): FoodItem[] => {
+const createFallbackItems = (_response: string, request: OpenAIAnalysisRequest): FoodItem[] => {
   // Extract food items from the user's description as fallback
   const items: FoodItem[] = [];
   const prompt = request.prompt.toLowerCase();
@@ -585,7 +585,7 @@ const createFallbackItems = (response: string, request: OpenAIAnalysisRequest): 
     }
   }
   
-  return items.length > 0 ? items : [createFallbackItem(response, request)!];
+  return items.length > 0 ? items : [createFallbackItem(_response, request)!];
 };
 
 // Estimate cost for the request

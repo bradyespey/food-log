@@ -98,6 +98,23 @@ npm run preview
 ```
 
 ### 5. Netlify Deployment
+
+## Technical Challenges & Solutions
+
+### CORS Configuration
+- **Issue**: Cross-origin requests blocked between React frontend and Flask API
+- **Solution**: Configured explicit allowed origins and proper CORS headers with resource mapping
+- **Status**: ✅ Resolved (Food logging working, Chrome visible on Windows)
+
+### Firestore Connection Errors
+- **Issue**: Persistent "Failed to get document because the client is offline" errors
+- **Solution**: Added offline detection, timeout handling, and improved error handling for network issues
+- **Status**: ✅ Resolved
+
+### TypeScript Build Errors
+- **Issue**: Netlify build failing due to unused variables and imports
+- **Solution**: Cleaned up all unused code and fixed TypeScript compilation
+- **Status**: ✅ Resolved
 - **Repository**: https://github.com/bradyespey/food-log
 - **Domain**: foodlog.theespeys.com
 - **Build Command**: `npm run build`
@@ -159,7 +176,7 @@ npm run preview
 - **Loading States**: Spinners and progress indicators
 - **Error Handling**: User-friendly error messages
 - **Toast Notifications**: Success/error feedback
-- **Real Sample Photos**: Uses actual user food photos (hummus, mocktail, steak, bread) for testing
+- **Real Sample Photos**: Uses actual user food photos with corrected names (mocktail, hummus, bread, steak) for testing
 - **Dual Interface**: AI-powered analysis and manual entry options
 - **Enhanced Dropdown Components**: Custom Headless UI components with proper styling
 
@@ -189,6 +206,8 @@ npm run preview
 - **Advanced Theme System**: Light/Dark/System modes with proper persistence and system detection
 - **Enhanced UI Components**: Custom dropdown menus and improved form styling
 - **Updated Branding**: Consistent naming and descriptions across all pages
+- **Food Logging**: Working with Chrome visible on Windows backend
+- **Error Handling**: Improved Firestore timeout handling and offline detection
 
 ### 🔄 In Progress
 - **Production Testing**: Full flow from photo to Lose It! logging

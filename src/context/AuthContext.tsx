@@ -17,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  isOnline: boolean;
 }
 
 const defaultSession: Session = {
@@ -30,18 +31,34 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signIn: async () => {},
   signOut: async () => {},
+  isOnline: true,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session>(defaultSession);
   const [userRole, setUserRole] = useState<'admin' | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS?.split(',') || [];
 
   useEffect(() => {
     // Set loading to false immediately to show UI faster
     setLoading(false);
+    
+    // Add online/offline event listeners
+    const handleOnline = () => {
+      console.log('Browser is online');
+      setIsOnline(true);
+    };
+    
+    const handleOffline = () => {
+      console.log('Browser is offline');
+      setIsOnline(false);
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     
     // Initialize Firebase auth after a larger delay
     const timer = setTimeout(() => {
@@ -69,7 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return unsubscribe;
     }, 1000); // Larger delay to let page fully render
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const handleUserDocument = async (user: FirebaseUser) => {
@@ -77,8 +98,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Only try to access Firestore if we have a valid user
       if (!user?.uid) return;
       
+      // Check if we're online before attempting Firestore operations
+      if (!navigator.onLine) {
+        console.log('Offline - skipping Firestore operations');
+        setUserRole('admin'); // Default to admin when offline
+        return;
+      }
+      
+      // Add a timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firestore timeout')), 5000)
+      );
+      
       const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      const userDocPromise = getDoc(userDocRef);
+      
+      const userDoc = await Promise.race([userDocPromise, timeoutPromise]) as any;
       
       if (userDoc.exists()) {
         setUserRole(userDoc.data().role || 'admin');
@@ -95,9 +130,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserRole('admin');
       }
     } catch (error) {
-      // Only log errors that aren't offline-related
-      if (error instanceof Error && !error.message.includes('offline')) {
-        console.error('Error handling user document:', error);
+      // Handle specific Firestore errors
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase();
+        if (errorMessage.includes('offline') || 
+            errorMessage.includes('network') || 
+            errorMessage.includes('permission') ||
+            errorMessage.includes('unavailable') ||
+            errorMessage.includes('timeout')) {
+          console.log('Firestore temporarily unavailable:', errorMessage);
+        } else {
+          console.error('Error handling user document:', error);
+        }
       }
       setUserRole('admin'); // Default to admin on error
     }
@@ -124,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, userRole, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, userRole, loading, signIn, signOut, isOnline }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,10 +1,10 @@
 // API client for backend food logging
 import type { FoodItem } from '../types';
 
-interface LogFoodRequest {
-  foodData: FoodItem[];
-  logWater?: boolean;
-}
+// interface LogFoodRequest {
+//   foodData: FoodItem[];
+//   logWater?: boolean;
+// }
 
 interface LogFoodResponse {
   success: boolean;
@@ -73,7 +73,7 @@ export const logFoodToBackend = async (
       headers['Authorization'] = `Basic ${btoa(`${apiUsername}:${apiPassword}`)}`;
     }
 
-    // Debug mode temporarily disabled until backend CORS is fixed
+    // Debug header disabled until backend CORS confirms allow-list for X-Debug-Mode
     // const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
     // if (debugMode) {
     //   headers['X-Debug-Mode'] = 'true';

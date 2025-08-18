@@ -135,13 +135,12 @@ const FoodLogPage: React.FC = () => {
 
     try {
       // Use actual food photos from the user
-      const samplePhotos = [
-        // These will be converted to File objects from the actual photos
-        new File([], 'hummus-bread.jpeg', { type: 'image/jpeg' }),
-        new File([], 'big-league-mocktail.jpeg', { type: 'image/jpeg' }),
-        new File([], 'shawarma-steak.jpeg', { type: 'image/jpeg' }),
-        new File([], 'house-bread.jpeg', { type: 'image/jpeg' }),
-      ];
+      // const samplePhotos = [
+      //   // These will be converted to File objects from the actual photos
+      //   new File([], 'hummus-bread.jpeg', { type: 'image/jpeg' }),
+      //   new File([], 'big-league-mocktail.jpeg', { type: 'image/jpeg' }),
+      //   new File([], 'house-bread.jpeg', { type: 'image/jpeg' }),
+      // ];
 
       // Convert the actual photos to File objects
       const photoUrls = [
@@ -152,10 +151,10 @@ const FoodLogPage: React.FC = () => {
       ];
 
       const photoNames = [
-        'Hummus & Bread',
-        'Big League Mocktail', 
-        'Shawarma Steak',
-        'House Bread'
+        'Big League Mocktail',
+        'Hummus & Bread', 
+        'House Bread',
+        'Shawarma Steak'
       ];
 
       // Fetch and convert photos to File objects
@@ -479,7 +478,11 @@ const FoodLogPage: React.FC = () => {
           <CardContent>
             <div 
               className="text-sm text-gray-700 dark:text-gray-300 space-y-2"
-              dangerouslySetInnerHTML={{ __html: logResult.replace(/\n/g, '<br>') }}
+              dangerouslySetInnerHTML={{ 
+                __html: logResult
+                  .replace(/\n/g, '<br>')
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              }}
             />
           </CardContent>
         </Card>

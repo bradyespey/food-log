@@ -74,6 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleUserDocument = async (user: FirebaseUser) => {
     try {
+      // Only try to access Firestore if we have a valid user
+      if (!user?.uid) return;
+      
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
       
@@ -92,7 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserRole('admin');
       }
     } catch (error) {
-      console.error('Error handling user document:', error);
+      // Only log errors that aren't offline-related
+      if (error instanceof Error && !error.message.includes('offline')) {
+        console.error('Error handling user document:', error);
+      }
       setUserRole('admin'); // Default to admin on error
     }
   };

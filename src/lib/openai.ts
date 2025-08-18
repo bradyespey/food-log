@@ -57,24 +57,52 @@ const compressImage = async (file: File): Promise<string> => {
   });
 };
 
-// Simple post-processing to fix common serving size issues
+// Comprehensive post-processing to fix malformed serving sizes
 function fixServingSizes(text: string): string {
   let fixed = text;
   
-  // Fix "0.5 5 serving" → "0.5 serving"
-  fixed = fixed.replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\s+serving/gi, 'Serving Size: $1 serving');
+  // Fix "0.5 5 serving" → "0.5 serving" (decimal + space + number + serving)
+  fixed = fixed.replace(/Serving Size:\s*(\d+\.\d+)\s+\d+\s+serving/gi, 'Serving Size: $1 serving');
   
-  // Fix "1 1 serving" → "1 serving"
+  // Fix "1 1 serving" → "1 serving" (same number repeated)
   fixed = fixed.replace(/Serving Size:\s*(\d+)\s+\1\s+serving/gi, 'Serving Size: $1 serving');
   
-  // Fix "2 2 each" → "2 each"
+  // Fix "2 2 each" → "2 each" (same number repeated with each)
   fixed = fixed.replace(/Serving Size:\s*(\d+)\s+\1\s+each/gi, 'Serving Size: $1 each');
   
-  // Fix "1 2 serving" → "0.5 serving"
+  // Fix "1 2 serving" → "0.5 serving" (fraction pattern)
   fixed = fixed.replace(/Serving Size:\s*1\s+2\s+serving/gi, 'Serving Size: 0.5 serving');
   
-  // Fix any other double number patterns
-  fixed = fixed.replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\.?\d*\s+(serving|each|ounces?|grams?)/gi, 'Serving Size: $1 $2');
+  // Fix "0.5 5 each" → "0.5 each" (decimal + space + number + each)
+  fixed = fixed.replace(/Serving Size:\s*(\d+\.\d+)\s+\d+\s+each/gi, 'Serving Size: $1 each');
+  
+  // Fix "1 1 each" → "1 each" (same number repeated with each)
+  fixed = fixed.replace(/Serving Size:\s*(\d+)\s+\1\s+each/gi, 'Serving Size: $1 each');
+  
+  // Fix any other double number patterns with common units
+  fixed = fixed.replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\.?\d*\s+(serving|each|ounces?|grams?|cups?|tablespoons?|teaspoons?)/gi, 'Serving Size: $1 $2');
+  
+  // Fix patterns like "0.5 5 fluid ounces" → "0.5 fluid ounces"
+  fixed = fixed.replace(/Serving Size:\s*(\d+\.\d+)\s+\d+\s+(fluid ounces?)/gi, 'Serving Size: $1 $2');
+  
+  // Fix patterns like "1 1 fluid ounces" → "1 fluid ounce"
+  fixed = fixed.replace(/Serving Size:\s*(\d+)\s+\1\s+(fluid ounces?)/gi, 'Serving Size: $1 $2');
+  
+  // Fix any remaining double number patterns (catch-all)
+  fixed = fixed.replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\.?\d*\s+(\w+)/gi, 'Serving Size: $1 $2');
+  
+  // Additional catch-all for any remaining malformed patterns
+  if (fixed.includes('Serving Size:') && /\d+\s+\d+\s+\w+/.test(fixed)) {
+    fixed = fixed.replace(/Serving Size:\s*(\d+\.?\d*)\s+\d+\.?\d*\s+(\w+)/gi, 'Serving Size: $1 $2');
+  }
+  
+  // Force fix the specific patterns you're seeing
+  fixed = fixed.replace(/Serving Size: 0\.5 5 serving/g, 'Serving Size: 0.5 serving');
+  fixed = fixed.replace(/Serving Size: 1 1 serving/g, 'Serving Size: 1 serving');
+  fixed = fixed.replace(/Serving Size: 1 2 serving/g, 'Serving Size: 0.5 serving');
+  
+  // Final safety check - if any serving size still has multiple numbers, take the first one
+  fixed = fixed.replace(/Serving Size: (\d+\.?\d*)\s+\d+\.?\d*\s+(\w+)/g, 'Serving Size: $1 $2');
   
   return fixed;
 }
@@ -127,7 +155,10 @@ Allowed serving guidance
 - CRITICAL: Use DECIMALS only - no fractions like "1/2" or "1 2"
 - CRITICAL: Serving Size must be EXACTLY ONE number followed by ONE unit
 - NEVER use formats like "0.5 5 serving" or "1 1 serving" - these are invalid
+- NEVER repeat numbers or add extra digits - use exactly what you estimate
 - Serving Size examples: "0.5 serving", "2 each", "8 fluid ounces"
+- If you estimate 0.5 serving, write "0.5 serving" not "0.5 5 serving"
+- If you estimate 1 serving, write "1 serving" not "1 1 serving"
 - Nutritional values: Use decimals (e.g., 12.5, 3.25) or whole numbers (e.g., 2, 0)
 
 Field order and exact schema
@@ -299,12 +330,13 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
     }
 
     // ALWAYS apply serving size fixes first, before any parsing
-    console.log('Raw AI response:', aiResponse);
     const fixedResponse = fixServingSizes(aiResponse);
-    console.log('Fixed response:', fixedResponse);
 
     // Parse the fixed response directly - skip validation for now
     const parsedResult = parseOpenAIResponse(fixedResponse, request);
+    
+    // Always use the fixed response for plainText
+    parsedResult.plainText = fixedResponse;
     
     return {
       success: true,
@@ -356,14 +388,14 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
       const fallbackItems = createFallbackItems(aiResponse, request);
       return {
         items: fallbackItems,
-        plainText: aiResponse,
+        plainText: aiResponse, // Keep original for fallback
         needsMoreInfo: false,
       };
     }
     
     return {
       items,
-      plainText: aiResponse,
+      plainText: aiResponse, // This should be the fixed response
       needsMoreInfo: false,
     };
   } catch (error) {
@@ -372,7 +404,7 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
     const fallbackItems = createFallbackItems(aiResponse, request);
     return {
       items: fallbackItems,
-      plainText: aiResponse,
+      plainText: aiResponse, // Keep original for fallback
       needsMoreInfo: false,
     };
   }
@@ -382,7 +414,6 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
 const parseNutritionalData = (response: string, request: OpenAIAnalysisRequest): FoodItem[] => {
   // Apply serving size fixes again at parsing level
   const cleanedResponse = fixServingSizes(response);
-  console.log('Response after parsing-level fix:', cleanedResponse);
   
   const items: FoodItem[] = [];
   
@@ -427,7 +458,9 @@ const parseNutritionalData = (response: string, request: OpenAIAnalysisRequest):
 
 const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest): FoodItem | null => {
   try {
-    const lines = section.split('\n').map(l => l.trim());
+    // First, apply serving size fixes to this section
+    const cleanedSection = fixServingSizes(section);
+    const lines = cleanedSection.split('\n').map(l => l.trim());
     
     // Extract values using multiple regex patterns (more flexible)
     const extractValue = (patterns: RegExp[], defaultValue: any = '') => {
@@ -449,13 +482,27 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
     const foodName = extractValue([/Food Name:\s*(.+)/i, /Item.*:\s*(.+)/i, /^(.+?):/i], 'Unknown Food');
     if (foodName === 'Unknown Food' || foodName === '') return null;
     
+    // Extract serving size with better pattern matching
+    const servingSizeLine = lines.find(line => line.startsWith('Serving Size:'));
+    let servingAmount = 1;
+    let servingUnit = 'each';
+    
+    if (servingSizeLine) {
+      // Use the cleaned serving size line
+      const servingMatch = servingSizeLine.match(/Serving Size:\s*(\d+\.?\d*)\s+(\w+(?:\s+\w+)?)/i);
+      if (servingMatch) {
+        servingAmount = parseFloat(servingMatch[1]) || 1;
+        servingUnit = servingMatch[2].toLowerCase();
+      }
+    }
+    
     return {
       foodName: foodName.substring(0, 60), // Limit to 60 chars as per spec
       brand: request.brand,
       icon: extractValue([/Icon:\s*(.+)/i], 'Default'),
       serving: {
-        amount: extractNumber([/Serving Size:\s*(\d+\.?\d*)/i, /Serving:\s*(\d+\.?\d*)/i], 1),
-        unit: extractValue([/Serving Size:.*?(\w+(?:\s+\w+)?)\s*$/i, /Serving.*?(\w+)\s*$/i], 'each'),
+        amount: servingAmount,
+        unit: servingUnit,
         descriptor: extractValue([/Serving Size:.*?\((.+?)\)/i], ''),
       },
       calories: extractNumber([/Calories:\s*(\d+)/i, /Cal:\s*(\d+)/i, /Energy:\s*(\d+)/i], 0),

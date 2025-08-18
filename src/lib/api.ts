@@ -73,6 +73,12 @@ export const logFoodToBackend = async (
       headers['Authorization'] = `Basic ${btoa(`${apiUsername}:${apiPassword}`)}`;
     }
 
+    // Debug mode temporarily disabled until backend CORS is fixed
+    // const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
+    // if (debugMode) {
+    //   headers['X-Debug-Mode'] = 'true';
+    // }
+
     const response = await fetch(`${apiBaseUrl}/food_log`, {
       method: 'POST',
       headers,

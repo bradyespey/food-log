@@ -7,32 +7,44 @@ import { Layout } from './components/Layout/Layout'
 import { LoginPage } from './pages/LoginPage'
 import { AuthCallback } from './pages/AuthCallback'
 import FoodLogPage from './pages/FoodLogPage'
+import ManualPage from './pages/ManualPage'
+import { ThemeProvider } from './components/ThemeProvider'
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Public */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+    <ThemeProvider defaultTheme="light" storageKey="foodlog-theme">
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
-          {/* Protected */}
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <Layout><FoodLogPage /></Layout>
-              </RequireAuth>
-            }
-          />
+            {/* Protected */}
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <Layout><FoodLogPage /></Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/manual"
+              element={
+                <RequireAuth>
+                  <Layout><ManualPage /></Layout>
+                </RequireAuth>
+              }
+            />
 
-          {/* Redirects */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to={window.location.pathname.toLowerCase()} replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+            {/* Redirects */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to={window.location.pathname.toLowerCase()} replace />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 

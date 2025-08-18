@@ -500,58 +500,80 @@ interface FoodItemCardProps {
 const FoodItemCard: React.FC<FoodItemCardProps> = ({ item }) => {
   return (
     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h4 className="font-semibold text-gray-900 dark:text-white">{item.foodName}</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{item.brand}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {item.serving.amount} {item.serving.unit}
-            {item.serving.descriptor && ` (${item.serving.descriptor})`}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{item.calories} cal</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Icon: {item.icon}</p>
-        </div>
+      {/* Top section - Food name and brand */}
+      <div className="mb-4">
+        <h4 className="font-semibold text-gray-900 dark:text-white text-lg">{item.foodName}</h4>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{item.brand}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {item.serving.amount} {item.serving.unit}
+          {item.serving.descriptor && ` (${item.serving.descriptor})`}
+        </p>
       </div>
       
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-sm">
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Fat:</span>
-          <span className="ml-1 font-medium">{item.fatG}g</span>
+      {/* Nutrition Facts - Exactly like Lose It! app */}
+      <div className="space-y-3">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+          Nutrition Facts
         </div>
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
-          <span className="ml-1 font-medium">{item.satFatG}g</span>
+        
+        {/* Amount and Serving - Like Lose It! */}
+        <div className="flex justify-between text-sm border-b border-gray-200 dark:border-gray-600 pb-2">
+          <span className="text-gray-500 dark:text-gray-400">Amount</span>
+          <span className="text-gray-500 dark:text-gray-400">1 Serving</span>
         </div>
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Chol:</span>
-          <span className="ml-1 font-medium">{item.cholesterolMg}mg</span>
-        </div>
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
-          <span className="ml-1 font-medium">{item.sodiumMg}mg</span>
-        </div>
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Carbs:</span>
-          <span className="ml-1 font-medium">{item.carbsG}g</span>
-        </div>
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Protein:</span>
-          <span className="ml-1 font-medium">{item.proteinG}g</span>
-        </div>
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
-          <span className="ml-1 font-medium">{item.fiberG}g</span>
-        </div>
-        <div>
-          <span className="text-gray-500 dark:text-gray-400">Sugar:</span>
-          <span className="ml-1 font-medium">{item.sugarG}g</span>
-        </div>
+        
+                            {/* Compact nutrition display - like Lose It! app */}
+          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+            {/* Calories prominently displayed */}
+            <div className="text-center mb-4">
+              <div className="text-5xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Calories</div>
+            </div>
+            
+            {/* Compact nutrient grid */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Total Fat:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Total Carbs:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Sugars:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Protein:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
+              </div>
+            </div>
+          </div>
+        
+        {/* Hydration - Only show for liquids */}
         {item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0 && (
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">Hydration:</span>
-            <span className="ml-1 font-medium">{item.hydration.fluidOz || 0} fl oz</span>
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Hydration:</span>
+              <span className="font-medium text-gray-900 dark:text-white">{item.hydration.fluidOz || 0} fl oz</span>
+            </div>
           </div>
         )}
       </div>

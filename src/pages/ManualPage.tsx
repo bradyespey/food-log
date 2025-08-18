@@ -410,37 +410,62 @@ Protein (g): 40`;
                   </div>
                   
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-sm">
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Fat:</span>
-                      <span className="ml-1 font-medium">{item.fatG}g</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
-                      <span className="ml-1 font-medium">{item.satFatG}g</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Chol:</span>
-                      <span className="ml-1 font-medium">{item.cholesterolMg}mg</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
-                      <span className="ml-1 font-medium">{item.sodiumMg}mg</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Carbs:</span>
-                      <span className="ml-1 font-medium">{item.carbsG}g</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Protein:</span>
-                      <span className="ml-1 font-medium">{item.proteinG}g</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
-                      <span className="ml-1 font-medium">{item.fiberG}g</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Sugar:</span>
-                      <span className="ml-1 font-medium">{item.sugarG}g</span>
+                    {/* Nutrition Facts - Exactly like Lose It! app */}
+                    <div className="col-span-full space-y-3">
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                        Nutrition Facts
+                      </div>
+                      
+                      {/* Amount and Serving - Like Lose It! */}
+                      <div className="flex justify-between text-sm border-b border-gray-200 dark:border-gray-600 pb-2">
+                        <span className="text-gray-500 dark:text-gray-400">Amount</span>
+                        <span className="text-gray-500 dark:text-gray-400">1 Serving</span>
+                      </div>
+                      
+                      {/* Compact nutrition display - like Lose It! app */}
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                        {/* Calories prominently displayed */}
+                        <div className="text-center mb-4">
+                          <div className="text-5xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">Calories</div>
+                        </div>
+                        
+                        {/* Compact nutrient grid */}
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Total Fat:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Total Carbs:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Sugars:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400">Protein:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

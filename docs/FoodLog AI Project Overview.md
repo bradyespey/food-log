@@ -208,6 +208,8 @@ npm run preview
 - **Updated Branding**: Consistent naming and descriptions across all pages
 - **Food Logging**: Working with Chrome visible on Windows backend
 - **Error Handling**: Improved Firestore timeout handling and offline detection
+- **NSSM Service Fix**: Resolved service configuration issues with correct Python path
+- **UI Layout Improvements**: Nutrition display now matches Lose It! app with protein last
 
 ### 🔄 In Progress
 - **Production Testing**: Full flow from photo to Lose It! logging

@@ -121,7 +121,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               <div className="aspect-square rounded-lg overflow-hidden border border-gray-200">
                 {file.type.startsWith('image/') ? (
                   <img
-                    src={URL.createObjectURL(file)}
+                    src={(file as any).preview || URL.createObjectURL(file)}
                     alt={`Preview ${index + 1}`}
                     className="w-full h-full object-cover"
                   />

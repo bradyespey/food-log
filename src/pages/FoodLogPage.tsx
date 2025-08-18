@@ -128,6 +128,61 @@ const FoodLogPage: React.FC = () => {
     }
   }, [analysisResult, formData.logWater]);
 
+  const handleSampleData = useCallback(async () => {
+    const samplePrompt = `- Hummus, served with house bread (had maybe half the hummus and all of the side bread)
+- Big League (mocktail), ritual tequila substitute, lime, orgeat, strawberry  
+- SHAWARMA-SPICED PRIME SKIRT STEAK FRITES* za'atar, feta. berbere red wine jus`;
+
+    try {
+      // Use actual food photos from the user
+      const samplePhotos = [
+        // These will be converted to File objects from the actual photos
+        new File([], 'hummus-bread.jpeg', { type: 'image/jpeg' }),
+        new File([], 'big-league-mocktail.jpeg', { type: 'image/jpeg' }),
+        new File([], 'shawarma-steak.jpeg', { type: 'image/jpeg' }),
+        new File([], 'house-bread.jpeg', { type: 'image/jpeg' }),
+      ];
+
+      // Convert the actual photos to File objects
+      const photoUrls = [
+        '/57E8E1E8-DF20-45B7-9B45-5B845A525770_1_105_c.jpeg',
+        '/10056C94-9E35-4980-AEB9-9C78DB4057B5_1_105_c.jpeg',
+        '/B26AFF03-F186-44A5-A9B7-293AE8003AE6_1_105_c.jpeg',
+        '/BF08A753-0D81-4CB3-8116-AB7588354C73_1_105_c.jpeg'
+      ];
+
+      const photoNames = [
+        'Hummus & Bread',
+        'Big League Mocktail', 
+        'Shawarma Steak',
+        'House Bread'
+      ];
+
+      // Fetch and convert photos to File objects
+      const photoFiles = await Promise.all(
+        photoUrls.map(async (url, index) => {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          const file = new File([blob], photoNames[index].toLowerCase().replace(/\s+/g, '-') + '.jpeg', { type: 'image/jpeg' });
+          return file;
+        })
+      );
+
+              setFormData(prev => ({
+          ...prev,
+          date: new Date().toISOString().split('T')[0],
+          meal: 'Dinner',
+          brand: 'Sample Restaurant',
+          prompt: samplePrompt,
+          images: photoFiles,
+        }));
+      toast.success('Sample data and photos loaded! Click Analyze to process.');
+    } catch (error) {
+      console.error('Error creating sample images:', error);
+      toast.error('Failed to create sample images');
+    }
+  }, []);
+
   const handleClear = useCallback(() => {
     setFormData({
       date: new Date().toISOString().split('T')[0],
@@ -207,22 +262,51 @@ const FoodLogPage: React.FC = () => {
       
       {/* Page Header */}
       <div className="text-center space-y-2 py-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-3">
-          <ChefHat className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-          FoodLog AI
+        <h1 className="text-3xl font-bold text-foreground flex items-center justify-center gap-3">
+          <ChefHat className="w-8 h-8 text-primary" />
+          AI Food Analysis
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-          Analyze your food with AI and log it to Lose It! in seconds
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Upload food photos for AI-powered nutritional analysis and automatic logging
         </p>
+        
+        {/* Sample Button */}
+        <Button 
+          onClick={handleSampleData}
+          variant="outline"
+          size="sm"
+          className="mx-auto"
+        >
+          📋 Load Sample Data
+        </Button>
       </div>
 
       {/* Main Food Analysis Form */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            Food Analysis
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Food Analysis
+            </CardTitle>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleClear}
+                disabled={isAnalyzing || isLogging}
+              >
+                Clear
+              </Button>
+              <Button
+                onClick={handleAnalyze}
+                disabled={!isFormValid || isAnalyzing || isLogging}
+                isLoading={isAnalyzing}
+                leftIcon={<Sparkles className="w-4 h-4" />}
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze Food'}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Required Fields Row */}
@@ -298,28 +382,11 @@ const FoodLogPage: React.FC = () => {
             </label>
           </div>
 
-          {/* Cost Estimate & Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+          {/* Cost Estimate */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <DollarSign className="w-4 h-4" />
               Estimated cost: ${estimatedCost.toFixed(4)}
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleClear}
-                disabled={isAnalyzing || isLogging}
-              >
-                Clear
-              </Button>
-              <Button
-                onClick={handleAnalyze}
-                disabled={!isFormValid || isAnalyzing || isLogging}
-                isLoading={isAnalyzing}
-                leftIcon={<Sparkles className="w-4 h-4" />}
-              >
-                {isAnalyzing ? 'Analyzing...' : 'Analyze Food'}
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -410,9 +477,10 @@ const FoodLogPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
-              {logResult}
-            </pre>
+            <div 
+              className="text-sm text-gray-700 dark:text-gray-300 space-y-2"
+              dangerouslySetInnerHTML={{ __html: logResult.replace(/\n/g, '<br>') }}
+            />
           </CardContent>
         </Card>
       )}

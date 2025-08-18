@@ -18,8 +18,11 @@ VITE_OPENAI_MODEL=gpt-4o-mini
 
 # API Configuration (for connecting to your Windows backend)
 VITE_API_BASE_URL=https://api.theespeys.com
-VITE_API_USERNAME=your_api_username_here
-VITE_API_PASSWORD=your_api_password_here
+VITE_API_USERNAME=foodlog_user
+VITE_API_PASSWORD=your_secure_password_here
+
+# Debug Mode (set to 'true' to see Chrome browser during automation)
+VITE_DEBUG_MODE=false
 
 # Development URLs (uncomment for local testing)
 # VITE_API_BASE_URL=http://localhost:5001

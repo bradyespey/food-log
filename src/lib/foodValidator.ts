@@ -183,10 +183,17 @@ function normalizeServingSize(fields: Fields, idx: number) {
   // Fix common malformed patterns first
   let cleaned = raw.replace(/\s+/g, ' ').trim();
   
-  // Fix "0.5 5 serving" → "0.5 serving"
-  if (cleaned.match(/^(\d+\.?\d*)\s+\d+\s+serving$/i)) {
-    const amount = parseFloat(cleaned.match(/^(\d+\.?\d*)\s+\d+\s+serving$/i)![1]);
+  // Fix "0.5 5 serving" → "0.5 serving" (decimal + space + number + serving)
+  if (cleaned.match(/^(\d+\.\d+)\s+\d+\s+serving$/i)) {
+    const amount = parseFloat(cleaned.match(/^(\d+\.\d+)\s+\d+\s+serving$/i)![1]);
     fields["Serving Size"] = `${amount} serving`;
+    return;
+  }
+  
+  // Fix "0.5 5 each" → "0.5 each" (decimal + space + number + each)
+  if (cleaned.match(/^(\d+\.\d+)\s+\d+\s+each$/i)) {
+    const amount = parseFloat(cleaned.match(/^(\d+\.\d+)\s+\d+\s+each$/i)![1]);
+    fields["Serving Size"] = `${amount} each`;
     return;
   }
   
@@ -237,6 +244,19 @@ function normalizeServingSize(fields: Fields, idx: number) {
     // Multiple numbers detected, take the first one
     amountStr = amountStr.split(' ')[0];
     console.warn(`Multiple numbers in serving size detected: "${m[1]}", using first: "${amountStr}"`);
+  }
+  
+  // Final safety check: ensure we don't have any remaining malformed patterns
+  if (cleaned.match(/\d+\s+\d+\s+\w+/)) {
+    console.warn(`Malformed serving size detected: "${cleaned}", attempting to fix`);
+    // Extract first number and unit
+    const firstMatch = cleaned.match(/^(\d+\.?\d*)\s+\d+\.?\d*\s+(\w+)/i);
+    if (firstMatch) {
+      const amount = parseFloat(firstMatch[1]);
+      const unit = firstMatch[2];
+      fields["Serving Size"] = `${amount} ${unit}`;
+      return;
+    }
   }
   
   const unitRaw = m[2].trim().toLowerCase();

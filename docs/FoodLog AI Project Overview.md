@@ -210,12 +210,19 @@ npm run preview
 - **Error Handling**: Improved Firestore timeout handling and offline detection
 - **NSSM Service Fix**: Resolved service configuration issues with correct Python path
 - **UI Layout Improvements**: Nutrition display now matches Lose It! app with protein last
+- **Multi-Card Food Analysis**: Added support for multiple food entries (breakfast, lunch, dinner) in single analysis
+- **Brand Capture Fix**: AI now captures actual brand names (Merit, Keurig) instead of generic "Multiple"
+- **Nutrition Column Layout**: Changed to top-down columns (Fat/Sat Fat/Cholesterol/Sodium | Carbs/Fiber/Sugars/Protein)
+- **Manual Page Redesign**: Simplified to single textarea for pre-formatted food items, matching old LoseIt app functionality
+- **Multi-Item Date Handling**: Fixed date mapping so each food item gets its correct individual date (08/17, 08/18, etc.)
+- **Manual Logging Fix**: Resolved second item logging failure by matching exact backend API format expected
+- **Firebase Configuration**: Added complete Firebase Google Auth setup for production deployment
 
 ### 🔄 In Progress
-- **Production Testing**: Full flow from photo to Lose It! logging
+- **Error Monitoring**: Enhanced Sentry integration for API endpoints
 
 ### ❌ Not Started
-- **Error Monitoring**: Enhanced Sentry integration
+- **Performance Monitoring**: Track API response times and costs
 
 ## Technical Challenges & Solutions
 
@@ -229,28 +236,54 @@ npm run preview
 **Solution**: 1-second Firebase initialization delay, lazy loading
 **Status**: Resolved (2-3s load time)
 
-### 3. AI Output Quality
+### 3. Firebase Configuration Missing
+**Problem**: App failing in production with `auth/invalid-api-key` error despite working locally
+**Solution**: Added complete Firebase configuration for Google Auth (API key, auth domain, project ID, etc.)
+**Status**: ✅ Resolved - Firebase Google Auth now properly configured for production deployment
+
+### 4. AI Output Quality
 **Problem**: Conservative estimates, single items instead of multiple
 **Solution**: Enhanced prompts, web search capability, fallback parsing
 **Status**: Implemented and working
 
-### 4. Build Configuration
+### 5. Build Configuration
 **Problem**: Tailwind CSS not processing, PostCSS errors
 **Solution**: Proper .cjs config files, dependency version management
 **Status**: Resolved
 
-### 5. API Architecture Migration
+### 6. API Architecture Migration
 **Problem**: Need to connect modern React frontend to existing Windows Selenium automation
 **Solution**: Consolidated all Windows automation into unified Flask API server
 **Status**: ✅ Implemented - Single API app replacing multiple individual services
 
-### 6. CORS and Authentication Errors
+### 7. CORS and Authentication Errors
 **Problem**: "Failed to fetch" errors with CORS and 401 Unauthorized when logging food
 **Solution**: 
 - Fixed CORS configuration to allow localhost:5173 and production domain
-- Synchronized API credentials between frontend (.env) and backend (API_AUTH)
+- Synchronized API credentials between frontend (.env) and backend (VITE_API_USERNAME/VITE_API_PASSWORD)
 - Added credentials support and proper Authorization headers
 **Status**: ✅ Resolved - React app can now authenticate with Windows API
+
+### 8. Multi-Item Food Analysis and Manual Logging
+**Problem**: 
+- Multi-card analysis not preserving individual entry dates (all items getting same date)
+- Manual page logging failing for second food item
+- AI analysis showing "Multiple" instead of actual brand names
+- Nutrition display layout not matching Lose It! app format
+**Solution**: 
+- Updated `formatFoodItemForLogging` to map items to individual entry dates based on order
+- Fixed Manual page to send data in exact format expected by backend (`food_items` array)
+- Removed brand override logic that was forcing "Multiple" instead of actual brands
+- Redesigned nutrition display to use top-down column layout matching Lose It! app
+**Status**: ✅ Resolved - Multi-item analysis now preserves individual dates, Manual page works correctly, brands captured properly
+
+### 9. Unified API Credentials Management
+**Problem**: API credentials duplicated between frontend (.env) and backend (API_AUTH) requiring maintenance in two places
+**Solution**: 
+- Updated Windows Flask server to read VITE_API_USERNAME and VITE_API_PASSWORD
+- Added fallback support for legacy API_AUTH format
+- Single source of truth for API credentials across frontend and backend
+**Status**: ✅ Resolved - Windows backend now uses same environment variables as frontend
 
 **Implementation Details**:
 - **Consolidation**: Merged Flask apps into single `/Volumes/Projects/API/` application
@@ -262,11 +295,9 @@ npm run preview
 ## Next Steps
 
 ### Immediate (Next Session)
-1. **Setup Unified API**: Install dependencies in `/Volumes/Projects/API/` (or `C:/Projects/API/`)
-2. **Create .env file**: Copy credentials from existing Budget/LoseIt apps
-3. **Test Unified API**: Run `python app.py` and test all endpoints
-4. **Update NSSM Service**: Point to unified API instead of individual apps
-5. **Test React Integration**: Verify complete flow from React app to Selenium automation
+1. **Enhanced Error Monitoring**: Implement Sentry integration for better API error tracking
+2. **Performance Optimization**: Monitor and optimize API response times
+3. **User Experience Testing**: Gather feedback on multi-card analysis and manual logging features
 
 **✅ Completed**:
 - Unified API created and tested with all endpoints working

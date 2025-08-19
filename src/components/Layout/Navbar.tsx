@@ -1,7 +1,7 @@
 //src/components/Layout/Navbar.tsx
 
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Menu, X, UtensilsCrossed, Monitor } from 'lucide-react';
+import { Moon, Sun, Menu, X, Monitor } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../ThemeProvider';
@@ -30,7 +30,7 @@ export function Navbar({}: NavbarProps) {
           <div className="flex items-center space-x-8">
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center space-x-2 text-xl font-semibold text-primary">
-              <UtensilsCrossed size={24} />
+              <img src="/food_log_image.png" alt="FoodLog AI" className="w-8 h-8" />
               <span>FoodLog AI</span>
             </Link>
             {/* Desktop Navigation Links */}

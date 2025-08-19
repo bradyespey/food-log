@@ -13,11 +13,24 @@ interface LogFoodResponse {
 }
 
 // Convert FoodItem to the text format expected by the Selenium automation
-const formatFoodItemForLogging = (item: FoodItem, date: string, meal: string): string => {
+const formatFoodItemForLogging = (item: FoodItem, date: string, meal: string, entryDates?: any[], index?: number): string => {
+  let itemDate = date;
+  let itemMeal = meal;
+  
+  // If we have multiple entry dates, map items to their corresponding entry dates
+  if (entryDates && entryDates.length > 1 && index !== undefined) {
+    const entryIndex = Math.min(index, entryDates.length - 1);
+    const entry = entryDates[entryIndex];
+    if (entry) {
+      itemDate = entry.date;
+      itemMeal = entry.meal;
+    }
+  }
+
   const lines = [
     `Food Name: ${item.foodName}`,
-    `Date: ${date}`,
-    `Meal: ${meal}`,
+    `Date: ${itemDate}`,
+    `Meal: ${itemMeal}`,
     `Brand: ${item.brand || ''}`,
     `Icon: ${item.icon}`,
     `Serving Size: ${item.serving.amount} ${item.serving.unit}`,
@@ -53,10 +66,20 @@ export const logFoodToBackend = async (
       throw new Error('API base URL not configured');
     }
 
-    // Convert each food item to the expected text format
-    const formattedItems = analysisResult.items.map((item: FoodItem) =>
-      formatFoodItemForLogging(item, analysisResult.date, analysisResult.meal)
-    );
+    let formattedItems: string[];
+    
+    // Check if we have direct food_items (from Manual page) or structured items (from AI analysis)
+    if (analysisResult.food_items && Array.isArray(analysisResult.food_items)) {
+      // Direct food items from Manual page - use them as-is
+      formattedItems = analysisResult.food_items;
+    } else if (analysisResult.items && Array.isArray(analysisResult.items)) {
+      // Structured items from AI analysis - convert to text format
+      formattedItems = analysisResult.items.map((item: FoodItem, index: number) =>
+        formatFoodItemForLogging(item, analysisResult.date, analysisResult.meal, analysisResult.entryDates, index)
+      );
+    } else {
+      throw new Error('No valid food items found in the analysis result');
+    }
 
     // Prepare the request payload
     const payload = {

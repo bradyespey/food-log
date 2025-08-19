@@ -1,7 +1,6 @@
 //src/pages/LoginPage.tsx
 
 import { Navigate, useLocation } from 'react-router-dom'
-import { UtensilsCrossed } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 
@@ -23,7 +22,7 @@ export function LoginPage() {
         <div className="text-center mb-8">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <UtensilsCrossed size={32} />
+              <img src="/food_log_image.png" alt="FoodLog AI" className="w-10 h-10" />
             </div>
           </div>
           <h1 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">

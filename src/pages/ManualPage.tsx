@@ -1,90 +1,52 @@
 import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Droplets, Copy, PenTool } from 'lucide-react';
 import { logFoodToBackend } from '../lib/api';
 import { toast, Toaster } from 'react-hot-toast';
 
-interface ManualFoodItem {
-  foodName: string;
-  date: string;
-  meal: string;
-  brand: string;
-  icon: string;
-  serving: {
-    amount: number;
-    unit: string;
-  };
-  calories: number;
-  fatG: number;
-  satFatG: number;
-  cholesterolMg: number;
-  sodiumMg: number;
-  carbsG: number;
-  fiberG: number;
-  sugarG: number;
-  proteinG: number;
-}
+
 
 export default function ManualPage() {
   const [isLogging, setIsLogging] = useState(false);
   const [logResult, setLogResult] = useState('');
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    meal: 'Dinner',
-    brand: '',
-    prompt: '',
-    logWater: false,
-  });
-
-  const [foodItems, setFoodItems] = useState<ManualFoodItem[]>([]);
-
-  const handleAnalyze = useCallback(async () => {
-    if (!formData.prompt.trim()) {
-      toast.error('Please enter food description');
-      return;
-    }
-
-    try {
-      // Parse the manual food format
-      const items = parseManualFoodFormat(formData.prompt);
-      if (items.length === 0) {
-        toast.error('Could not parse food format. Please use the exact format shown.');
-        return;
-      }
-
-      setFoodItems(items);
-      toast.success(`Parsed ${items.length} food items`);
-    } catch (error) {
-      console.error('Parsing failed:', error);
-      toast.error('Failed to parse food format');
-    }
-  }, [formData.prompt]);
+  const [foodText, setFoodText] = useState('');
+  const [logWater, setLogWater] = useState(true);
 
   const handleLogFood = useCallback(async () => {
-    if (foodItems.length === 0) return;
+    if (!foodText.trim()) {
+      toast.error('Please paste food items to log');
+      return;
+    }
 
     setIsLogging(true);
     setLogResult('');
     toast.dismiss();
     
     try {
-      // Convert to the format expected by the API
-      const analysisResult = {
-        date: formData.date,
-        meal: formData.meal,
-        items: foodItems
-      };
+      // Split food items by double newlines and create individual food item strings
+      const foodItems = foodText.split('\n\n')
+        .filter(item => item.trim())
+        .map(item => item.trim())
+        .filter(item => item.includes('Food Name:')); // Only include valid food items
 
-      const result = await logFoodToBackend(analysisResult, formData.logWater);
+      if (foodItems.length === 0) {
+        toast.error('No food items found. Please paste in the correct format.');
+        return;
+      }
+
+      // Send data in the exact same format as your old LoseIt app
+      const result = await logFoodToBackend({ 
+        food_items: foodItems,
+        log_water: logWater 
+      }, logWater);
       
       if (result.success) {
         setLogResult(`✅ ${result.message}\n\n${result.output || ''}`);
-        toast.success('Food logged successfully!');
+        toast.success(`Food logged successfully! (${foodItems.length} items)`);
         
-        if (formData.logWater) {
+        if (logWater) {
           setLogResult(prev => prev + '\n💧 Water intake also logged');
         }
       } else {
@@ -98,151 +60,62 @@ export default function ManualPage() {
     } finally {
       setIsLogging(false);
     }
-  }, [foodItems, formData.date, formData.meal, formData.logWater]);
+  }, [foodText, logWater]);
 
   const handleClear = useCallback(() => {
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      meal: 'Dinner',
-      brand: '',
-      prompt: '',
-      logWater: false,
-    });
-    setFoodItems([]);
+    setFoodText('');
     setLogResult('');
+    toast.success('Cleared all data');
   }, []);
 
-  const handleSampleData = useCallback(() => {
-    const samplePrompt = `Food Name: Big League (Mocktail)
-Date: ${new Date().toISOString().split('T')[0]}
-Meal: Dinner
-Brand: Sample Restaurant
-Icon: Mixed Drink
+  const handleExample = useCallback(() => {
+    const exampleText = `Food Name: Cafe Vanilla Coffee
+Date: 08/17
+Meal: Breakfast
+Brand: Keurig
+Icon: Coffee
 Serving Size: 8 fluid ounces
-Calories: 120
+Calories: 60
+Fat (g): 2
+Saturated Fat (g): 0.5
+Cholesterol (mg): 0
+Sodium (mg): 100
+Carbs (g): 10
+Fiber (g): 0
+Sugar (g): 8
+Protein (g): 1
+
+Food Name: Greek Yogurt with Berries
+Date: 08/17
+Meal: Breakfast
+Brand: Chobani
+Icon: Yogurt
+Serving Size: 1 cup
+Calories: 140
 Fat (g): 0
 Saturated Fat (g): 0
-Cholesterol (mg): 0
-Sodium (mg): 10
-Carbs (g): 30
+Cholesterol (mg): 10
+Sodium (mg): 65
+Carbs (g): 20
 Fiber (g): 0
-Sugar (g): 25
-Protein (g): 0
+Sugar (g): 16
+Protein (g): 20`;
 
-Food Name: Hummus w/ House Bread
-Date: ${new Date().toISOString().split('T')[0]}
-Meal: Dinner
-Brand: Sample Restaurant
-Icon: Dip
-Serving Size: 0.5 serving
-Calories: 150
-Fat (g): 8
-Saturated Fat (g): 1
-Cholesterol (mg): 0
-Sodium (mg): 300
-Carbs (g): 18
-Fiber (g): 4
-Sugar (g): 1
-Protein (g): 5
-
-Food Name: Shawarma-Spiced Prime Skirt Steak Frites
-Date: ${new Date().toISOString().split('T')[0]}
-Meal: Dinner
-Brand: Sample Restaurant
-Icon: Beef
-Serving Size: 1 serving
-Calories: 600
-Fat (g): 35
-Saturated Fat (g): 10
-Cholesterol (mg): 100
-Sodium (mg): 800
-Carbs (g): 40
-Fiber (g): 5
-Sugar (g): 2
-Protein (g): 40`;
-
-    setFormData(prev => ({
-      ...prev,
-      date: new Date().toISOString().split('T')[0],
-      meal: 'Dinner',
-      brand: 'Sample Restaurant',
-      prompt: samplePrompt,
-    }));
-    toast.success('Sample data loaded!');
+    setFoodText(exampleText);
+    toast.success('Example data loaded!');
   }, []);
 
-  const parseManualFoodFormat = (text: string): ManualFoodItem[] => {
-    const items: ManualFoodItem[] = [];
-    const foodBlocks = text.split('\n\n').filter(block => block.trim());
-    
-    for (const block of foodBlocks) {
-      const lines = block.split('\n').filter(line => line.trim());
-      const item: any = {};
-      
-      for (const line of lines) {
-        const [key, ...valueParts] = line.split(': ');
-        const value = valueParts.join(': ').trim();
-        
-        switch (key.trim()) {
-          case 'Food Name':
-            item.foodName = value;
-            break;
-          case 'Date':
-            item.date = value;
-            break;
-          case 'Meal':
-            item.meal = value;
-            break;
-          case 'Brand':
-            item.brand = value;
-            break;
-          case 'Icon':
-            item.icon = value;
-            break;
-          case 'Serving Size':
-            const [amount, unit] = value.split(' ');
-            item.serving = {
-              amount: parseFloat(amount) || 1,
-              unit: unit || 'serving'
-            };
-            break;
-          case 'Calories':
-            item.calories = parseInt(value) || 0;
-            break;
-          case 'Fat (g)':
-            item.fatG = parseInt(value) || 0;
-            break;
-          case 'Saturated Fat (g)':
-            item.satFatG = parseInt(value) || 0;
-            break;
-          case 'Cholesterol (mg)':
-            item.cholesterolMg = parseInt(value) || 0;
-            break;
-          case 'Sodium (mg)':
-            item.sodiumMg = parseInt(value) || 0;
-            break;
-          case 'Carbs (g)':
-            item.carbsG = parseInt(value) || 0;
-            break;
-          case 'Fiber (g)':
-            item.fiberG = parseInt(value) || 0;
-            break;
-          case 'Sugar (g)':
-            item.sugarG = parseInt(value) || 0;
-            break;
-          case 'Protein (g)':
-            item.proteinG = parseInt(value) || 0;
-            break;
-        }
-      }
-      
-      if (item.foodName && item.calories !== undefined) {
-        items.push(item as ManualFoodItem);
-      }
+  const copyToClipboard = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      toast.error('Failed to copy to clipboard');
     }
-    
-    return items;
-  };
+  }, []);
+
+
 
   return (
     <div className="space-y-8 px-4 max-w-5xl mx-auto">
@@ -251,241 +124,122 @@ Protein (g): 40`;
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#363636',
-            color: '#fff',
+            background: 'var(--toast-bg)',
+            color: 'var(--toast-color)',
           },
         }}
       />
 
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-          Manual Food Logging
+      {/* Page Header */}
+      <div className="text-center space-y-2 py-6">
+        <h1 className="text-3xl font-bold text-foreground flex items-center justify-center gap-3">
+          <PenTool className="w-8 h-8 text-primary" />
+          Manual Food Log
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
-          Direct food entry in structured format for quick logging without AI analysis
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Paste pre-formatted food items for direct logging to Lose It!
         </p>
       </div>
 
-      {/* Sample Button */}
+      {/* Main Input Card - Simple like your old LoseIt app */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            Quick Start
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button 
-            onClick={handleSampleData}
-            variant="outline"
-            className="w-full"
-          >
-            📋 Load Sample Data
-          </Button>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center">
-            Loads sample food items for testing and demonstration
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Food Entry Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Food Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Date
-              </label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Meal
-              </label>
-              <select
-                value={formData.meal}
-                onChange={(e) => setFormData(prev => ({ ...prev, meal: e.target.value }))}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-              >
-                <option value="Breakfast">Breakfast</option>
-                <option value="Lunch">Lunch</option>
-                <option value="Dinner">Dinner</option>
-                <option value="Snack">Snack</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Brand/Restaurant
-              </label>
-              <Input
-                type="text"
-                placeholder="e.g., Sample Restaurant"
-                value={formData.brand}
-                onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Food Items (use exact format below)
-            </label>
-            <Textarea
-              placeholder="Paste food items in the exact format shown below..."
-              value={formData.prompt}
-              onChange={(e) => setFormData(prev => ({ ...prev, prompt: e.target.value }))}
-              rows={12}
-              className="font-mono text-sm"
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Format: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat, etc.
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="logWater"
-              checked={formData.logWater}
-              onChange={(e) => setFormData(prev => ({ ...prev, logWater: e.target.checked }))}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="logWater" className="text-sm text-gray-700 dark:text-gray-300">
-              Log water intake for drinks
-            </label>
-          </div>
-
-          <div className="flex gap-3">
-            <Button 
-              onClick={handleAnalyze}
-              variant="outline"
-              className="flex-1"
-            >
-              🔍 Parse & Validate
-            </Button>
-            <Button 
-              onClick={handleClear}
-              variant="outline"
-              className="flex-1"
-            >
-              🗑️ Clear All
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Parsed Results */}
-      {foodItems.length > 0 && (
-        <Card>
-          <CardHeader>
+          <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              Parsed Food Items ({foodItems.length})
+              <PenTool className="w-5 h-5 text-green-600 dark:text-green-400" />
+              Food Log Text
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {foodItems.map((item, index) => (
-                <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white">{item.foodName}</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{item.brand}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {item.serving.amount} {item.serving.unit}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{item.calories} cal</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Icon: {item.icon}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-sm">
-                    {/* Nutrition Facts - Exactly like Lose It! app */}
-                    <div className="col-span-full space-y-3">
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                        Nutrition Facts
-                      </div>
-                      
-                      {/* Amount and Serving - Like Lose It! */}
-                      <div className="flex justify-between text-sm border-b border-gray-200 dark:border-gray-600 pb-2">
-                        <span className="text-gray-500 dark:text-gray-400">Amount</span>
-                        <span className="text-gray-500 dark:text-gray-400">1 Serving</span>
-                      </div>
-                      
-                      {/* Compact nutrition display - like Lose It! app */}
-                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                        {/* Calories prominently displayed */}
-                        <div className="text-center mb-4">
-                          <div className="text-5xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">Calories</div>
-                        </div>
-                        
-                        {/* Compact nutrient grid */}
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Total Fat:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Total Carbs:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Sugars:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Protein:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6">
-              <Button 
-                onClick={handleLogFood}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleClear}
                 disabled={isLogging}
+              >
+                Clear
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExample}
+                disabled={isLogging}
+              >
+                Example
+              </Button>
+              <Button
+                onClick={handleLogFood}
+                disabled={!foodText.trim() || isLogging}
                 isLoading={isLogging}
                 leftIcon={<CheckCircle className="w-4 h-4" />}
-                className="w-full"
               >
-                {isLogging ? 'Logging...' : 'Log to Lose It!'}
+                {isLogging ? 'Logging...' : 'Log Food'}
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Main textarea - like your old LoseIt app */}
+          <Textarea
+            placeholder="Paste your food log text here...
+
+Example format:
+Food Name: Cafe Vanilla Coffee
+Date: 08/17
+Meal: Breakfast
+Brand: Keurig
+Icon: Coffee
+Serving Size: 8 fluid ounces
+Calories: 60
+Fat (g): 2
+Saturated Fat (g): 0.5
+Cholesterol (mg): 0
+Sodium (mg): 100
+Carbs (g): 10
+Fiber (g): 0
+Sugar (g): 8
+Protein (g): 1
+
+(Separate multiple items with blank lines)"
+            value={foodText}
+            onChange={(e) => setFoodText(e.target.value)}
+            rows={20}
+            className="font-mono text-sm resize-none"
+          />
+
+          {/* Log Water Toggle - like your old app */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="logWater"
+                checked={logWater}
+                onChange={(e) => setLogWater(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Droplets className="w-4 h-4 text-blue-500" />
+                Log Water
+              </label>
+            </div>
+            
+            {foodText && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyToClipboard(foodText)}
+                leftIcon={<Copy className="w-4 h-4" />}
+              >
+                Copy Text
+              </Button>
+            )}
+          </div>
+
+          {/* Item count indicator */}
+          {foodText && (
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {foodText.split('\n\n').filter(item => item.trim()).length} food item(s) ready to log
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Logging Results */}
       {logResult && (
@@ -498,8 +252,12 @@ Protein (g): 40`;
           </CardHeader>
           <CardContent>
             <div 
-              className="text-sm text-gray-700 dark:text-gray-300 space-y-2"
-              dangerouslySetInnerHTML={{ __html: logResult.replace(/\n/g, '<br>') }}
+              className="text-sm text-gray-700 dark:text-gray-300 space-y-2 whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ 
+                __html: logResult
+                  .replace(/\n/g, '<br>')
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              }}
             />
           </CardContent>
         </Card>

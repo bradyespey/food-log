@@ -98,6 +98,15 @@ export interface FormData {
   logWater: boolean;
 }
 
+export interface FoodEntryCard {
+  id: string;
+  date: string;
+  meal: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
+  brand: string;
+  prompt: string;
+  images: File[];
+}
+
 // ── Constants ────────────────────────────────────────────────────────
 
 export const NUTRITION_ICONS = [

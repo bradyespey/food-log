@@ -1,7 +1,7 @@
 //src/pages/FoodLogPage.tsx
 
 import React, { useState, useCallback } from 'react';
-import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets } from 'lucide-react';
+import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, Plus, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -10,18 +10,20 @@ import { Textarea } from '../components/ui/Textarea';
 import ImageUpload from '../components/ui/ImageUpload';
 import { analyzeFood, estimateCost } from '../lib/openai';
 import { logFoodToBackend } from '../lib/api';
-import type { FoodItem, FormData } from '../types';
+import type { FoodItem, FoodEntryCard } from '../types';
 
 const FoodLogPage: React.FC = () => {
-  // ── Form State ──────────────────────────────────────────────────
-  const [formData, setFormData] = useState<FormData>({
+  // ── Multi-Entry State ────────────────────────────────────────────
+  const [foodEntries, setFoodEntries] = useState<FoodEntryCard[]>([{
+    id: '1',
     date: new Date().toISOString().split('T')[0],
     meal: 'Breakfast',
     brand: '',
     prompt: '',
     images: [],
-    logWater: false,
-  });
+  }]);
+  
+  const [logWater, setLogWater] = useState(false);
 
   // ── UI State ────────────────────────────────────────────────────
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -32,20 +34,46 @@ const FoodLogPage: React.FC = () => {
   const [logResult, setLogResult] = useState<string>('');
 
   // ── Computed Values ─────────────────────────────────────────────
-  const estimatedCost = estimateCost(formData.prompt, formData.images.length);
-  const isFormValid = formData.date && formData.meal && formData.brand && formData.prompt;
+  const validEntries = foodEntries.filter(entry => 
+    entry.date && entry.meal && entry.brand && entry.prompt
+  );
+  const totalImages = foodEntries.reduce((sum, entry) => sum + entry.images.length, 0);
+  const totalPromptLength = foodEntries.reduce((sum, entry) => sum + entry.prompt.length, 0);
+  const estimatedCost = estimateCost('', totalImages) + (totalPromptLength / 1000) * 0.001;
+  const isFormValid = validEntries.length > 0;
 
   // ── Handlers ────────────────────────────────────────────────────
-  const handleInputChange = useCallback((field: keyof FormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const addFoodEntry = useCallback(() => {
+    const newEntry: FoodEntryCard = {
+      id: Date.now().toString(),
+      date: new Date().toISOString().split('T')[0],
+      meal: 'Breakfast',
+      brand: '',
+      prompt: '',
+      images: [],
+    };
+    setFoodEntries(prev => [...prev, newEntry]);
   }, []);
 
-  const handleImagesChange = useCallback((images: File[]) => {
-    setFormData(prev => ({ ...prev, images }));
+  const removeFoodEntry = useCallback((id: string) => {
+    setFoodEntries(prev => prev.filter(entry => entry.id !== id));
   }, []);
+
+  const updateFoodEntry = useCallback((id: string, field: keyof FoodEntryCard, value: any) => {
+    setFoodEntries(prev => prev.map(entry => 
+      entry.id === id ? { ...entry, [field]: value } : entry
+    ));
+  }, []);
+
+  const handleImagesChange = useCallback((id: string, images: File[]) => {
+    updateFoodEntry(id, 'images', images);
+  }, [updateFoodEntry]);
 
   const handleAnalyze = useCallback(async () => {
-    if (!isFormValid) return;
+    if (!isFormValid || validEntries.length === 0) {
+      toast.error('Please fill in at least one food entry completely');
+      return;
+    }
 
     setIsAnalyzing(true);
     setQuestions([]);
@@ -54,13 +82,60 @@ const FoodLogPage: React.FC = () => {
     toast.dismiss();
     
     try {
-      const response = await analyzeFood({
-        prompt: formData.prompt,
-        images: formData.images,
-        date: formData.date,
-        meal: formData.meal,
-        brand: formData.brand,
+      // Combine all valid entries into a single prompt with individual dates
+      const combinedPrompt = validEntries.map((entry) => {
+        const mealLabel = validEntries.length > 1 ? `${entry.meal} (${entry.brand})` : `${entry.brand}`;
+        const formattedDate = entry.date.split('-').slice(1).join('/'); // Convert YYYY-MM-DD to MM/DD
+        return `**${mealLabel} - ${formattedDate}:**
+${entry.prompt}`;
+      }).join('\n\n');
+
+      // Combine all images from all entries, filtering out invalid ones
+      const allImages = validEntries.reduce((acc: File[], entry) => {
+        const validImages = entry.images.filter(img => {
+          if (!img || !img.size || img.size === 0) return false;
+          if (!img.type || !img.type.startsWith('image/')) return false;
+          return true;
+        });
+        return [...acc, ...validImages];
+      }, []);
+
+      console.log('Image validation:', {
+        totalImages: validEntries.reduce((sum, entry) => sum + entry.images.length, 0),
+        validImages: allImages.length,
+        invalidImages: validEntries.reduce((sum, entry) => sum + entry.images.length, 0) - allImages.length
       });
+
+      // Use the first entry's date and meal, or combine if multiple
+      const firstEntry = validEntries[0];
+      const hasMultipleMeals = new Set(validEntries.map(e => e.meal)).size > 1;
+      const meal = hasMultipleMeals ? 'Mixed' as any : firstEntry.meal;
+      
+      // Don't override individual brands with 'Multiple' - let AI use actual brand names
+
+      console.log('Analysis request:', {
+        prompt: combinedPrompt,
+        imageCount: allImages.length,
+        date: firstEntry.date,
+        meal: meal,
+        brand: firstEntry.brand, // Use actual brand name, not 'Multiple'
+      });
+
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Analysis timed out after 60 seconds')), 60000)
+      );
+
+      const response = await Promise.race([
+        analyzeFood({
+          prompt: combinedPrompt,
+          images: allImages,
+          date: firstEntry.date,
+          meal: meal,
+          brand: firstEntry.brand, // Use actual brand name, not 'Multiple'
+        }) as Promise<any>,
+        timeoutPromise
+      ]);
 
       if (!response.success) {
         throw new Error(response.error || 'Analysis failed');
@@ -73,17 +148,25 @@ const FoodLogPage: React.FC = () => {
         setQuestions(data.questions);
         toast.error('AI needs more information to provide accurate analysis');
       } else if (data?.items && data.items.length > 0) {
-        // Successful analysis
+        // Successful analysis - preserve individual entry dates
         const analysisData = {
-          date: formData.date.split('-').slice(1).join('/'), // Convert YYYY-MM-DD to MM/DD
-          meal: formData.meal,
+          date: validEntries.length === 1 
+            ? firstEntry.date.split('-').slice(1).join('/') // Single entry: use its date
+            : 'Multiple Dates', // Multiple entries: indicate mixed dates
+          meal: meal,
           items: data.items,
           plainText: data.plainText || '',
+          // Store individual entry info for proper date handling
+          entryDates: validEntries.map(entry => ({
+            date: entry.date.split('-').slice(1).join('/'),
+            meal: entry.meal,
+            brand: entry.brand
+          }))
         };
         
         setAnalysisResult(analysisData);
         setShowResults(true);
-        toast.success(`Analysis complete! Found ${data.items.length} food item(s)`);
+        toast.success(`Analysis complete! Found ${data.items.length} food item(s) from ${validEntries.length} entry/entries`);
       } else {
         throw new Error('No food items could be identified');
       }
@@ -96,7 +179,7 @@ const FoodLogPage: React.FC = () => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [formData, isFormValid]);
+  }, [validEntries, isFormValid]);
 
   const handleLogFood = useCallback(async () => {
     if (!analysisResult) return;
@@ -106,13 +189,13 @@ const FoodLogPage: React.FC = () => {
     toast.dismiss();
     
     try {
-      const result = await logFoodToBackend(analysisResult, formData.logWater);
+      const result = await logFoodToBackend(analysisResult, logWater);
       
       if (result.success) {
         setLogResult(`✅ ${result.message}\n\n${result.output || ''}`);
         toast.success('Food logged successfully!');
         
-        if (formData.logWater) {
+        if (logWater) {
           setLogResult(prev => prev + '\n💧 Water intake also logged');
         }
       } else {
@@ -126,7 +209,7 @@ const FoodLogPage: React.FC = () => {
     } finally {
       setIsLogging(false);
     }
-  }, [analysisResult, formData.logWater]);
+  }, [analysisResult, logWater]);
 
   const handleSampleData = useCallback(async () => {
     const samplePrompt = `- Hummus, served with house bread (had maybe half the hummus and all of the side bread)
@@ -134,14 +217,6 @@ const FoodLogPage: React.FC = () => {
 - SHAWARMA-SPICED PRIME SKIRT STEAK FRITES* za'atar, feta. berbere red wine jus`;
 
     try {
-      // Use actual food photos from the user
-      // const samplePhotos = [
-      //   // These will be converted to File objects from the actual photos
-      //   new File([], 'hummus-bread.jpeg', { type: 'image/jpeg' }),
-      //   new File([], 'big-league-mocktail.jpeg', { type: 'image/jpeg' }),
-      //   new File([], 'house-bread.jpeg', { type: 'image/jpeg' }),
-      // ];
-
       // Convert the actual photos to File objects
       const photoUrls = [
         '/57E8E1E8-DF20-45B7-9B45-5B845A525770_1_105_c.jpeg',
@@ -167,30 +242,40 @@ const FoodLogPage: React.FC = () => {
         })
       );
 
-              setFormData(prev => ({
-          ...prev,
-          date: new Date().toISOString().split('T')[0],
-          meal: 'Dinner',
-          brand: 'Sample Restaurant',
-          prompt: samplePrompt,
-          images: photoFiles,
-        }));
-      toast.success('Sample data and photos loaded! Click Analyze to process.');
+      // Find first entry with empty fields, or use the first entry
+      const targetEntryId = foodEntries.find(entry => !entry.prompt && !entry.brand)?.id || foodEntries[0]?.id;
+      
+      if (targetEntryId) {
+        setFoodEntries(prev => prev.map(entry => 
+          entry.id === targetEntryId 
+            ? {
+                ...entry,
+                date: new Date().toISOString().split('T')[0],
+                meal: 'Dinner',
+                brand: 'Sample Restaurant',
+                prompt: samplePrompt,
+                images: photoFiles,
+              }
+            : entry
+        ));
+        toast.success('Sample data and photos loaded! Click Analyze to process.');
+      }
     } catch (error) {
       console.error('Error creating sample images:', error);
       toast.error('Failed to create sample images');
     }
-  }, []);
+  }, [foodEntries]);
 
   const handleClear = useCallback(() => {
-    setFormData({
+    setFoodEntries([{
+      id: '1',
       date: new Date().toISOString().split('T')[0],
       meal: 'Breakfast',
       brand: '',
       prompt: '',
       images: [],
-      logWater: false,
-    });
+    }]);
+    setLogWater(false);
     setQuestions([]);
     setAnalysisResult(null);
     setShowResults(false);
@@ -201,6 +286,11 @@ const FoodLogPage: React.FC = () => {
     try {
       await navigator.clipboard.writeText(text);
       toast.success('Copied to clipboard!');
+      
+      // Debug: Log what's being sent to clipboard
+      console.log('=== COPIED TO CLIPBOARD ===');
+      console.log(text);
+      console.log('=== END CLIPBOARD ===');
     } catch (error) {
       console.error('Failed to copy:', error);
       toast.error('Failed to copy to clipboard');
@@ -216,14 +306,34 @@ const FoodLogPage: React.FC = () => {
   const formatForChatGPT = useCallback((result: any) => {
     if (!result?.items) return '';
     
-    const formattedItems = result.items.map((item: FoodItem) => {
+    const formattedItems = result.items.map((item: FoodItem, index: number) => {
+      // Map items to their corresponding entries based on order
+      let itemDate = result.date;
+      let itemMeal = result.meal;
+      
+      if (result.entryDates && result.entryDates.length > 1) {
+        // For multiple entries, try to map items to entries based on order
+        // This assumes the AI returns items in roughly the same order as the entries
+        const entryIndex = Math.min(index, result.entryDates.length - 1);
+        const entry = result.entryDates[entryIndex];
+        if (entry) {
+          itemDate = entry.date;
+          itemMeal = entry.meal;
+        }
+      }
+      
+      // Format serving size exactly like your old site
+      const servingSize = item.serving.descriptor 
+        ? `${item.serving.amount} ${item.serving.unit} (${item.serving.descriptor})`
+        : `${item.serving.amount} ${item.serving.unit}`;
+
       const lines = [
         `Food Name: ${item.foodName}`,
-        `Date: ${result.date}`,
-        `Meal: ${result.meal}`,
+        `Date: ${itemDate}`,
+        `Meal: ${itemMeal}`,
         `Brand: ${item.brand}`,
         `Icon: ${item.icon}`,
-        `Serving Size: ${item.serving.amount} ${item.serving.unit}`,
+        `Serving Size: ${servingSize}`,
         `Calories: ${item.calories}`,
         `Fat (g): ${item.fatG}`,
         `Saturated Fat (g): ${item.satFatG}`,
@@ -235,7 +345,7 @@ const FoodLogPage: React.FC = () => {
         `Protein (g): ${item.proteinG}`,
       ];
       
-      // Add hydration for drinks
+      // Add hydration for drinks - this is what your backend expects for fluid ounces
       if (item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0) {
         lines.push(`Hydration: ${item.hydration.fluidOz} fluid ounces`);
       }
@@ -280,13 +390,47 @@ const FoodLogPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Main Food Analysis Form */}
+      {/* Food Entry Cards */}
+      <div className="space-y-6">
+        {foodEntries.map((entry, index) => (
+          <FoodEntryCardComponent
+            key={entry.id}
+            entry={entry}
+            index={index}
+            canRemove={foodEntries.length > 1}
+            onUpdate={updateFoodEntry}
+            onRemove={removeFoodEntry}
+            onImagesChange={handleImagesChange}
+          />
+        ))}
+        
+        {/* Add New Item Button */}
+        <Card className="border-dashed border-2 border-gray-300 dark:border-gray-600">
+          <CardContent className="py-8">
+            <div className="text-center">
+              <Button
+                onClick={addFoodEntry}
+                variant="outline"
+                disabled={isAnalyzing || isLogging}
+                leftIcon={<Plus className="w-4 h-4" />}
+              >
+                Add Another Food Item
+              </Button>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Log multiple meals at once (breakfast, lunch, dinner)
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Analysis Controls */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Food Analysis
+              Analysis Controls
             </CardTitle>
             <div className="flex gap-3">
               <Button
@@ -294,7 +438,7 @@ const FoodLogPage: React.FC = () => {
                 onClick={handleClear}
                 disabled={isAnalyzing || isLogging}
               >
-                Clear
+                Clear All
               </Button>
               <Button
                 onClick={handleAnalyze}
@@ -302,68 +446,28 @@ const FoodLogPage: React.FC = () => {
                 isLoading={isAnalyzing}
                 leftIcon={<Sparkles className="w-4 h-4" />}
               >
-                {isAnalyzing ? 'Analyzing...' : 'Analyze Food'}
+                {isAnalyzing ? 'Analyzing...' : `Analyze ${validEntries.length} Item${validEntries.length !== 1 ? 's' : ''}`}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Required Fields Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              label="Date *"
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleInputChange('date', e.target.value)}
-              required
-            />
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Meal *
-              </label>
-              <select
-                value={formData.meal}
-                onChange={(e) => handleInputChange('meal', e.target.value as 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks')}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                required
-              >
-                <option value="Breakfast">Breakfast</option>
-                <option value="Lunch">Lunch</option>
-                <option value="Dinner">Dinner</option>
-                <option value="Snacks">Snacks</option>
-              </select>
+          {/* Summary */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="font-medium text-blue-800 dark:text-blue-200">Entries:</span>
+                <span className="ml-2 text-blue-700 dark:text-blue-300">{foodEntries.length} card{foodEntries.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div>
+                <span className="font-medium text-blue-800 dark:text-blue-200">Valid:</span>
+                <span className="ml-2 text-blue-700 dark:text-blue-300">{validEntries.length} ready to analyze</span>
+              </div>
+              <div>
+                <span className="font-medium text-blue-800 dark:text-blue-200">Photos:</span>
+                <span className="ml-2 text-blue-700 dark:text-blue-300">{totalImages} image{totalImages !== 1 ? 's' : ''}</span>
+              </div>
             </div>
-            <Input
-              label="Brand/Restaurant *"
-              placeholder="e.g., McDonald's, Starbucks"
-              value={formData.brand}
-              onChange={(e) => handleInputChange('brand', e.target.value)}
-              required
-            />
-          </div>
-
-          {/* What did you eat */}
-          <Textarea
-            label="What did you eat? *"
-            placeholder="Describe your food in detail, including portions, preparation, and any sides or drinks..."
-            value={formData.prompt}
-            onChange={(e) => handleInputChange('prompt', e.target.value)}
-            rows={4}
-            helperText="Be as specific as possible for accurate nutritional analysis"
-            required
-          />
-
-          {/* Photo Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Photos (optional)
-            </label>
-            <ImageUpload
-              onImagesChange={handleImagesChange}
-              images={formData.images}
-              maxImages={5}
-              maxSizeBytes={10 * 1024 * 1024}
-            />
           </div>
 
           {/* Log Water Toggle */}
@@ -371,8 +475,8 @@ const FoodLogPage: React.FC = () => {
             <input
               type="checkbox"
               id="logWater"
-              checked={formData.logWater}
-              onChange={(e) => handleInputChange('logWater', e.target.checked)}
+              checked={logWater}
+              onChange={(e) => setLogWater(e.target.checked)}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -444,24 +548,44 @@ const FoodLogPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button
-                variant="outline"
-                onClick={() => copyToClipboard(formatForChatGPT(analysisResult))}
-                leftIcon={<Copy className="w-4 h-4" />}
-              >
-                Copy Results
-              </Button>
-              <Button
-                onClick={handleLogFood}
-                disabled={isLogging}
-                isLoading={isLogging}
-                leftIcon={<CheckCircle className="w-4 h-4" />}
-              >
-                {isLogging ? 'Logging...' : 'Log to Lose It!'}
-              </Button>
+                    {/* Date Information */}
+        {analysisResult.entryDates && analysisResult.entryDates.length > 1 && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200 mb-2">
+              <AlertCircle className="w-4 h-4" />
+              <span className="font-medium">Multiple Dates Detected</span>
             </div>
+            <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+              {analysisResult.entryDates.map((entry: any, index: number) => (
+                <div key={index}>
+                  • {entry.meal}: {entry.date} ({entry.brand})
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+              Note: Items will be mapped to their corresponding entry dates based on order. Verify the dates are correct before logging.
+            </p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            variant="outline"
+            onClick={() => copyToClipboard(formatForChatGPT(analysisResult))}
+            leftIcon={<Copy className="w-4 h-4" />}
+          >
+            Copy Results
+          </Button>
+          <Button
+            onClick={handleLogFood}
+            disabled={isLogging}
+            isLoading={isLogging}
+            leftIcon={<CheckCircle className="w-4 h-4" />}
+          >
+            {isLogging ? 'Logging...' : 'Log to Lose It!'}
+          </Button>
+        </div>
           </CardContent>
         </Card>
       )}
@@ -530,39 +654,46 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item }) => {
               <div className="text-sm text-gray-500 dark:text-gray-400">Calories</div>
             </div>
             
-            {/* Compact nutrient grid */}
+            {/* Compact nutrient grid - Top-down columns */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Total Fat:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
+              {/* Left Column: Fat, Sat Fat, Cholesterol, Sodium */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Total Fat:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Total Carbs:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Sugars:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Protein:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
+              
+              {/* Right Column: Carbs, Fiber, Sugars, Protein */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Total Carbs:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Sugars:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Protein:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
+                </div>
               </div>
             </div>
           </div>
@@ -578,6 +709,127 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item }) => {
         )}
       </div>
     </div>
+  );
+};
+
+// ── Food Entry Card Component ───────────────────────────────────────
+
+interface FoodEntryCardProps {
+  entry: FoodEntryCard;
+  index: number;
+  canRemove: boolean;
+  onUpdate: (id: string, field: keyof FoodEntryCard, value: any) => void;
+  onRemove: (id: string) => void;
+  onImagesChange: (id: string, images: File[]) => void;
+}
+
+const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({ 
+  entry, 
+  index, 
+  canRemove, 
+  onUpdate, 
+  onRemove, 
+  onImagesChange 
+}) => {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <ChefHat className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            Food Entry #{index + 1}
+          </CardTitle>
+          {canRemove && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRemove(entry.id)}
+              leftIcon={<X className="w-4 h-4" />}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Required Fields Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input
+            label="Date *"
+            type="date"
+            value={entry.date}
+            onChange={(e) => onUpdate(entry.id, 'date', e.target.value)}
+            required
+          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Meal *
+            </label>
+            <select
+              value={entry.meal}
+              onChange={(e) => onUpdate(entry.id, 'meal', e.target.value as 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks')}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              required
+            >
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Dinner">Dinner</option>
+              <option value="Snacks">Snacks</option>
+            </select>
+          </div>
+          <Input
+            label="Brand/Restaurant *"
+            placeholder="e.g., McDonald's, Starbucks"
+            value={entry.brand}
+            onChange={(e) => onUpdate(entry.id, 'brand', e.target.value)}
+            required
+          />
+        </div>
+
+        {/* What did you eat */}
+        <Textarea
+          label="What did you eat? *"
+          placeholder="Describe your food in detail, including portions, preparation, and any sides or drinks..."
+          value={entry.prompt}
+          onChange={(e) => onUpdate(entry.id, 'prompt', e.target.value)}
+          rows={4}
+          helperText="Be as specific as possible for accurate nutritional analysis"
+          required
+        />
+
+        {/* Photo Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Photos (optional)
+          </label>
+          <ImageUpload
+            onImagesChange={(images) => onImagesChange(entry.id, images)}
+            images={entry.images}
+            maxImages={5}
+            maxSizeBytes={10 * 1024 * 1024}
+          />
+        </div>
+
+        {/* Entry Status */}
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-4 text-sm">
+            <div className={`flex items-center gap-2 ${
+              entry.date && entry.meal && entry.brand && entry.prompt 
+                ? 'text-green-600 dark:text-green-400' 
+                : 'text-gray-500 dark:text-gray-400'
+            }`}>
+              <CheckCircle className="w-4 h-4" />
+              {entry.date && entry.meal && entry.brand && entry.prompt ? 'Ready to analyze' : 'Incomplete'}
+            </div>
+            {entry.images.length > 0 && (
+              <div className="text-blue-600 dark:text-blue-400">
+                📷 {entry.images.length} photo{entry.images.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

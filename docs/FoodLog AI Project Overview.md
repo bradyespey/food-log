@@ -217,6 +217,7 @@ npm run preview
 - **Multi-Item Date Handling**: Fixed date mapping so each food item gets its correct individual date (08/17, 08/18, etc.)
 - **Manual Logging Fix**: Resolved second item logging failure by matching exact backend API format expected
 - **Firebase Configuration**: Added complete Firebase Google Auth setup for production deployment
+- **Security Measures**: Pre-commit hook prevents API key leaks, comprehensive security checklist
 
 ### 🔄 In Progress
 - **Error Monitoring**: Enhanced Sentry integration for API endpoints
@@ -373,6 +374,26 @@ npm run preview
 - **Netlify**: Free tier sufficient for personal use
 - **Firebase**: Free tier sufficient for single user
 - **Image Storage**: Client-side compression reduces upload costs
+
+## Security & API Key Protection
+
+### Current Security Setup
+- **Pre-commit Hook**: Automatically scans for API keys and sensitive data before commits
+- **Global Gitignore**: `/Users/brady/Projects/.gitignore_global` protects `.env` files
+- **Project Gitignore**: Additional project-specific exclusions
+- **Security Checklist**: Comprehensive documentation in `docs/SECURITY_CHECKLIST.md`
+
+### How It Prevents Leaks
+1. **Pre-commit Scanning**: Detects OpenAI API keys (`sk-proj-*`), other keys (`sk-*`), and `.env` files
+2. **Automatic Blocking**: Prevents commits containing sensitive data
+3. **Pattern Recognition**: Identifies credential patterns (password, secret, token, key)
+4. **File Type Protection**: Blocks environment files and credential files
+
+### Emergency Response (If Leak Occurs)
+1. **Immediate**: Revoke/regenerate exposed key
+2. **Clean History**: Use `git filter-branch` to remove from git history
+3. **Force Push**: Update remote repository with cleaned history
+4. **Notify**: Alert affected services
 
 ## Troubleshooting
 

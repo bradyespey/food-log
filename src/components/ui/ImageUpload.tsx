@@ -77,7 +77,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {/* Upload Area */}
       <div className="relative">
         <input
@@ -88,12 +88,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           disabled={disabled || images.length >= maxImages}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         />
-        <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+        <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
           disabled || images.length >= maxImages
             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
             : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
         }`}>
-          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+          <Upload className="mx-auto h-8 w-8 text-gray-400" />
           <p className="mt-2 text-sm text-gray-600">
             {images.length >= maxImages 
               ? `Maximum ${maxImages} images reached`

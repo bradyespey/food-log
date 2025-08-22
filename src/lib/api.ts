@@ -10,6 +10,9 @@ interface LogFoodResponse {
   success: boolean;
   message: string;
   output?: string;
+  verification?: {
+    [itemIndex: number]: any;
+  };
 }
 
 // Convert FoodItem to the text format expected by the Selenium automation
@@ -116,9 +119,10 @@ export const logFoodToBackend = async (
     const result = await response.json();
 
     return {
-      success: true,
-      message: 'Food logged successfully!',
+      success: result.success || true,
+      message: result.message || 'Food logged successfully!',
       output: result.output || result.message || 'Food logged to Lose It!',
+      verification: result.verification || {},
     };
 
   } catch (error) {

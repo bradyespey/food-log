@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Textarea } from '../components/ui/Textarea';
@@ -12,7 +12,20 @@ export default function ManualPage() {
   const [isLogging, setIsLogging] = useState(false);
   const [logResult, setLogResult] = useState('');
   const [foodText, setFoodText] = useState('');
-  const [logWater, setLogWater] = useState(true);
+  const [logWater, setLogWater] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('foodlog-logwater');
+      return saved ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+
+  // Save logWater state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('foodlog-logwater', JSON.stringify(logWater));
+    }
+  }, [logWater]);
 
   const handleLogFood = useCallback(async () => {
     if (!foodText.trim()) {
@@ -118,7 +131,7 @@ Protein (g): 20`;
 
 
   return (
-    <div className="space-y-8 px-4 max-w-5xl mx-auto">
+    <div className="space-y-4 px-4 max-w-5xl mx-auto">
       <Toaster 
         position="top-center" 
         toastOptions={{
@@ -131,12 +144,12 @@ Protein (g): 20`;
       />
 
       {/* Page Header */}
-      <div className="text-center space-y-2 py-6">
-        <h1 className="text-3xl font-bold text-foreground flex items-center justify-center gap-3">
-          <PenTool className="w-8 h-8 text-primary" />
+      <div className="text-center space-y-1 py-1">
+        <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-3">
+          <PenTool className="w-6 h-6 text-primary" />
           Manual Food Log
         </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-base text-muted-foreground max-w-2xl mx-auto">
           Paste pre-formatted food items for direct logging to Lose It!
         </p>
       </div>
@@ -144,16 +157,18 @@ Protein (g): 20`;
       {/* Main Input Card - Simple like your old LoseIt app */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="flex items-center gap-2">
               <PenTool className="w-5 h-5 text-green-600 dark:text-green-400" />
               Food Log Text
             </CardTitle>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 onClick={handleClear}
                 disabled={isLogging}
+                size="sm"
+                className="text-sm"
               >
                 Clear
               </Button>
@@ -161,21 +176,25 @@ Protein (g): 20`;
                 variant="outline"
                 onClick={handleExample}
                 disabled={isLogging}
+                size="sm"
+                className="text-sm"
               >
-                Example
+                📋 Load Sample Data
               </Button>
               <Button
                 onClick={handleLogFood}
                 disabled={!foodText.trim() || isLogging}
                 isLoading={isLogging}
                 leftIcon={<CheckCircle className="w-4 h-4" />}
+                size="sm"
+                className="text-sm"
               >
                 {isLogging ? 'Logging...' : 'Log Food'}
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Main textarea - like your old LoseIt app */}
           <Textarea
             placeholder="Paste your food log text here...

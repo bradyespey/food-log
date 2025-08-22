@@ -69,10 +69,39 @@ export interface LogRequest {
   logWater?: boolean;
 }
 
+export interface FieldVerificationStatus {
+  verified: boolean;
+  expected: string | number;
+  actual: string | number;
+  matches: boolean;
+}
+
+export interface ItemVerificationStatus {
+  foodName: FieldVerificationStatus;
+  brand: FieldVerificationStatus;
+  icon: FieldVerificationStatus;
+  serving: FieldVerificationStatus;
+  calories: FieldVerificationStatus;
+  fatG: FieldVerificationStatus;
+  satFatG: FieldVerificationStatus;
+  cholesterolMg: FieldVerificationStatus;
+  sodiumMg: FieldVerificationStatus;
+  carbsG: FieldVerificationStatus;
+  fiberG: FieldVerificationStatus;
+  sugarG: FieldVerificationStatus;
+  proteinG: FieldVerificationStatus;
+  hydration?: FieldVerificationStatus;
+  allFieldsMatch: boolean;
+  verificationComplete: boolean;
+}
+
 export interface LogResponse {
   success: boolean;
   message: string;
   error?: string;
+  verification?: {
+    [itemIndex: number]: ItemVerificationStatus;
+  };
 }
 
 export interface ApiError {

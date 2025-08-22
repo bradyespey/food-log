@@ -65,8 +65,8 @@ export function Navbar({ onLoadSample }: NavbarProps) {
           </div>
           {/* Theme toggle and sign out (always visible) */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Load Sample Data Button (only on AI Food Log page) */}
-            {pathname === '/dashboard' && onLoadSample && (
+            {/* Load Sample Data Button (on both AI Food Log and Manual pages) */}
+            {onLoadSample && (
               <Button variant="outline" size="sm" onClick={onLoadSample}>
                 📋 Load Sample Data
               </Button>
@@ -118,7 +118,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                 </Link>
               ))}
               {/* Load Sample Data Button for mobile */}
-              {pathname === '/dashboard' && onLoadSample && (
+              {onLoadSample && (
                 <div className="px-4 pt-2">
                   <Button variant="outline" size="sm" onClick={onLoadSample} className="w-full">
                     📋 Load Sample Data

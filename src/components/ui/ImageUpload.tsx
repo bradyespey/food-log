@@ -76,6 +76,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+
+
   return (
     <div className={`space-y-3 ${className}`}>
       {/* Upload Area */}
@@ -90,17 +92,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         />
         <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
           disabled || images.length >= maxImages
-            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+            ? 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed'
+            : 'border-gray-300 dark:border-gray-500 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer'
         }`}>
-          <Upload className="mx-auto h-8 w-8 text-gray-400" />
-          <p className="mt-2 text-sm text-gray-600">
+          <Upload className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
             {images.length >= maxImages 
               ? `Maximum ${maxImages} images reached`
               : 'Drop images here or click to select'
             }
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Max {maxImages} images, up to {Math.round(maxSizeBytes / 1024 / 1024)}MB each
           </p>
         </div>
@@ -108,8 +110,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
       {/* Error Message */}
       {error && (
-        <div className="rounded-md bg-red-50 p-3">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
 
@@ -118,7 +120,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {images.map((file, index) => (
             <div key={index} className="relative group">
-              <div className="aspect-square rounded-lg overflow-hidden border border-gray-200">
+              <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
                 {file.type.startsWith('image/') ? (
                   <img
                     src={(file as any).preview || URL.createObjectURL(file)}
@@ -126,8 +128,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                    <ImageIcon className="w-8 h-8 text-gray-400" />
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                    <ImageIcon className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                   </div>
                 )}
               </div>
@@ -138,7 +140,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               >
                 <X className="w-3 h-3" />
               </button>
-              <p className="mt-1 text-xs text-gray-500 truncate">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
                 {file.name} ({formatFileSize(file.size)})
               </p>
             </div>

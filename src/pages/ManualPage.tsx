@@ -8,6 +8,7 @@ import { toast, Toaster } from 'react-hot-toast';
 
 
 
+
 export default function ManualPage() {
   const [isLogging, setIsLogging] = useState(false);
   const [logResult, setLogResult] = useState('');
@@ -81,42 +82,7 @@ export default function ManualPage() {
     toast.success('Cleared all data');
   }, []);
 
-  const handleExample = useCallback(() => {
-    const exampleText = `Food Name: Cafe Vanilla Coffee
-Date: 08/17
-Meal: Breakfast
-Brand: Keurig
-Icon: Coffee
-Serving Size: 8 fluid ounces
-Calories: 60
-Fat (g): 2
-Saturated Fat (g): 0.5
-Cholesterol (mg): 0
-Sodium (mg): 100
-Carbs (g): 10
-Fiber (g): 0
-Sugar (g): 8
-Protein (g): 1
 
-Food Name: Greek Yogurt with Berries
-Date: 08/17
-Meal: Breakfast
-Brand: Chobani
-Icon: Yogurt
-Serving Size: 1 cup
-Calories: 140
-Fat (g): 0
-Saturated Fat (g): 0
-Cholesterol (mg): 10
-Sodium (mg): 65
-Carbs (g): 20
-Fiber (g): 0
-Sugar (g): 16
-Protein (g): 20`;
-
-    setFoodText(exampleText);
-    toast.success('Example data loaded!');
-  }, []);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -173,15 +139,6 @@ Protein (g): 20`;
                 Clear
               </Button>
               <Button
-                variant="outline"
-                onClick={handleExample}
-                disabled={isLogging}
-                size="sm"
-                className="text-sm"
-              >
-                📋 Load Sample Data
-              </Button>
-              <Button
                 onClick={handleLogFood}
                 disabled={!foodText.trim() || isLogging}
                 isLoading={isLogging}
@@ -223,34 +180,6 @@ Protein (g): 1
             className="font-mono text-sm resize-none"
           />
 
-          {/* Log Water Toggle - like your old app */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="logWater"
-                checked={logWater}
-                onChange={(e) => setLogWater(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <Droplets className="w-4 h-4 text-blue-500" />
-                Log Water
-              </label>
-            </div>
-            
-            {foodText && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => copyToClipboard(foodText)}
-                leftIcon={<Copy className="w-4 h-4" />}
-              >
-                Copy Text
-              </Button>
-            )}
-          </div>
-
           {/* Item count indicator */}
           {foodText && (
             <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -259,6 +188,34 @@ Protein (g): 1
           )}
         </CardContent>
       </Card>
+
+      {/* Log Water Row - moved outside the box like AI page */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            id="logWater"
+            checked={logWater}
+            onChange={(e) => setLogWater(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <Droplets className="w-4 h-4 text-blue-500" />
+            Log Water
+          </label>
+        </div>
+        
+        {foodText && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => copyToClipboard(foodText)}
+            leftIcon={<Copy className="w-4 h-4" />}
+          >
+            Copy Text
+          </Button>
+        )}
+      </div>
 
       {/* Logging Results */}
       {logResult && (

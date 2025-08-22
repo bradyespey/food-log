@@ -8,9 +8,11 @@ import { useTheme } from '../ThemeProvider';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/DropdownMenu';
 import { useState } from 'react';
 
-interface NavbarProps {}
+interface NavbarProps {
+  onLoadSample?: () => void;
+}
 
-export function Navbar({}: NavbarProps) {
+export function Navbar({ onLoadSample }: NavbarProps) {
   const { signOut } = useAuth();
   const { pathname } = useLocation();
   const { theme, setTheme } = useTheme();
@@ -63,6 +65,12 @@ export function Navbar({}: NavbarProps) {
           </div>
           {/* Theme toggle and sign out (always visible) */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Load Sample Data Button (only on AI Food Log page) */}
+            {pathname === '/dashboard' && onLoadSample && (
+              <Button variant="outline" size="sm" onClick={onLoadSample}>
+                📋 Load Sample Data
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -109,6 +117,14 @@ export function Navbar({}: NavbarProps) {
                   {label}
                 </Link>
               ))}
+              {/* Load Sample Data Button for mobile */}
+              {pathname === '/dashboard' && onLoadSample && (
+                <div className="px-4 pt-2">
+                  <Button variant="outline" size="sm" onClick={onLoadSample} className="w-full">
+                    📋 Load Sample Data
+                  </Button>
+                </div>
+              )}
               {/* Theme toggle and sign out for mobile */}
               <div className="flex items-center px-4 pt-2 space-x-2">
                 <DropdownMenu>

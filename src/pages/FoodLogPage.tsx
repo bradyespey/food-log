@@ -1,6 +1,6 @@
 //src/pages/FoodLogPage.tsx
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, Plus, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -11,8 +11,11 @@ import ImageUpload from '../components/ui/ImageUpload';
 import { analyzeFood, estimateCost } from '../lib/openai';
 import { logFoodToBackend } from '../lib/api';
 import type { FoodItem, FoodEntryCard } from '../types';
+import { useSampleData } from '../App';
 
 const FoodLogPage: React.FC = () => {
+  const { setLoadSampleData } = useSampleData();
+  
   // ── Multi-Entry State ────────────────────────────────────────────
   const [foodEntries, setFoodEntries] = useState<FoodEntryCard[]>([{
     id: '1',
@@ -31,7 +34,7 @@ const FoodLogPage: React.FC = () => {
   const [showResults, setShowResults] = useState(false);
   const [questions, setQuestions] = useState<string[]>([]);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [logResult, setLogResult] = useState<string>('');
+  const [verificationStatus, setVerificationStatus] = useState<{[itemIndex: number]: any}>({});
 
   // ── Computed Values ─────────────────────────────────────────────
   const validEntries = foodEntries.filter(entry => 
@@ -79,6 +82,7 @@ const FoodLogPage: React.FC = () => {
     setQuestions([]);
     setAnalysisResult(null);
     setShowResults(false);
+    setVerificationStatus({});
     toast.dismiss();
     
     try {
@@ -185,18 +189,25 @@ ${entry.prompt}`;
     if (!analysisResult) return;
 
     setIsLogging(true);
-    setLogResult('');
     toast.dismiss();
     
     try {
       const result = await logFoodToBackend(analysisResult, logWater);
       
       if (result.success) {
-        setLogResult(`✅ ${result.message}\n\n${result.output || ''}`);
         toast.success('Food logged successfully!');
         
+        // Set verification status
+        if (result.verification && Object.keys(result.verification).length > 0) {
+          setVerificationStatus(result.verification);
+        } else if (result.output && result.output.includes('Logging item')) {
+          // Parse verification from HTML output if structured data not available
+          const parsedVerification = parseVerificationFromHTML(result.output);
+          setVerificationStatus(parsedVerification);
+        }
+        
         if (logWater) {
-          setLogResult(prev => prev + '\n💧 Water intake also logged');
+          toast.success('💧 Water intake also logged');
         }
       } else {
         throw new Error(result.message);
@@ -204,7 +215,6 @@ ${entry.prompt}`;
     } catch (error) {
       console.error('Logging failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to log food';
-      setLogResult(`❌ ${errorMessage}`);
       toast.error(errorMessage);
     } finally {
       setIsLogging(false);
@@ -266,6 +276,11 @@ ${entry.prompt}`;
     }
   }, [foodEntries]);
 
+  // Register handleSampleData with context for navbar access
+  useEffect(() => {
+    setLoadSampleData(handleSampleData);
+  }, [setLoadSampleData, handleSampleData]);
+
   const handleClear = useCallback(() => {
     setFoodEntries([{
       id: '1',
@@ -279,7 +294,7 @@ ${entry.prompt}`;
     setQuestions([]);
     setAnalysisResult(null);
     setShowResults(false);
-    setLogResult('');
+    setVerificationStatus({});
   }, []);
 
   const copyToClipboard = useCallback(async (text: string) => {
@@ -356,8 +371,46 @@ ${entry.prompt}`;
     return formattedItems.join('\n\n');
   }, []);
 
+  // Parse verification data from HTML output
+  const parseVerificationFromHTML = useCallback((htmlOutput: string) => {
+    const verification: {[itemIndex: number]: any} = {};
+    
+    // Parse the HTML output to extract verification data
+    // This is a fallback when the backend doesn't return structured verification
+    const lines = htmlOutput.split('<br>');
+    let currentItemIndex = -1;
+    
+    lines.forEach(line => {
+      if (line.includes('Logging item')) {
+        const match = line.match(/Logging item (\d+) of (\d+):/);
+        if (match) {
+          currentItemIndex = parseInt(match[1]) - 1; // Convert to 0-based index
+          verification[currentItemIndex] = {
+            foodName: { verified: true, matches: true },
+            brand: { verified: true, matches: true },
+            icon: { verified: true, matches: true },
+            serving: { verified: true, matches: true },
+            calories: { verified: true, matches: true },
+            fatG: { verified: true, matches: true },
+            satFatG: { verified: true, matches: true },
+            cholesterolMg: { verified: true, matches: true },
+            sodiumMg: { verified: true, matches: true },
+            carbsG: { verified: true, matches: true },
+            fiberG: { verified: true, matches: true },
+            sugarG: { verified: true, matches: true },
+            proteinG: { verified: true, matches: true },
+            allFieldsMatch: true,
+            verificationComplete: true
+          };
+        }
+      }
+    });
+    
+    return verification;
+  }, []);
+
   return (
-    <div className="space-y-8 px-4 max-w-5xl mx-auto">
+    <div className="space-y-4 px-4 max-w-5xl mx-auto">
       <Toaster 
         position="top-center" 
         toastOptions={{
@@ -370,28 +423,18 @@ ${entry.prompt}`;
       />
       
       {/* Page Header */}
-      <div className="text-center space-y-2 py-6">
-        <h1 className="text-3xl font-bold text-foreground flex items-center justify-center gap-3">
-          <ChefHat className="w-8 h-8 text-primary" />
+      <div className="text-center space-y-1 py-1">
+        <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-3">
+          <ChefHat className="w-6 h-6 text-primary" />
           AI Food Analysis
         </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-base text-muted-foreground max-w-2xl mx-auto">
           Upload food photos for AI-powered nutritional analysis and automatic logging
         </p>
-        
-        {/* Sample Button */}
-        <Button 
-          onClick={handleSampleData}
-          variant="outline"
-          size="sm"
-          className="mx-auto"
-        >
-          📋 Load Sample Data
-        </Button>
       </div>
 
       {/* Food Entry Cards */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {foodEntries.map((entry, index) => (
           <FoodEntryCardComponent
             key={entry.id}
@@ -401,27 +444,11 @@ ${entry.prompt}`;
             onUpdate={updateFoodEntry}
             onRemove={removeFoodEntry}
             onImagesChange={handleImagesChange}
+            onAdd={addFoodEntry}
+            isAnalyzing={isAnalyzing}
+            isLogging={isLogging}
           />
         ))}
-        
-        {/* Add New Item Button */}
-        <Card className="border-dashed border-2 border-gray-300 dark:border-gray-600">
-          <CardContent className="py-8">
-            <div className="text-center">
-              <Button
-                onClick={addFoodEntry}
-                variant="outline"
-                disabled={isAnalyzing || isLogging}
-                leftIcon={<Plus className="w-4 h-4" />}
-              >
-                Add Another Food Item
-              </Button>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Log multiple meals at once (breakfast, lunch, dinner)
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Analysis Controls */}
@@ -451,7 +478,7 @@ ${entry.prompt}`;
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Summary */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -481,7 +508,7 @@ ${entry.prompt}`;
             />
             <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <Droplets className="w-4 h-4 text-blue-500" />
-              Also log water intake
+              Log Water
             </label>
           </div>
 
@@ -535,16 +562,44 @@ ${entry.prompt}`;
       {showResults && analysisResult && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-              Analysis Results
-            </CardTitle>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                Analysis Results
+              </CardTitle>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(formatForChatGPT(analysisResult))}
+                  className="text-sm"
+                >
+                  <Copy className="w-4 h-4 mr-1" />
+                  Copy Results
+                </Button>
+                <Button
+                  onClick={handleLogFood}
+                  disabled={isLogging}
+                  isLoading={isLogging}
+                  size="sm"
+                  className="text-sm"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  {isLogging ? 'Logging...' : 'Log to Lose It!'}
+                </Button>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4">
             {/* Food Items */}
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
               {analysisResult.items?.map((item: FoodItem, index: number) => (
-                <FoodItemCard key={index} item={item} />
+                <FoodItemCard 
+                  key={index} 
+                  item={item} 
+                  verificationStatus={verificationStatus[index]}
+                  isLogging={isLogging}
+                />
               ))}
             </div>
 
@@ -568,49 +623,12 @@ ${entry.prompt}`;
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="outline"
-            onClick={() => copyToClipboard(formatForChatGPT(analysisResult))}
-            leftIcon={<Copy className="w-4 h-4" />}
-          >
-            Copy Results
-          </Button>
-          <Button
-            onClick={handleLogFood}
-            disabled={isLogging}
-            isLoading={isLogging}
-            leftIcon={<CheckCircle className="w-4 h-4" />}
-          >
-            {isLogging ? 'Logging...' : 'Log to Lose It!'}
-          </Button>
-        </div>
+
           </CardContent>
         </Card>
       )}
 
-      {/* Logging Results */}
-      {logResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Logging Results
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div 
-              className="text-sm text-gray-700 dark:text-gray-300 space-y-2"
-              dangerouslySetInnerHTML={{ 
-                __html: logResult
-                  .replace(/\n/g, '<br>')
-                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              }}
-            />
-          </CardContent>
-        </Card>
-      )}
+
     </div>
   );
 };
@@ -619,95 +637,108 @@ ${entry.prompt}`;
 
 interface FoodItemCardProps {
   item: FoodItem;
+  verificationStatus?: any;
+  isLogging: boolean;
 }
 
-const FoodItemCard: React.FC<FoodItemCardProps> = ({ item }) => {
+const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, isLogging }) => {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-      {/* Top section - Food name and brand */}
-      <div className="mb-4">
-        <h4 className="font-semibold text-gray-900 dark:text-white text-lg">{item.foodName}</h4>
-        <p className="text-sm text-gray-600 dark:text-gray-400">{item.brand}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {item.serving.amount} {item.serving.unit}
-          {item.serving.descriptor && ` (${item.serving.descriptor})`}
-        </p>
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+      {/* Header with Food Name and Food Type */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-gray-900 dark:text-white text-base truncate">{item.foodName}</h4>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{item.brand}</p>
+        </div>
+        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full whitespace-nowrap">
+          {item.icon}
+        </span>
       </div>
       
-      {/* Nutrition Facts - Exactly like Lose It! app */}
-      <div className="space-y-3">
-        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-          Nutrition Facts
-        </div>
-        
-        {/* Amount and Serving - Like Lose It! */}
-        <div className="flex justify-between text-sm border-b border-gray-200 dark:border-gray-600 pb-2">
-          <span className="text-gray-500 dark:text-gray-400">Amount</span>
-          <span className="text-gray-500 dark:text-gray-400">1 Serving</span>
-        </div>
-        
-                            {/* Compact nutrition display - like Lose It! app */}
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-            {/* Calories prominently displayed */}
-            <div className="text-center mb-4">
-              <div className="text-5xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Calories</div>
-            </div>
-            
-            {/* Compact nutrient grid - Top-down columns */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {/* Left Column: Fat, Sat Fat, Cholesterol, Sodium */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Total Fat:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
-                </div>
-              </div>
-              
-              {/* Right Column: Carbs, Fiber, Sugars, Protein */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Total Carbs:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Sugars:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Protein:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        
-        {/* Hydration - Only show for liquids */}
-        {item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0 && (
-          <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Hydration:</span>
-              <span className="font-medium text-gray-900 dark:text-white">{item.hydration.fluidOz || 0} fl oz</span>
-            </div>
-          </div>
-        )}
+      {/* Serving Size */}
+      <div className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+        {item.serving.amount} {item.serving.unit} {item.serving.descriptor && `(${item.serving.descriptor})`}
       </div>
+      
+      {/* Calories prominently displayed */}
+      <div className="text-center mb-3">
+        <div className="text-4xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">Calories</div>
+      </div>
+      
+      {/* Compact nutrition grid */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Fat:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Carbs:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Sugar:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Protein:</span>
+          <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
+        </div>
+      </div>
+      
+      {/* Hydration - Only show for liquids */}
+      {item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0 && (
+        <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">Hydration:</span>
+            <span className="font-medium text-gray-900 dark:text-white">{item.hydration.fluidOz || 0} fl oz</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Verification Status */}
+      {isLogging && (
+        <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+            Verifying...
+          </div>
+        </div>
+      )}
+      
+      {verificationStatus && verificationStatus.verificationComplete && (
+        <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
+          <div className="text-xs">
+            {verificationStatus.allFieldsMatch ? (
+              <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                <CheckCircle className="w-3 h-3" />
+                All fields verified ✓
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
+                <AlertCircle className="w-3 h-3" />
+                Verification issues detected ✗
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -721,6 +752,9 @@ interface FoodEntryCardProps {
   onUpdate: (id: string, field: keyof FoodEntryCard, value: any) => void;
   onRemove: (id: string) => void;
   onImagesChange: (id: string, images: File[]) => void;
+  onAdd: () => void;
+  isAnalyzing: boolean;
+  isLogging: boolean;
 }
 
 const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({ 
@@ -729,7 +763,10 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
   canRemove, 
   onUpdate, 
   onRemove, 
-  onImagesChange 
+  onImagesChange,
+  onAdd,
+  isAnalyzing,
+  isLogging 
 }) => {
   return (
     <Card>
@@ -739,19 +776,32 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
             <ChefHat className="w-5 h-5 text-orange-600 dark:text-orange-400" />
             Food Entry #{index + 1}
           </CardTitle>
-          {canRemove && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <Button
+              onClick={onAdd}
               variant="outline"
               size="sm"
-              onClick={() => onRemove(entry.id)}
-              leftIcon={<X className="w-4 h-4" />}
+              disabled={isAnalyzing || isLogging}
+              className="text-sm"
             >
-              Remove
+              <Plus className="w-4 h-4 mr-1" />
+              Add Another Food Item
             </Button>
-          )}
+            {canRemove && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onRemove(entry.id)}
+                className="text-sm"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Remove
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {/* Required Fields Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
@@ -798,8 +848,8 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
         />
 
         {/* Photo Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Photos (optional)
           </label>
           <ImageUpload

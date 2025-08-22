@@ -9,12 +9,58 @@ import { AuthCallback } from './pages/AuthCallback'
 import FoodLogPage from './pages/FoodLogPage'
 import ManualPage from './pages/ManualPage'
 import { ThemeProvider } from './components/ThemeProvider'
+import { createContext, useContext, useState } from 'react'
+
+// Create a context for sample data loading
+const SampleDataContext = createContext<{
+  loadSampleData: () => void;
+  setLoadSampleData: (fn: () => void) => void;
+}>({
+  loadSampleData: () => {},
+  setLoadSampleData: () => {},
+});
+
+export const useSampleData = () => useContext(SampleDataContext);
+
+
+// Provider component
+function SampleDataProvider({ children }: { children: React.ReactNode }) {
+  const [loadSampleDataFn, setLoadSampleDataFn] = useState<(() => void) | null>(null);
+
+  const loadSampleData = () => {
+    if (loadSampleDataFn) {
+      loadSampleDataFn();
+    }
+  };
+
+  const setLoadSampleData = (fn: () => void) => {
+    setLoadSampleDataFn(() => fn);
+  };
+
+  return (
+    <SampleDataContext.Provider value={{ loadSampleData, setLoadSampleData }}>
+      {children}
+    </SampleDataContext.Provider>
+  );
+}
+
+// Wrapper component for dashboard to handle sample data loading
+function DashboardWrapper() {
+  const { loadSampleData } = useSampleData();
+  
+  return (
+    <Layout onLoadSample={loadSampleData}>
+      <FoodLogPage />
+    </Layout>
+  );
+}
 
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="foodlog-theme">
       <BrowserRouter>
         <AuthProvider>
+          <SampleDataProvider>
           <Routes>
             {/* Public */}
             <Route path="/login" element={<LoginPage />} />
@@ -25,7 +71,7 @@ function App() {
               path="/dashboard"
               element={
                 <RequireAuth>
-                  <Layout><FoodLogPage /></Layout>
+                  <DashboardWrapper />
                 </RequireAuth>
               }
             />
@@ -42,6 +88,7 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to={window.location.pathname.toLowerCase()} replace />} />
           </Routes>
+          </SampleDataProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

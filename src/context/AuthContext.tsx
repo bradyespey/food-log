@@ -43,51 +43,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS?.split(',') || [];
 
   useEffect(() => {
-    // Set loading to false immediately to show UI faster
-    setLoading(false);
-    
     // Add online/offline event listeners
     const handleOnline = () => {
-      console.log('Browser is online');
       setIsOnline(true);
     };
     
     const handleOffline = () => {
-      console.log('Browser is offline');
       setIsOnline(false);
     };
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
-    // Initialize Firebase auth after a larger delay
-    const timer = setTimeout(() => {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user && allowedEmails.includes(user.email || '')) {
-          setSession({
-            user: {
-              id: user.uid,
-              email: user.email || '',
-            },
-            isAuthenticated: true,
-          });
-          await handleUserDocument(user);
-        } else {
-          setSession(defaultSession);
-          setUserRole(null);
-          if (user) {
-            // User not authorized
-            alert('Access denied. You are not authorized to use this application.');
-            await firebaseSignOut(auth);
-          }
+    // Initialize Firebase auth immediately
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && allowedEmails.includes(user.email || '')) {
+        setSession({
+          user: {
+            id: user.uid,
+            email: user.email || '',
+          },
+          isAuthenticated: true,
+        });
+        // Handle user document in background, don't block loading
+        handleUserDocument(user);
+      } else {
+        setSession(defaultSession);
+        setUserRole(null);
+        if (user) {
+          // User not authorized
+          alert('Access denied. You are not authorized to use this application.');
+          await firebaseSignOut(auth);
         }
-      });
+      }
+      // Set loading to false immediately after auth state is determined
+      setLoading(false);
+    });
 
-      return unsubscribe;
-    }, 1000); // Larger delay to let page fully render
+    return unsubscribe;
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
@@ -100,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Check if we're online before attempting Firestore operations
       if (!navigator.onLine) {
-        console.log('Offline - skipping Firestore operations');
         setUserRole('admin'); // Default to admin when offline
         return;
       }
@@ -138,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             errorMessage.includes('permission') ||
             errorMessage.includes('unavailable') ||
             errorMessage.includes('timeout')) {
-          console.log('Firestore temporarily unavailable:', errorMessage);
+          // Firestore temporarily unavailable - continue silently
         } else {
           console.error('Error handling user document:', error);
         }

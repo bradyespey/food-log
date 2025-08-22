@@ -1,7 +1,7 @@
 //src/pages/FoodLogPage.tsx
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, Plus, X } from 'lucide-react';
+import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, Plus, X, Clipboard } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -104,11 +104,7 @@ ${entry.prompt}`;
         return [...acc, ...validImages];
       }, []);
 
-      console.log('Image validation:', {
-        totalImages: validEntries.reduce((sum, entry) => sum + entry.images.length, 0),
-        validImages: allImages.length,
-        invalidImages: validEntries.reduce((sum, entry) => sum + entry.images.length, 0) - allImages.length
-      });
+
 
       // Use the first entry's date and meal, or combine if multiple
       const firstEntry = validEntries[0];
@@ -117,13 +113,7 @@ ${entry.prompt}`;
       
       // Don't override individual brands with 'Multiple' - let AI use actual brand names
 
-      console.log('Analysis request:', {
-        prompt: combinedPrompt,
-        imageCount: allImages.length,
-        date: firstEntry.date,
-        meal: meal,
-        brand: firstEntry.brand, // Use actual brand name, not 'Multiple'
-      });
+
 
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
@@ -302,10 +292,7 @@ ${entry.prompt}`;
       await navigator.clipboard.writeText(text);
       toast.success('Copied to clipboard!');
       
-      // Debug: Log what's being sent to clipboard
-      console.log('=== COPIED TO CLIPBOARD ===');
-      console.log(text);
-      console.log('=== END CLIPBOARD ===');
+
     } catch (error) {
       console.error('Failed to copy:', error);
       toast.error('Failed to copy to clipboard');
@@ -447,80 +434,37 @@ ${entry.prompt}`;
             onAdd={addFoodEntry}
             isAnalyzing={isAnalyzing}
             isLogging={isLogging}
+            isLastCard={index === foodEntries.length - 1}
+            validEntries={validEntries}
+            isFormValid={isFormValid}
+            onAnalyze={handleAnalyze}
+            onClear={handleClear}
           />
         ))}
       </div>
 
-      {/* Analysis Controls */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Analysis Controls
-            </CardTitle>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleClear}
-                disabled={isAnalyzing || isLogging}
-              >
-                Clear All
-              </Button>
-              <Button
-                onClick={handleAnalyze}
-                disabled={!isFormValid || isAnalyzing || isLogging}
-                isLoading={isAnalyzing}
-                leftIcon={<Sparkles className="w-4 h-4" />}
-              >
-                {isAnalyzing ? 'Analyzing...' : `Analyze ${validEntries.length} Item${validEntries.length !== 1 ? 's' : ''}`}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Summary */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-blue-800 dark:text-blue-200">Entries:</span>
-                <span className="ml-2 text-blue-700 dark:text-blue-300">{foodEntries.length} card{foodEntries.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-800 dark:text-blue-200">Valid:</span>
-                <span className="ml-2 text-blue-700 dark:text-blue-300">{validEntries.length} ready to analyze</span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-800 dark:text-blue-200">Photos:</span>
-                <span className="ml-2 text-blue-700 dark:text-blue-300">{totalImages} image{totalImages !== 1 ? 's' : ''}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Log Water Toggle */}
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              id="logWater"
-              checked={logWater}
-              onChange={(e) => setLogWater(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <Droplets className="w-4 h-4 text-blue-500" />
-              Log Water
-            </label>
-          </div>
-
-          {/* Cost Estimate */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <DollarSign className="w-4 h-4" />
-              Estimated cost: ${estimatedCost.toFixed(4)}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Log Water Row */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            id="logWater"
+            checked={logWater}
+            onChange={(e) => setLogWater(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <Droplets className="w-4 h-4 text-blue-500" />
+            Log Water
+          </label>
+        </div>
+        
+        {/* Cost Estimate - moved to bottom right */}
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <DollarSign className="w-4 h-4" />
+          Estimated cost: ${estimatedCost.toFixed(4)}
+        </div>
+      </div>
 
       {/* Questions from AI */}
       {questions.length > 0 && (
@@ -755,6 +699,11 @@ interface FoodEntryCardProps {
   onAdd: () => void;
   isAnalyzing: boolean;
   isLogging: boolean;
+  isLastCard: boolean;
+  validEntries: FoodEntryCard[];
+  isFormValid: boolean;
+  onAnalyze: () => void;
+  onClear: () => void;
 }
 
 const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({ 
@@ -766,7 +715,12 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
   onImagesChange,
   onAdd,
   isAnalyzing,
-  isLogging 
+  isLogging,
+  isLastCard,
+  validEntries,
+  isFormValid,
+  onAnalyze,
+  onClear
 }) => {
   return (
     <Card>
@@ -849,31 +803,94 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
 
         {/* Photo Upload */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Photos (optional)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Photos (optional)
+            </label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const clipboardItems = await navigator.clipboard.read();
+                  
+                  for (const clipboardItem of clipboardItems) {
+                    for (const type of clipboardItem.types) {
+                      if (type.startsWith('image/')) {
+                        const blob = await clipboardItem.getType(type);
+                        const file = new File([blob], `clipboard-image-${Date.now()}.png`, { type });
+                        
+                        if (entry.images.length < 5) {
+                          onImagesChange(entry.id, [...entry.images, file]);
+                          toast.success('Image pasted from clipboard!');
+                          return;
+                        } else {
+                          toast.error('Maximum 5 images allowed');
+                          return;
+                        }
+                      }
+                    }
+                  }
+                  
+                  toast.error('No images found in clipboard');
+                } catch (error) {
+                  toast.error('Failed to paste from clipboard. Please try copying the image again.');
+                }
+              }}
+              disabled={isAnalyzing || isLogging || entry.images.length >= 5}
+              className="text-xs"
+            >
+              <Clipboard className="w-3 h-3 mr-1" />
+              Paste
+            </Button>
+          </div>
           <ImageUpload
             onImagesChange={(images) => onImagesChange(entry.id, images)}
             images={entry.images}
             maxImages={5}
             maxSizeBytes={10 * 1024 * 1024}
+            disabled={isAnalyzing || isLogging}
           />
         </div>
 
-        {/* Entry Status */}
+        {/* Entry Status and Analysis Controls for the last card */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-4 text-sm">
-            <div className={`flex items-center gap-2 ${
-              entry.date && entry.meal && entry.brand && entry.prompt 
-                ? 'text-green-600 dark:text-green-400' 
-                : 'text-gray-500 dark:text-gray-400'
-            }`}>
-              <CheckCircle className="w-4 h-4" />
-              {entry.date && entry.meal && entry.brand && entry.prompt ? 'Ready to analyze' : 'Incomplete'}
+          <div className="flex items-center justify-between">
+            {/* Status on the left */}
+            <div className="flex items-center gap-4 text-sm">
+              <div className={`flex items-center gap-2 ${
+                entry.date && entry.meal && entry.brand && entry.prompt 
+                  ? 'text-green-600 dark:text-green-400' 
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                <CheckCircle className="w-4 h-4" />
+                {entry.date && entry.meal && entry.brand && entry.prompt ? 'Ready to analyze' : 'Incomplete'}
+              </div>
+              {entry.images.length > 0 && (
+                <div className="text-blue-600 dark:text-blue-400">
+                  📷 {entry.images.length} photo{entry.images.length !== 1 ? 's' : ''}
+                </div>
+              )}
             </div>
-            {entry.images.length > 0 && (
-              <div className="text-blue-600 dark:text-blue-400">
-                📷 {entry.images.length} photo{entry.images.length !== 1 ? 's' : ''}
+
+            {/* Analysis Controls on the right for the last card */}
+            {isLastCard && (
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={onClear}
+                  disabled={isAnalyzing || isLogging}
+                >
+                  Clear All
+                </Button>
+                <Button
+                  onClick={onAnalyze}
+                  disabled={!isFormValid || isAnalyzing || isLogging}
+                  isLoading={isAnalyzing}
+                  leftIcon={<Sparkles className="w-4 h-4" />}
+                >
+                  {isAnalyzing ? 'Analyzing...' : `Analyze ${validEntries.length} Item${validEntries.length !== 1 ? 's' : ''}`}
+                </Button>
               </div>
             )}
           </div>

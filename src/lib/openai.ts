@@ -384,7 +384,6 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
     
     // If parsing failed and we got 0 values, use fallback
     if (items.length > 0 && items.every(item => item.calories === 0)) {
-      console.log('AI returned 0 values, using fallback parsing');
       const fallbackItems = createFallbackItems(aiResponse, request);
       return {
         items: fallbackItems,

@@ -9,7 +9,7 @@ import { AuthCallback } from './pages/AuthCallback'
 import FoodLogPage from './pages/FoodLogPage'
 import ManualPage from './pages/ManualPage'
 import { ThemeProvider } from './components/ThemeProvider'
-import { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState } from 'react'
 
 // Create a context for sample data loading
 const SampleDataContext = createContext<{
@@ -55,6 +55,15 @@ function DashboardWrapper() {
   );
 }
 
+// Wrapper component for manual page to handle sample data loading
+function ManualWrapper() {
+  return (
+    <Layout onLoadSample={() => {}}>
+      <ManualPage />
+    </Layout>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="foodlog-theme">
@@ -79,14 +88,14 @@ function App() {
               path="/manual"
               element={
                 <RequireAuth>
-                  <Layout><ManualPage /></Layout>
+                  <ManualWrapper />
                 </RequireAuth>
               }
             />
 
             {/* Redirects */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to={window.location.pathname.toLowerCase()} replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
           </SampleDataProvider>
         </AuthProvider>

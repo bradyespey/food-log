@@ -6,7 +6,7 @@ interface OpenAIAnalysisRequest {
   prompt: string;
   images: File[];
   date: string;
-  meal: string;
+  meal: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
   brand: string;
 }
 
@@ -125,13 +125,21 @@ Brand/Restaurant: ${params.brand}
 Food Description: ${params.user_prompt}
 Photos available: ${params.photos_present_boolean}
 
+CRITICAL ANALYSIS REQUIREMENTS:
+- ALWAYS carefully examine ALL photos if provided. Photos show actual portions, plate/glass sizes, garnishes, rims, sides, etc.
+- FOLLOW USER SPECIFICATIONS EXACTLY. If they mention specific details (like "tajin on the rim", "had 2 drinks", "half the hummus"), include those in your nutritional calculations.
+- When photos are provided, estimate serving sizes based on visual cues: plate size, glass size, portion relative to utensils, etc.
+- For drinks with photos: estimate liquid volume excluding ice (ice takes ~30-40% of glass volume typically)
+- Pay attention to ALL visible elements: garnishes, salt/spice rims, sides, condiments, etc.
+- User context: 6'1" 200lb male - use this for portion context when photos aren't available
+
 Behavior
 - Use the provided Date, Meal, and Brand/Restaurant as given.
 - Only ask for clarification if both of these are true:
   1) the description is very unclear or contradictory, and
   2) the photos do not add enough context to identify the item or a reasonable serving estimate.
 - Otherwise, make confident, reasonable estimates. Do not ask for exact measurements.
-- Prefer visual estimation from photos. When unclear, use typical restaurant standards.
+- PHOTOS ALWAYS OVERRIDE text-only estimates. If photos show food, estimate based on what you see.
 - For restaurant items, use your knowledge of standard menu portions and nutritional data from that restaurant.
 - You may use web search to look up restaurant menus and nutrition references, but never include links, citations, or notes in the output. Return only the schema fields.
 - Base serving size and calories on what is shown. If you scale calories up or down, scale macros proportionally.
@@ -144,6 +152,13 @@ Behavior
 - Icon suggestions: Hummus → "Dip", Bread → "Bread", Steak → "Beef", Mocktail → "Mixed Drink", Salad → "Salad", etc.
 - Fields must never be empty for Food Name, Date, Meal, Brand, Serving Size, Calories.
 - Values must be numbers only, with units exactly as shown in the schema labels. No parentheticals or extra words.
+
+SPECIAL ATTENTION TO USER SPECIFICATIONS:
+- Salt/spice rims (tajin, salt, etc.): add 200-400mg sodium per drink
+- "Had 2 drinks": multiply everything by 2 for that item
+- "Half the hummus": use 0.5 serving size
+- Specific brand callouts: use exact nutrition if known
+- Visual portion cues: small/large plates, glass sizes, relative to hands/utensils
 
 Allowed serving guidance
 - Countable items: use Each (e.g., "3 tacos" = "3 each")
@@ -246,8 +261,8 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
             {
               type: 'text',
               text: request.images.length > 0 
-                ? `Analyze the food shown in the images: ${request.prompt}`
-                : `Analyze this food description: ${request.prompt}`,
+                ? `ANALYZE THE FOOD SHOWN IN THE ${request.images.length} IMAGE(S). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Estimate volumes based on visual cues. User description: ${request.prompt}`
+                : `Analyze this food description (no photos provided, estimate based on context for 6'1" 200lb male): ${request.prompt}`,
             },
             ...compressedImages.map(imageData => ({
               type: 'image_url',
@@ -481,6 +496,13 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
     const foodName = extractValue([/Food Name:\s*(.+)/i, /Item.*:\s*(.+)/i, /^(.+?):/i], 'Unknown Food');
     if (foodName === 'Unknown Food' || foodName === '') return null;
     
+    // Extract date and meal from the AI response
+    const date = extractValue([/Date:\s*(.+)/i], request.date);
+    const extractedMeal = extractValue([/Meal:\s*(.+)/i], request.meal);
+    const meal = (extractedMeal === 'Breakfast' || extractedMeal === 'Lunch' || extractedMeal === 'Dinner' || extractedMeal === 'Snacks') 
+      ? extractedMeal 
+      : request.meal as 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
+    
     // Extract serving size with better pattern matching
     const servingSizeLine = lines.find(line => line.startsWith('Serving Size:'));
     let servingAmount = 1;
@@ -497,6 +519,8 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
     
     return {
       foodName: foodName.substring(0, 60), // Limit to 60 chars as per spec
+      date: date,
+      meal: meal,
       brand: request.brand,
       icon: extractValue([/Icon:\s*(.+)/i], 'Default'),
       serving: {
@@ -531,6 +555,8 @@ const createFallbackItem = (_response: string, request: OpenAIAnalysisRequest): 
   // Create a basic item from whatever information we can extract
   return {
     foodName: request.prompt.substring(0, 60) || 'Unknown Food',
+    date: request.date,
+    meal: request.meal,
     brand: request.brand,
     icon: 'Default',
     serving: {
@@ -570,6 +596,8 @@ const createFallbackItems = (_response: string, request: OpenAIAnalysisRequest):
     if (prompt.includes(food)) {
       items.push({
         foodName: food.charAt(0).toUpperCase() + food.slice(1),
+        date: request.date,
+        meal: request.meal,
         brand: request.brand,
         icon: 'Default',
         serving: { amount: 1, unit: 'portion', descriptor: '' },

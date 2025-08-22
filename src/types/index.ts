@@ -16,6 +16,8 @@ export interface Session {
 
 export interface FoodItem {
   foodName: string;
+  date: string;
+  meal: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
   brand: string;
   icon: string;
   serving: {

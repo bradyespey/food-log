@@ -1,7 +1,7 @@
 //src/pages/FoodLogPage.tsx
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, Plus, X, Clipboard } from 'lucide-react';
+import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, Plus, X, Clipboard, Calendar, Clock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -588,11 +588,21 @@ interface FoodItemCardProps {
 const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, isLogging }) => {
   return (
     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-      {/* Header with Food Name and Food Type */}
+      {/* Header with Food Name, Date, Meal, and Food Type */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold text-gray-900 dark:text-white text-base truncate">{item.foodName}</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{item.brand}</p>
+          <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {item.date}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {item.meal}
+            </span>
+            <span>{item.brand}</span>
+          </div>
         </div>
         <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full whitespace-nowrap">
           {item.icon}

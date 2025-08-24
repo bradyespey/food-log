@@ -26,6 +26,226 @@ const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams,
 
 const ICON_LIST = "Alcohol; Alcohol, White; Almond; Almond Butter; Apple; Apple Sauce; Apple, Gala; Apple, Granny Smith; Apple, Honey Crisp; Apple, Macintosh; Artichoke; Asparagus; Avocado; Bacon; Bagel; Bagel, Blueberry; Bagel, Chocolate Chip; Bagel, Sesame; Baguette; Baked Beans; Balsamic Vinaigrette; Bamboo; Banana; Banana Pepper; Bar; Bean, Black; Bean, Green; Bean, Red; Bean, White; Beef; Beer; BeerDark; Beet; Bell Pepper, Green; Bell Pepper, Red; Bell Pepper, Yellow; Biscuit; Biscuit Cracker; Blackberry; Blueberry; Breadsticks; Breakfast; Breakfast Sandwich; Broccoli; Brownie; Brussels Sprout; Burrito; Butter; Cabbage; Cake; CakeDark; CakeWhite; CakeWhiteDark; Calamari; Calories; Can; Candy; Candy Bar; Carrot; Carrots; Cashew; Casserole; Cauliflower; Celery; Cereal; Cereal Bar; CerealCheerios; CerealCornFlakes; CerealFruitLoops; Cheese; CheeseAmerican; CheeseBlue; CheeseBrie; Cheeseburger; Cheesecake; CheeseCheddar; CheeseGouda; CheesePepperjack; Cherry; CherryMaraschino; Chestnut; Chicken; Chicken Tenders; ChickenGrilled; ChickenWing; Chickpea; Chocolate; Chocolate Chip; Chocolate Chips; ChocolateDark; Churro; Cider; Cinnamon Roll; Clam; Coconut; Coffee; Coleslaw; Com; Combread; Cookie; Cookie, Christmas; Cookie, Molasses; Cookie, Red Velvet; Cookie, Sugar; Cottage Cheese; Crab; Cracker; Cranberry; Cream; Croissant; Crouton; Crumpet; Cucumber; Cupcake; Cupcake, Carrot; Cupcake, Vanilla; Curry; Date; Default; Deli Meat; Dinner Roll; Dip, Green; Dip, Red; Dish; Donut; Donut, Chocolate Iced; Donut, Strawberry Iced; DoubleCheeseburger; Dressing, Ranch; Dumpling; Eclair; Egg; Egg McMuffin; Egg Roll; Eggplant; Enchilada; Falafel; Fern; Fig; Filbert; Fish; Food, Can; Fowl; French Fries; French Toast; Fritter; Frosting, Chocolate; Frosting, Yellow; Fruit Cocktail; Fruit Leather; FruitCake; Game; Garlic; Gobo Root; Gourd; Graham Cracker; Grain; Grapefruit; Grapes; Grilled Cheese; Guava; Gummy Bear; Hamburger; Hamburger Bun; Hamburger Patty; Hamburger, Double; Hash; Hazelnut; Honey; Horseradish; Hot Dog; Hot Dog Bun; Hot Pot; Ice Cream; Ice Cream Bar; Ice Cream Sandwich; Ice Cream, Chocolate; Ice Cream, Strawberry; Iced Coffee; Iced Tea; Jam; Jicama; Juice; Kale; Kebab; Ketchup; Kiwi; Lamb; Lasagna; Latte; Leeks; Lemon; Lemonade; Lime; Liquid; Lobster; Mac And Cheese; Macadamia; Mango; Marshmallow; Mayonnaise; Meatballs; Melon; Milk; Milk Shake; Milk Shake, Chocolate; Milk Shake, Strawberry; Mixed Drink; Mixed Drink, Martini; Mixed Nuts; Muffin; Mushroom; Mustard; Nigiri Sushi; Oatmeal; Octopus; Oil; Okra; Olive, Black; Olive, Green; Omelette; Onion; Orange; Orange Chicken; Orange Juice; Pancakes; Papaya; Parfait; Parsley; Parsnip; Pasta; Pastry; Patty Sandwich; Pavlova; Peach; Peanut; Peanut Butter; Pear; Peas; Pecan; Peppers; Persimmon; Pickle; Pie; Pie, Apple; Pill; Pine Nut; Pineapple; Pistachio; Pita Sandwich; Pizza; Plum; Pocky; Pomegranate; Popcom; Popsicle; Pork; Pork Chop; Pot Pie; Potato; Potato Chip; Potato Salad; Powdered Drink; Prawn; Pretzel; Prune; Pudding; Pumpkin; Quesadilla; Quiche; Radish; Raisin; Raspberry; Ravioli; Recipe; Relish; Rhubarb; Ribs; Rice; Rice Cake; Roll; Romaine Lettuce; Salad; Salad Dressing, Balsamic; Salt; Sandwich; Sauce; Sausage; Seaweed; Seed; Shallot; Shrimp; Smoothie; Snack; Snap Bean; Soft Drink; SoftServeChocolate; SoftServeSwirl; SoftServeVanilla; Souffle; Soup; Sour Cream; Soy Nut; Soy Sauce; Spice, Brown; Spice, Green; Spice, Red; Spice, Yellow; Spinach; Spring Roll; Sprouts; Squash; Squash, Spaghetti; Starfruit; Stew, Brown; Stew, Yellow; Stir Fry; Stir Fry Noodles; Strawberry; Stuffing; Sub Sandwich; Sugar Cookie; Sugar, Brown; Sugar, White; Sushi; Syrup; Taco; Taro; Tater Tots; Tea; Tempura; Toast; Toaster Pastry; Tofu; Tomato; Tomato Soup; Tortilla; Tortilla Chip; Tostada; Turkey; Turnip; Turnover; Vegetable; Waffles; Walnut; Water; Water Chestnut; Watermelon; White Bread; Wine, Red; Wine, White; Wrap; Yam; Yogurt; Zucchini";
 
+// Food name to icon mapping for common items not in ICON_LIST
+const FOOD_ICON_MAPPING: Record<string, string> = {
+  'bread': 'Breadsticks',
+  'house bread': 'Breadsticks',
+  'sourdough': 'Breadsticks',
+  'rye bread': 'Breadsticks',
+  'wheat bread': 'Breadsticks',
+  'white bread': 'White Bread',
+  'whole wheat': 'Breadsticks',
+  'baguette': 'Baguette',
+  'roll': 'Roll',
+  'dinner roll': 'Dinner Roll',
+  'toast': 'Toast',
+  'sandwich': 'Sandwich',
+  'burger': 'Hamburger',
+  'hamburger': 'Hamburger',
+  'cheeseburger': 'Cheeseburger',
+  'pizza': 'Pizza',
+  'pasta': 'Pasta',
+  'rice': 'Rice',
+  'salad': 'Salad',
+  'soup': 'Soup',
+  'steak': 'Beef',
+  'beef': 'Beef',
+  'chicken': 'Chicken',
+  'fish': 'Fish',
+  'pork': 'Pork',
+  'lamb': 'Lamb',
+  'turkey': 'Turkey',
+  'eggs': 'Egg',
+  'egg': 'Egg',
+  'bacon': 'Bacon',
+  'sausage': 'Sausage',
+  'ham': 'Deli Meat',
+  'deli meat': 'Deli Meat',
+  'cheese': 'Cheese',
+  'milk': 'Milk',
+  'yogurt': 'Yogurt',
+  'ice cream': 'Ice Cream',
+  'cake': 'Cake',
+  'cookie': 'Cookie',
+  'pie': 'Pie',
+  'donut': 'Donut',
+  'muffin': 'Muffin',
+  'croissant': 'Croissant',
+  'apple': 'Apple',
+  'banana': 'Banana',
+  'orange': 'Orange',
+  'grape': 'Grapes',
+  'strawberry': 'Strawberry',
+  'blueberry': 'Blueberry',
+  'carrot': 'Carrot',
+  'broccoli': 'Broccoli',
+  'spinach': 'Spinach',
+  'potato': 'Potato',
+  'french fries': 'French Fries',
+  'chips': 'Potato Chip',
+  'potato chips': 'Potato Chip',
+  'nuts': 'Mixed Nuts',
+  'almond': 'Almond',
+  'peanut': 'Peanut',
+  'peanut butter': 'Peanut Butter',
+  'hummus': 'Dip, Green',
+  'dip': 'Dip, Green',
+  'sauce': 'Sauce',
+  'dressing': 'Salad Dressing, Balsamic',
+  'drink': 'Mixed Drink',
+  'cocktail': 'Mixed Drink',
+  'mocktail': 'Mixed Drink',
+  'beer': 'Beer',
+  'wine': 'Wine, Red',
+  'coffee': 'Coffee',
+  'tea': 'Tea',
+  'juice': 'Juice',
+  'smoothie': 'Smoothie',
+  'water': 'Water',
+};
+
+// Validate and normalize icon to ensure it's in ICON_LIST
+function validateIcon(icon: string, foodName: string): string {
+  const iconList = ICON_LIST.split('; ').map(i => i.trim());
+  
+  // First, try exact match
+  if (iconList.includes(icon)) {
+    return icon;
+  }
+  
+  // Try case-insensitive match
+  const lowerIcon = icon.toLowerCase();
+  const exactMatch = iconList.find(i => i.toLowerCase() === lowerIcon);
+  if (exactMatch) {
+    return exactMatch;
+  }
+  
+  // Try partial match (e.g., "Bread" matches "Breadsticks")
+  const partialMatch = iconList.find(i => i.toLowerCase().includes(lowerIcon) || lowerIcon.includes(i.toLowerCase()));
+  if (partialMatch) {
+    return partialMatch;
+  }
+  
+  // Use food name mapping as fallback
+  const lowerFoodName = foodName.toLowerCase();
+  for (const [food, mappedIcon] of Object.entries(FOOD_ICON_MAPPING)) {
+    if (lowerFoodName.includes(food) || food.includes(lowerFoodName)) {
+      return mappedIcon;
+    }
+  }
+  
+  // Final fallback to most appropriate icon based on food name
+  if (lowerFoodName.includes('bread') || lowerFoodName.includes('roll') || lowerFoodName.includes('toast')) {
+    return 'Breadsticks';
+  }
+  if (lowerFoodName.includes('meat') || lowerFoodName.includes('beef') || lowerFoodName.includes('steak')) {
+    return 'Beef';
+  }
+  if (lowerFoodName.includes('chicken')) {
+    return 'Chicken';
+  }
+  if (lowerFoodName.includes('fish') || lowerFoodName.includes('seafood')) {
+    return 'Fish';
+  }
+  if (lowerFoodName.includes('drink') || lowerFoodName.includes('cocktail') || lowerFoodName.includes('mocktail')) {
+    return 'Mixed Drink';
+  }
+  if (lowerFoodName.includes('salad')) {
+    return 'Salad';
+  }
+  if (lowerFoodName.includes('soup')) {
+    return 'Soup';
+  }
+  if (lowerFoodName.includes('pizza')) {
+    return 'Pizza';
+  }
+  if (lowerFoodName.includes('pasta')) {
+    return 'Pasta';
+  }
+  if (lowerFoodName.includes('rice')) {
+    return 'Rice';
+  }
+  if (lowerFoodName.includes('dip') || lowerFoodName.includes('hummus')) {
+    return 'Dip, Green';
+  }
+  
+  // Default fallback
+  return 'Default';
+}
+
+// Validate and normalize serving type to ensure it's in SERVING_TYPES
+function validateServingType(servingUnit: string): string {
+  const servingTypes = SERVING_TYPES.split('; ').map(s => s.trim());
+  
+  // Normalize common variations
+  const normalizedUnit = servingUnit.toLowerCase().trim();
+  
+  // Direct matches
+  if (servingTypes.some(s => s.toLowerCase() === normalizedUnit)) {
+    return servingTypes.find(s => s.toLowerCase() === normalizedUnit)!;
+  }
+  
+  // Common variations mapping
+  const unitMapping: Record<string, string> = {
+    'each': 'Each',
+    'piece': 'Piece',
+    'pieces': 'Piece',
+    'slice': 'Slice',
+    'slices': 'Slice',
+    'cup': 'Cups',
+    'cups': 'Cups',
+    'tablespoon': 'Tablespoons',
+    'tablespoons': 'Tablespoons',
+    'tbsp': 'Tablespoons',
+    'teaspoon': 'Teaspoons',
+    'teaspoons': 'Teaspoons',
+    'tsp': 'Teaspoons',
+    'ounce': 'Ounces',
+    'ounces': 'Ounces',
+    'oz': 'Ounces',
+    'fluid ounce': 'Fluid Ounce',
+    'fluid ounces': 'Fluid Ounce',
+    'fl oz': 'Fluid Ounce',
+    'gram': 'Grams',
+    'grams': 'Grams',
+    'g': 'Grams',
+    'pound': 'Pounds',
+    'pounds': 'Pounds',
+    'lb': 'Pounds',
+    'serving': 'Serving',
+    'servings': 'Serving',
+    'portion': 'Serving',
+    'portions': 'Serving',
+    'bottle': 'Bottle',
+    'bottles': 'Bottle',
+    'can': 'Can',
+    'cans': 'Can',
+    'container': 'Container',
+    'containers': 'Container',
+    'package': 'Package',
+    'packages': 'Package',
+    'jar': 'Jar',
+    'jars': 'Jar',
+    'box': 'Box',
+    'boxes': 'Box',
+  };
+  
+  // Try mapping
+  if (unitMapping[normalizedUnit]) {
+    return unitMapping[normalizedUnit];
+  }
+  
+  // Try partial matches
+  for (const [variant, standard] of Object.entries(unitMapping)) {
+    if (normalizedUnit.includes(variant) || variant.includes(normalizedUnit)) {
+      return standard;
+    }
+  }
+  
+  // Default to "Each" for countable items, "Serving" for others
+  return 'Each';
+}
+
 // Image compression utility
 const compressImage = async (file: File): Promise<string> => {
   return new Promise((resolve) => {
@@ -148,8 +368,10 @@ Behavior
 - Output must be plain text only. No bullets, numbering, bold, or extra notes.
 - List each food item as a separate full block. Separate items with a single blank line.
 - Serving Size must use exactly one allowed serving type from the SERVING_TYPES list.
+- CRITICAL: Only use serving types that exist in the SERVING_TYPES list. Common examples: "Each", "Piece", "Slice", "Cups", "Ounces", "Fluid Ounce", "Grams", "Serving".
 - Icon must be exactly one value from the ICON_LIST. Never use "Default" - pick the most appropriate icon based on the food type.
-- Icon suggestions: Hummus → "Dip", Bread → "Bread", Steak → "Beef", Mocktail → "Mixed Drink", Salad → "Salad", etc.
+- Icon suggestions: Hummus → "Dip, Green", Bread → "Breadsticks", Steak → "Beef", Mocktail → "Mixed Drink", Salad → "Salad", etc.
+- CRITICAL: Only use icons that exist in the ICON_LIST. If unsure, use the closest match.
 - Fields must never be empty for Food Name, Date, Meal, Brand, Serving Size, Calories.
 - Values must be numbers only, with units exactly as shown in the schema labels. No parentheticals or extra words.
 
@@ -522,10 +744,10 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
       date: date,
       meal: meal,
       brand: request.brand,
-      icon: extractValue([/Icon:\s*(.+)/i], 'Default'),
+      icon: validateIcon(extractValue([/Icon:\s*(.+)/i], 'Default'), foodName),
       serving: {
         amount: servingAmount,
-        unit: servingUnit,
+        unit: validateServingType(servingUnit),
         descriptor: extractValue([/Serving Size:.*?\((.+?)\)/i], ''),
       },
       calories: extractNumber([/Calories:\s*(\d+)/i, /Cal:\s*(\d+)/i, /Energy:\s*(\d+)/i], 0),

@@ -26,224 +26,24 @@ const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams,
 
 const ICON_LIST = "Alcohol; Alcohol, White; Almond; Almond Butter; Apple; Apple Sauce; Apple, Gala; Apple, Granny Smith; Apple, Honey Crisp; Apple, Macintosh; Artichoke; Asparagus; Avocado; Bacon; Bagel; Bagel, Blueberry; Bagel, Chocolate Chip; Bagel, Sesame; Baguette; Baked Beans; Balsamic Vinaigrette; Bamboo; Banana; Banana Pepper; Bar; Bean, Black; Bean, Green; Bean, Red; Bean, White; Beef; Beer; BeerDark; Beet; Bell Pepper, Green; Bell Pepper, Red; Bell Pepper, Yellow; Biscuit; Biscuit Cracker; Blackberry; Blueberry; Breadsticks; Breakfast; Breakfast Sandwich; Broccoli; Brownie; Brussels Sprout; Burrito; Butter; Cabbage; Cake; CakeDark; CakeWhite; CakeWhiteDark; Calamari; Calories; Can; Candy; Candy Bar; Carrot; Carrots; Cashew; Casserole; Cauliflower; Celery; Cereal; Cereal Bar; CerealCheerios; CerealCornFlakes; CerealFruitLoops; Cheese; CheeseAmerican; CheeseBlue; CheeseBrie; Cheeseburger; Cheesecake; CheeseCheddar; CheeseGouda; CheesePepperjack; Cherry; CherryMaraschino; Chestnut; Chicken; Chicken Tenders; ChickenGrilled; ChickenWing; Chickpea; Chocolate; Chocolate Chip; Chocolate Chips; ChocolateDark; Churro; Cider; Cinnamon Roll; Clam; Coconut; Coffee; Coleslaw; Com; Combread; Cookie; Cookie, Christmas; Cookie, Molasses; Cookie, Red Velvet; Cookie, Sugar; Cottage Cheese; Crab; Cracker; Cranberry; Cream; Croissant; Crouton; Crumpet; Cucumber; Cupcake; Cupcake, Carrot; Cupcake, Vanilla; Curry; Date; Default; Deli Meat; Dinner Roll; Dip, Green; Dip, Red; Dish; Donut; Donut, Chocolate Iced; Donut, Strawberry Iced; DoubleCheeseburger; Dressing, Ranch; Dumpling; Eclair; Egg; Egg McMuffin; Egg Roll; Eggplant; Enchilada; Falafel; Fern; Fig; Filbert; Fish; Food, Can; Fowl; French Fries; French Toast; Fritter; Frosting, Chocolate; Frosting, Yellow; Fruit Cocktail; Fruit Leather; FruitCake; Game; Garlic; Gobo Root; Gourd; Graham Cracker; Grain; Grapefruit; Grapes; Grilled Cheese; Guava; Gummy Bear; Hamburger; Hamburger Bun; Hamburger Patty; Hamburger, Double; Hash; Hazelnut; Honey; Horseradish; Hot Dog; Hot Dog Bun; Hot Pot; Ice Cream; Ice Cream Bar; Ice Cream Sandwich; Ice Cream, Chocolate; Ice Cream, Strawberry; Iced Coffee; Iced Tea; Jam; Jicama; Juice; Kale; Kebab; Ketchup; Kiwi; Lamb; Lasagna; Latte; Leeks; Lemon; Lemonade; Lime; Liquid; Lobster; Mac And Cheese; Macadamia; Mango; Marshmallow; Mayonnaise; Meatballs; Melon; Milk; Milk Shake; Milk Shake, Chocolate; Milk Shake, Strawberry; Mixed Drink; Mixed Drink, Martini; Mixed Nuts; Muffin; Mushroom; Mustard; Nigiri Sushi; Oatmeal; Octopus; Oil; Okra; Olive, Black; Olive, Green; Omelette; Onion; Orange; Orange Chicken; Orange Juice; Pancakes; Papaya; Parfait; Parsley; Parsnip; Pasta; Pastry; Patty Sandwich; Pavlova; Peach; Peanut; Peanut Butter; Pear; Peas; Pecan; Peppers; Persimmon; Pickle; Pie; Pie, Apple; Pill; Pine Nut; Pineapple; Pistachio; Pita Sandwich; Pizza; Plum; Pocky; Pomegranate; Popcom; Popsicle; Pork; Pork Chop; Pot Pie; Potato; Potato Chip; Potato Salad; Powdered Drink; Prawn; Pretzel; Prune; Pudding; Pumpkin; Quesadilla; Quiche; Radish; Raisin; Raspberry; Ravioli; Recipe; Relish; Rhubarb; Ribs; Rice; Rice Cake; Roll; Romaine Lettuce; Salad; Salad Dressing, Balsamic; Salt; Sandwich; Sauce; Sausage; Seaweed; Seed; Shallot; Shrimp; Smoothie; Snack; Snap Bean; Soft Drink; SoftServeChocolate; SoftServeSwirl; SoftServeVanilla; Souffle; Soup; Sour Cream; Soy Nut; Soy Sauce; Spice, Brown; Spice, Green; Spice, Red; Spice, Yellow; Spinach; Spring Roll; Sprouts; Squash; Squash, Spaghetti; Starfruit; Stew, Brown; Stew, Yellow; Stir Fry; Stir Fry Noodles; Strawberry; Stuffing; Sub Sandwich; Sugar Cookie; Sugar, Brown; Sugar, White; Sushi; Syrup; Taco; Taro; Tater Tots; Tea; Tempura; Toast; Toaster Pastry; Tofu; Tomato; Tomato Soup; Tortilla; Tortilla Chip; Tostada; Turkey; Turnip; Turnover; Vegetable; Waffles; Walnut; Water; Water Chestnut; Watermelon; White Bread; Wine, Red; Wine, White; Wrap; Yam; Yogurt; Zucchini";
 
-// Food name to icon mapping for common items not in ICON_LIST
-const FOOD_ICON_MAPPING: Record<string, string> = {
-  'bread': 'Breadsticks',
-  'house bread': 'Breadsticks',
-  'sourdough': 'Breadsticks',
-  'rye bread': 'Breadsticks',
-  'wheat bread': 'Breadsticks',
-  'white bread': 'White Bread',
-  'whole wheat': 'Breadsticks',
-  'baguette': 'Baguette',
-  'roll': 'Roll',
-  'dinner roll': 'Dinner Roll',
-  'toast': 'Toast',
-  'sandwich': 'Sandwich',
-  'burger': 'Hamburger',
-  'hamburger': 'Hamburger',
-  'cheeseburger': 'Cheeseburger',
-  'pizza': 'Pizza',
-  'pasta': 'Pasta',
-  'rice': 'Rice',
-  'salad': 'Salad',
-  'soup': 'Soup',
-  'steak': 'Beef',
-  'beef': 'Beef',
-  'chicken': 'Chicken',
-  'fish': 'Fish',
-  'pork': 'Pork',
-  'lamb': 'Lamb',
-  'turkey': 'Turkey',
-  'eggs': 'Egg',
-  'egg': 'Egg',
-  'bacon': 'Bacon',
-  'sausage': 'Sausage',
-  'ham': 'Deli Meat',
-  'deli meat': 'Deli Meat',
-  'cheese': 'Cheese',
-  'milk': 'Milk',
-  'yogurt': 'Yogurt',
-  'ice cream': 'Ice Cream',
-  'cake': 'Cake',
-  'cookie': 'Cookie',
-  'pie': 'Pie',
-  'donut': 'Donut',
-  'muffin': 'Muffin',
-  'croissant': 'Croissant',
-  'apple': 'Apple',
-  'banana': 'Banana',
-  'orange': 'Orange',
-  'grape': 'Grapes',
-  'strawberry': 'Strawberry',
-  'blueberry': 'Blueberry',
-  'carrot': 'Carrot',
-  'broccoli': 'Broccoli',
-  'spinach': 'Spinach',
-  'potato': 'Potato',
-  'french fries': 'French Fries',
-  'chips': 'Potato Chip',
-  'potato chips': 'Potato Chip',
-  'nuts': 'Mixed Nuts',
-  'almond': 'Almond',
-  'peanut': 'Peanut',
-  'peanut butter': 'Peanut Butter',
-  'hummus': 'Dip, Green',
-  'dip': 'Dip, Green',
-  'sauce': 'Sauce',
-  'dressing': 'Salad Dressing, Balsamic',
-  'drink': 'Mixed Drink',
-  'cocktail': 'Mixed Drink',
-  'mocktail': 'Mixed Drink',
-  'beer': 'Beer',
-  'wine': 'Wine, Red',
-  'coffee': 'Coffee',
-  'tea': 'Tea',
-  'juice': 'Juice',
-  'smoothie': 'Smoothie',
-  'water': 'Water',
-};
-
-// Validate and normalize icon to ensure it's in ICON_LIST
-function validateIcon(icon: string, foodName: string): string {
+// Simple icon validation - let the AI handle most of it with better prompting
+function validateIcon(icon: string): string {
   const iconList = ICON_LIST.split('; ').map(i => i.trim());
   
-  // First, try exact match
+  // If exact match, return it
   if (iconList.includes(icon)) {
     return icon;
   }
   
-  // Try case-insensitive match
-  const lowerIcon = icon.toLowerCase();
-  const exactMatch = iconList.find(i => i.toLowerCase() === lowerIcon);
-  if (exactMatch) {
-    return exactMatch;
-  }
-  
-  // Try partial match (e.g., "Bread" matches "Breadsticks")
-  const partialMatch = iconList.find(i => i.toLowerCase().includes(lowerIcon) || lowerIcon.includes(i.toLowerCase()));
-  if (partialMatch) {
-    return partialMatch;
-  }
-  
-  // Use food name mapping as fallback
-  const lowerFoodName = foodName.toLowerCase();
-  for (const [food, mappedIcon] of Object.entries(FOOD_ICON_MAPPING)) {
-    if (lowerFoodName.includes(food) || food.includes(lowerFoodName)) {
-      return mappedIcon;
-    }
-  }
-  
-  // Final fallback to most appropriate icon based on food name
-  if (lowerFoodName.includes('bread') || lowerFoodName.includes('roll') || lowerFoodName.includes('toast')) {
-    return 'Breadsticks';
-  }
-  if (lowerFoodName.includes('meat') || lowerFoodName.includes('beef') || lowerFoodName.includes('steak')) {
-    return 'Beef';
-  }
-  if (lowerFoodName.includes('chicken')) {
-    return 'Chicken';
-  }
-  if (lowerFoodName.includes('fish') || lowerFoodName.includes('seafood')) {
-    return 'Fish';
-  }
-  if (lowerFoodName.includes('drink') || lowerFoodName.includes('cocktail') || lowerFoodName.includes('mocktail')) {
-    return 'Mixed Drink';
-  }
-  if (lowerFoodName.includes('salad')) {
-    return 'Salad';
-  }
-  if (lowerFoodName.includes('soup')) {
-    return 'Soup';
-  }
-  if (lowerFoodName.includes('pizza')) {
-    return 'Pizza';
-  }
-  if (lowerFoodName.includes('pasta')) {
-    return 'Pasta';
-  }
-  if (lowerFoodName.includes('rice')) {
-    return 'Rice';
-  }
-  if (lowerFoodName.includes('dip') || lowerFoodName.includes('hummus')) {
-    return 'Dip, Green';
-  }
-  
-  // Default fallback
-  return 'Default';
-}
-
-// Validate and normalize serving type to ensure it's in SERVING_TYPES
-function validateServingType(servingUnit: string): string {
-  const servingTypes = SERVING_TYPES.split('; ').map(s => s.trim());
-  
-  // Normalize common variations
-  const normalizedUnit = servingUnit.toLowerCase().trim();
-  
-  // Direct matches
-  if (servingTypes.some(s => s.toLowerCase() === normalizedUnit)) {
-    return servingTypes.find(s => s.toLowerCase() === normalizedUnit)!;
-  }
-  
-  // Common variations mapping
-  const unitMapping: Record<string, string> = {
-    'each': 'Each',
-    'piece': 'Piece',
-    'pieces': 'Piece',
-    'slice': 'Slice',
-    'slices': 'Slice',
-    'cup': 'Cups',
-    'cups': 'Cups',
-    'tablespoon': 'Tablespoons',
-    'tablespoons': 'Tablespoons',
-    'tbsp': 'Tablespoons',
-    'teaspoon': 'Teaspoons',
-    'teaspoons': 'Teaspoons',
-    'tsp': 'Teaspoons',
-    'ounce': 'Ounces',
-    'ounces': 'Ounces',
-    'oz': 'Ounces',
-    'fluid ounce': 'Fluid Ounce',
-    'fluid ounces': 'Fluid Ounce',
-    'fl oz': 'Fluid Ounce',
-    'gram': 'Grams',
-    'grams': 'Grams',
-    'g': 'Grams',
-    'pound': 'Pounds',
-    'pounds': 'Pounds',
-    'lb': 'Pounds',
-    'serving': 'Serving',
-    'servings': 'Serving',
-    'portion': 'Serving',
-    'portions': 'Serving',
-    'bottle': 'Bottle',
-    'bottles': 'Bottle',
-    'can': 'Can',
-    'cans': 'Can',
-    'container': 'Container',
-    'containers': 'Container',
-    'package': 'Package',
-    'packages': 'Package',
-    'jar': 'Jar',
-    'jars': 'Jar',
-    'box': 'Box',
-    'boxes': 'Box',
+  // Simple fallbacks for common mismatches
+  const iconMap: Record<string, string> = {
+    'Bread': 'Breadsticks',
+    'Steak': 'Beef',
+    'Hummus': 'Dip, Green',
+    'Mocktail': 'Mixed Drink',
   };
   
-  // Try mapping
-  if (unitMapping[normalizedUnit]) {
-    return unitMapping[normalizedUnit];
-  }
-  
-  // Try partial matches
-  for (const [variant, standard] of Object.entries(unitMapping)) {
-    if (normalizedUnit.includes(variant) || variant.includes(normalizedUnit)) {
-      return standard;
-    }
-  }
-  
-  // Default to "Each" for countable items, "Serving" for others
-  return 'Each';
+  return iconMap[icon] || 'Default';
 }
 
 // Image compression utility
@@ -327,102 +127,48 @@ function fixServingSizes(text: string): string {
   return fixed;
 }
 
-// Build the system prompt with exact ChatGPT Custom GPT format
-function buildSystemPrompt(params: {
-  formatted_date: string;
-  meal: string;
-  brand: string;
-  user_prompt: string;
-  photos_present_boolean: string;
-}): string {
+// Build system prompt based on successful Custom GPT approach
+function buildSystemPrompt(): string {
   return `
-You are a nutritional analysis expert. Analyze the food shown or described and return a single plain-text block per item using the exact field order and formatting below. Do not include any extra commentary.
+You provide detailed nutritional information for food and drink items for logging in food apps. Follow these guidelines exactly:
 
-Context provided by the app:
-Date: ${params.formatted_date}
-Meal: ${params.meal}
-Brand/Restaurant: ${params.brand}
-Food Description: ${params.user_prompt}
-Photos available: ${params.photos_present_boolean}
+- Remove all formatting (bold, bullets, numbering, etc) - keep all text plain
+- Follow order strictly: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat (g), Saturated Fat (g), Cholesterol (mg), Sodium (mg), Carbs (g), Fiber (g), Sugar (g), Protein (g)
+- Use reliable sources/standardized estimates, look up restaurant nutrition if needed
+- Meal must be: Breakfast, Lunch, Dinner, or Snacks
+- Max 60 character food names, shorten where possible (e.g., "w/" for "with"), proper case
+- For Icons, select exactly from the ICON_LIST below
+- For serving sizes, use standard types from SERVING_TYPES and convert fractions to decimals (1/4 = 0.25)
+- List drinks/smoothies/soups in fluid ounces first for water intake tracking
+- Base estimates on photos when provided - account for ice in drinks
+- List each food item separately with blank line between items
+- Use today's date unless specified
+- Values must be clean numbers without extra text
+- Include sodium from salt/tajin on rims when applicable
+- User context: 6'1" 200lb male for portion estimation
 
-CRITICAL ANALYSIS REQUIREMENTS:
-- ALWAYS carefully examine ALL photos if provided. Photos show actual portions, plate/glass sizes, garnishes, rims, sides, etc.
-- FOLLOW USER SPECIFICATIONS EXACTLY. If they mention specific details (like "tajin on the rim", "had 2 drinks", "half the hummus"), include those in your nutritional calculations.
-- When photos are provided, estimate serving sizes based on visual cues: plate size, glass size, portion relative to utensils, etc.
-- For drinks with photos: estimate liquid volume excluding ice (ice takes ~30-40% of glass volume typically)
-- Pay attention to ALL visible elements: garnishes, salt/spice rims, sides, condiments, etc.
-- User context: 6'1" 200lb male - use this for portion context when photos aren't available
-
-Behavior
-- Use the provided Date, Meal, and Brand/Restaurant as given.
-- Only ask for clarification if both of these are true:
-  1) the description is very unclear or contradictory, and
-  2) the photos do not add enough context to identify the item or a reasonable serving estimate.
-- Otherwise, make confident, reasonable estimates. Do not ask for exact measurements.
-- PHOTOS ALWAYS OVERRIDE text-only estimates. If photos show food, estimate based on what you see.
-- For restaurant items, use your knowledge of standard menu portions and nutritional data from that restaurant.
-- You may use web search to look up restaurant menus and nutrition references, but never include links, citations, or notes in the output. Return only the schema fields.
-- Base serving size and calories on what is shown. If you scale calories up or down, scale macros proportionally.
-- Drinks, smoothies, soups: report serving in Fluid Ounce. Account for ice volume in the estimate.
-- Names: proper case, max 60 chars, shorten where possible (e.g., "w/" for "with").
-- Output must be plain text only. No bullets, numbering, bold, or extra notes.
-- List each food item as a separate full block. Separate items with a single blank line.
-- Serving Size must use exactly one allowed serving type from the SERVING_TYPES list.
-- CRITICAL: Only use serving types that exist in the SERVING_TYPES list. Common examples: "Each", "Piece", "Slice", "Cups", "Ounces", "Fluid Ounce", "Grams", "Serving".
-- Icon must be exactly one value from the ICON_LIST. Never use "Default" - pick the most appropriate icon based on the food type.
-- Icon suggestions: Hummus → "Dip, Green", Bread → "Breadsticks", Steak → "Beef", Mocktail → "Mixed Drink", Salad → "Salad", etc.
-- CRITICAL: Only use icons that exist in the ICON_LIST. If unsure, use the closest match.
-- Fields must never be empty for Food Name, Date, Meal, Brand, Serving Size, Calories.
-- Values must be numbers only, with units exactly as shown in the schema labels. No parentheticals or extra words.
-
-SPECIAL ATTENTION TO USER SPECIFICATIONS:
-- Salt/spice rims (tajin, salt, etc.): add 200-400mg sodium per drink
-- "Had 2 drinks": multiply everything by 2 for that item
-- "Half the hummus": use 0.5 serving size
-- Specific brand callouts: use exact nutrition if known
-- Visual portion cues: small/large plates, glass sizes, relative to hands/utensils
-
-Allowed serving guidance
-- Countable items: use Each (e.g., "3 tacos" = "3 each")
-- Beverages or soups: use Fluid Ounce
-- Weight-based foods: use Grams or Ounces as appropriate
-- When exact weight/measurement unknown: use "serving" with context
-- Examples: "0.5 serving", "1 serving", "2 servings"
-- Never use "Default" for Icon - pick the most appropriate one
-- CRITICAL: Use DECIMALS only - no fractions like "1/2" or "1 2"
-- CRITICAL: Serving Size must be EXACTLY ONE number followed by ONE unit
-- NEVER use formats like "0.5 5 serving" or "1 1 serving" - these are invalid
-- NEVER repeat numbers or add extra digits - use exactly what you estimate
-- Serving Size examples: "0.5 serving", "2 each", "8 fluid ounces"
-- If you estimate 0.5 serving, write "0.5 serving" not "0.5 5 serving"
-- If you estimate 1 serving, write "1 serving" not "1 1 serving"
-- Nutritional values: Use decimals (e.g., 12.5, 3.25) or whole numbers (e.g., 2, 0)
-
-Field order and exact schema
-Food Name: <short name, max 60 chars>
-Date: <MM/DD>
-Meal: <Breakfast|Lunch|Dinner|Snacks>
-Brand: <brand or restaurant>
-Icon: <one from ICON_LIST>
-Serving Size: <amount> <unit> (e.g., "0.5 serving", "3 each", "8 fluid ounces")
-Calories: <number>
-Fat (g): <number>
-Saturated Fat (g): <number>
-Cholesterol (mg): <number>
-Sodium (mg): <number>
-Carbs (g): <number>
-Fiber (g): <number>
-Sugar (g): <number>
-Protein (g): <number>
-
-If fluid ounces are present, append this line:
-Hydration: <total beverage fluid ounces as number> Fluid Ounce
-
-SERVING_TYPES:
+SERVING_TYPES (use exactly one):
 ${SERVING_TYPES}
 
-ICON_LIST:
+ICON_LIST (use exactly one):
 ${ICON_LIST}
+
+Example format:
+Food Name: Brisket Tacos
+Date: 6/30
+Meal: Lunch
+Brand: Torchy's Tacos
+Icon: Taco
+Serving Size: 3.5 each
+Calories: 1100
+Fat (g): 67
+Saturated Fat (g): 27
+Cholesterol (mg): 210
+Sodium (mg): 3000
+Carbs (g): 80
+Fiber (g): 10
+Sugar (g): 5
+Protein (g): 50
 `.trim();
 }
 
@@ -437,14 +183,8 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
 
     const formattedDate = new Date(request.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
     
-    // Build system prompt with exact parameters
-    const systemPrompt = buildSystemPrompt({
-      formatted_date: formattedDate,
-      meal: request.meal,
-      brand: request.brand,
-      user_prompt: request.prompt,
-      photos_present_boolean: request.images.length > 0 ? 'true' : 'false',
-    });
+    // Build simplified system prompt
+    const systemPrompt = buildSystemPrompt();
 
     // Compress images
     const compressedImages = await Promise.all(
@@ -482,9 +222,13 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
           content: [
             {
               type: 'text',
-              text: request.images.length > 0 
-                ? `ANALYZE THE FOOD SHOWN IN THE ${request.images.length} IMAGE(S). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Estimate volumes based on visual cues. User description: ${request.prompt}`
-                : `Analyze this food description (no photos provided, estimate based on context for 6'1" 200lb male): ${request.prompt}`,
+              text: `Date: ${formattedDate}
+Meal: ${request.meal}
+Brand/Restaurant: ${request.brand}
+
+${request.images.length > 0 
+  ? `Analyze the food shown in the ${request.images.length} image(s). Look at portion sizes, plate/glass sizes, garnishes, rims, sides. Account for ice in drinks. Description: ${request.prompt}`
+  : `Analyze this food description: ${request.prompt}`}`,
             },
             ...compressedImages.map(imageData => ({
               type: 'image_url',
@@ -499,61 +243,15 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       temperature: 0.2,
     };
 
-    // Try with web search first
-    let resp;
-    try {
-      resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...apiRequest,
-          functions: [
-            {
-              name: "web_search",
-              description: "Search the web for real-time information",
-              parameters: {
-                type: "object",
-                properties: {
-                  query: {
-                    type: "string",
-                    description: "The search query"
-                  }
-                },
-                required: ["query"]
-              }
-            }
-          ],
-          function_call: "auto"
-        }),
-      });
-
-      // If web search fails, try standard completion
-      if (!resp.ok && resp.status === 400) {
-        console.warn('Web search failed, falling back to standard completion');
-        resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(apiRequest),
-        });
-      }
-    } catch (e: any) {
-      // If any error occurs, try standard completion
-      console.warn('API error, falling back to standard completion:', e);
-      resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiRequest),
-      });
-    }
+    // Make standard API request (no web search to reduce costs)
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(apiRequest),
+    });
 
     if (!resp.ok) {
       throw new Error(`OpenAI API error: ${resp.status}`);
@@ -744,12 +442,12 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
       date: date,
       meal: meal,
       brand: request.brand,
-      icon: validateIcon(extractValue([/Icon:\s*(.+)/i], 'Default'), foodName),
-      serving: {
-        amount: servingAmount,
-        unit: validateServingType(servingUnit),
-        descriptor: extractValue([/Serving Size:.*?\((.+?)\)/i], ''),
-      },
+              icon: validateIcon(extractValue([/Icon:\s*(.+)/i], 'Default')),
+        serving: {
+          amount: servingAmount,
+          unit: servingUnit,
+          descriptor: extractValue([/Serving Size:.*?\((.+?)\)/i], ''),
+        },
       calories: extractNumber([/Calories:\s*(\d+)/i, /Cal:\s*(\d+)/i, /Energy:\s*(\d+)/i], 0),
       fatG: extractNumber([/Fat.*:\s*(\d+\.?\d*)/i, /Total Fat.*:\s*(\d+\.?\d*)/i], 0),
       satFatG: extractNumber([/Saturated Fat.*:\s*(\d+\.?\d*)/i, /Sat Fat.*:\s*(\d+\.?\d*)/i], 0),

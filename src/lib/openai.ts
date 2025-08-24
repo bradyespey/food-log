@@ -134,7 +134,7 @@ You provide detailed nutritional information for food and drink items for loggin
 
 - Remove all formatting (bold, bullets, numbering, etc) - keep all text plain
 - Follow order strictly: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat (g), Saturated Fat (g), Cholesterol (mg), Sodium (mg), Carbs (g), Fiber (g), Sugar (g), Protein (g)
-- Use reliable sources/standardized estimates, look up restaurant nutrition if needed
+- Use reliable sources/standardized estimates, look up restaurant nutrition online if needed
 - Meal must be: Breakfast, Lunch, Dinner, or Snacks
 - Max 60 character food names, shorten where possible (e.g., "w/" for "with"), proper case
 - For Icons, select exactly from the ICON_LIST below
@@ -243,15 +243,45 @@ ${request.images.length > 0
       temperature: 0.2,
     };
 
-    // Make standard API request (no web search to reduce costs)
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(apiRequest),
-    });
+    // Try with web search first (GPT-4o-mini supports it)
+    let resp;
+    try {
+      resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...apiRequest,
+          tools: [{ type: "web_search" }],
+        }),
+      });
+
+      // If web search fails, fall back to standard completion
+      if (!resp.ok && resp.status === 400) {
+        console.warn('Web search failed, falling back to standard completion');
+        resp = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(apiRequest),
+        });
+      }
+    } catch (e: any) {
+      // If any error occurs, try standard completion
+      console.warn('API error, falling back to standard completion:', e);
+      resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiRequest),
+      });
+    }
 
     if (!resp.ok) {
       throw new Error(`OpenAI API error: ${resp.status}`);

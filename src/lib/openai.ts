@@ -243,7 +243,7 @@ ${request.images.length > 0
       temperature: 0.2,
     };
 
-    // Try with web search first (GPT-4o-mini supports it)
+    // Try with web search first
     let resp;
     try {
       resp = await fetch('https://api.openai.com/v1/chat/completions', {

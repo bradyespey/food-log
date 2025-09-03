@@ -137,6 +137,8 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - For "Entry 1 (09/01, Lunch, McDonald's)", all food items from that entry use: Date: 09/01, Meal: Lunch, Brand: McDonald's
 - For "Entry 2 (08/31, Breakfast, Taco Bell)", all food items from that entry use: Date: 08/31, Meal: Breakfast, Brand: Taco Bell
 - Never use generic brand names - always use the specific brand listed in parentheses for each entry
+- When user provides partial nutrition data (e.g., "Calories: 690, Fat: 43g, Carbs: 43g, Protein: 40g"), estimate the missing values (like sodium, cholesterol, fiber, sugar) based on the food type - do NOT set them to 0
+- Use valid serving sizes from SERVING_TYPES only - never use "bowl", "platter", or similar invalid units
 - List each distinct food item separately - do not combine similar items
 - ONLY list food items that are explicitly mentioned or clearly implied in the description
 - Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
@@ -198,8 +200,6 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       throw new Error('OpenAI API key not configured');
     }
 
-    const formattedDate = new Date(request.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
-    
     // Build simplified system prompt
     const systemPrompt = buildSystemPrompt();
 
@@ -239,13 +239,9 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
           content: [
             {
               type: 'text',
-              text: `Date: ${formattedDate}
-Meal: ${request.meal}
-Brand/Restaurant: ${request.brand}
-
-${request.images.length > 0 
-  ? `Analyze the food shown in the ${request.images.length} image(s). Look at portion sizes, plate/glass sizes, garnishes, rims, sides. Account for ice in drinks. Description: ${request.prompt}`
-  : `Analyze this food description: ${request.prompt}`}`,
+              text: `${request.images.length > 0 
+  ? `Analyze the food shown in the ${request.images.length} image(s). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Account for ice in drinks. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`
+  : `Analyze these food entries. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`}`,
             },
             ...compressedImages.map(imageData => ({
               type: 'image_url',

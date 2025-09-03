@@ -92,11 +92,18 @@ export const logFoodToBackend = async (
 
     // Debug mode is now controlled by .env HEADLESS_MODE on the Flask server
 
+    // Create an AbortController for timeout control
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000); // 15 minutes timeout
+
     const response = await fetch(`${apiBaseUrl}/food_log`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const result = await response.json();
 
@@ -128,7 +135,9 @@ export const logFoodToBackend = async (
     // Provide clearer error messages for common issues
     let errorMessage = 'Failed to log food';
     if (error instanceof Error) {
-      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out after 15 minutes. Selenium automation may still be running in the background.';
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
         errorMessage = 'Cannot connect to API server. Please ensure the Flask API is running.';
       } else if (error.message.includes('502') || error.message.includes('Bad Gateway')) {
         errorMessage = 'API server is not responding. Please check if the Flask API is running.';
@@ -153,12 +162,19 @@ export const checkApiHealth = async (): Promise<boolean> => {
       return false;
     }
 
+    // Health check with shorter timeout (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30 * 1000);
+
     const response = await fetch(`${apiBaseUrl}/health`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     return response.ok;
   } catch (error) {

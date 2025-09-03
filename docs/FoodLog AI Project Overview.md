@@ -77,6 +77,8 @@ VITE_OPENAI_MODEL=gpt-4o-mini
 
 # Allowed Email Addresses (Firebase Auth)
 VITE_ALLOWED_EMAILS=baespey@gmail.com
+
+# Note: HEADLESS_MODE no longer needed - Chrome visibility auto-detected
 ```
 
 ### 3. Firebase Project Setup
@@ -85,17 +87,15 @@ VITE_ALLOWED_EMAILS=baespey@gmail.com
 - **Web App**: Configured for foodlog.theespeys.com
 - **Allowed Domains**: foodlog.theespeys.com, localhost:5173
 
-### 4. Debug Mode Configuration
-**Simple Configuration** (in Windows API `.env`):
-```env
-HEADLESS_MODE=False  # Chrome visible for debugging
-HEADLESS_MODE=True   # Chrome hidden for normal operation
-```
+### 4. Chrome Visibility Configuration
+**Automatic Detection** (no configuration needed):
+- **Manual execution** (`python app.py`): Chrome visible for debugging
+- **Service execution** (NSSM): Chrome hidden for normal operation
 
 **How it works:**
-- **All environments**: Uses `.env` `HEADLESS_MODE` value
-- **Toggle as needed**: Change `.env` value and restart Flask app
-- **No complex logic**: Simple on/off switch for Chrome visibility
+- **Service Detection**: Automatically detects Windows service vs manual execution
+- **No configuration**: No environment variables or settings needed
+- **Smart defaults**: Visible for debugging, hidden for production
 
 ### 5. Chrome Profile Setup
 **Profile-First Login Strategy:**
@@ -244,7 +244,7 @@ npm run preview
 - **Authentication Matching**: Frontend and backend API credentials properly synchronized
 - **Sample Data Button**: Loads actual user food photos (hummus, mocktail, steak, bread) for testing
 - **Manual Entry Page**: Direct food entry without AI for fallback scenarios
-- **Debug Mode Toggle**: Environment variable control for Chrome browser visibility
+- **Automatic Chrome Visibility**: Smart detection of service vs manual execution for optimal debugging
 - **Advanced Theme System**: Light/Dark/System modes with proper persistence and system detection
 - **Enhanced UI Components**: Custom dropdown menus and improved form styling
 - **Updated Branding**: Consistent naming and descriptions across all pages
@@ -278,10 +278,13 @@ npm run preview
 - **Sample Data Loading System**: Implemented smart sample data loading with dinner (today) and smoothie (yesterday) samples
 - **Multi-Card Sample Support**: Sample data loading works with existing card structure, cycling through samples for multiple cards
 - **Date Display Fixes**: Improved Analysis Results date mapping to prevent N/A values for items beyond first entry
+- **Timezone Correction**: Fixed date handling to use local time (CST) instead of UTC, preventing dates from being off by one day
+- **Backend Logging Fixes**: Resolved date/meal inheritance bug where dinner items were incorrectly logging to previous day's date and meal
+- **Selenium Automation Robustness**: Added page refresh logic to handle modal overlays and prevent infinite retries
+- **Placeholder Text Clearing**: Fixed food entry automation getting stuck on "NoExistFood99887766" placeholder text
+- **TypeScript Build Fixes**: Resolved all build errors including unused imports, type mismatches, and parameter cleanup
 
 ### 🔄 In Progress
-- **Sample Data Loading Issues**: Multi-card sample loading not working consistently
-- **Date Display Issues**: Analysis Results showing N/A for some items despite correct form dates
 - **Error Monitoring**: Enhanced Sentry integration for API endpoints
 
 ### ❌ Not Started
@@ -438,28 +441,30 @@ npm run preview
 - Added aggressive Chrome process management to prevent conflicts
 **Status**: ✅ Complete - All tests passing, ready for production use
 
-### 16. Sample Data Loading and Date Display Issues (Current)
+### 16. Sample Data Loading and Date Display Issues
 **Problem**: 
 - Sample data loading works for single card but fails for multiple cards
 - When adding second card and loading sample data, second card remains empty
 - Analysis Results showing "N/A" dates for items beyond the first entry
 - Date mapping logic not properly handling AI response items vs form entries
-**Current Status**: 🔄 In Progress
-- **Sample Loading**: Function caches old card count, doesn't update existing cards properly
-- **Date Display**: `analysisResult.entryDates[index]` returns undefined for items beyond form entry count
-- **Food Logging**: Backend automation works correctly, issue is frontend display only
-**Next Steps**: 
-- Fix sample data loading to properly update existing cards with cycling sample data
-- Resolve date mapping to use fallback dates when entryDates array is shorter than AI response items
-- Test multi-card scenarios with different dates to ensure proper analysis results
+- Timezone issues causing dates to be off by one day in UI and logging
+- Backend logging inheriting wrong dates/meals from previous items
+**Solution**: 
+- Fixed sample data loading to properly cycle through samples for multiple cards
+- Resolved date mapping to use individual item dates instead of entryDates array
+- Implemented local timezone handling with `getLocalDateString()` helper function
+- Simplified `formatFoodItemForLogging` to use item.date and item.meal directly
+- Added page refresh logic to handle Selenium modal overlays
+- Fixed placeholder text clearing in food entry automation
+- Cleaned up TypeScript build errors and unused code
+**Status**: ✅ Resolved - Multi-card sample loading works, all dates display correctly, backend logs to proper dates
 
 ## Next Steps
 
 ### Immediate (Next Session)
-1. **Fix Sample Data Loading**: Resolve multi-card sample data loading to properly populate all cards
-2. **Fix Date Display Issues**: Resolve Analysis Results showing N/A dates for items beyond first entry
-3. **Multi-Card Testing**: Test complete workflow with multiple food cards and different dates
-4. **Production Deployment**: Deploy fixes to https://foodlog.theespeys.com/ once issues resolved
+1. **Production Deployment**: Deploy latest fixes to https://foodlog.theespeys.com/
+2. **Daily Usage Testing**: Use the system for regular food logging to identify any edge cases
+3. **Performance Monitoring**: Monitor API response times and costs during regular use
 
 **✅ Production Ready - All Systems Complete**:
 - **Frontend**: Modern React UI with AI analysis and manual entry options
@@ -469,10 +474,14 @@ npm run preview
 - **Food Logging**: Enhanced automation with tabindex-based meal selection
 - **Water Logging**: Automatic fluid ounce tracking integrated with food logging
 - **Testing**: Streamlined 4-test production suite (login, food, water, comprehensive)
-- **Debug System**: HEADLESS_MODE in .env controls Chrome visibility for troubleshooting
+- **Debug System**: Automatic Chrome visibility detection (service=headless, manual=visible)
 - **Verification**: Inline real-time status updates showing logging success/failure
 - **Performance**: Optimized for speed and reliability with proper error handling
 - **Production Logging**: Clean logging for monitoring without excessive debug output
+- **Multi-Card Support**: Sample data loading and analysis works with multiple food entries
+- **Date Accuracy**: Local timezone handling ensures correct dates in UI and backend logging
+- **Robust Automation**: Page refresh logic handles modal overlays and prevents infinite retries
+- **Build System**: TypeScript compilation passes without errors, ready for deployment
 
 ### Short Term
 1. **Daily Usage**: Use the system for regular food logging to identify any edge cases

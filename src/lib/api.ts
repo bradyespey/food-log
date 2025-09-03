@@ -98,12 +98,22 @@ export const logFoodToBackend = async (
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API error (${response.status}): ${errorText}`);
-    }
-
     const result = await response.json();
+
+    if (!response.ok) {
+      // Even for error responses, check if we have verification data
+      if (result.verification && Object.keys(result.verification).length > 0) {
+        return {
+          success: false,
+          message: result.error || result.message || 'Food logging failed',
+          output: result.output || '',
+          verification: result.verification || {},
+        };
+      } else {
+        // No verification data, this is a real error
+        throw new Error(`API error (${response.status}): ${result.error || result.message || 'Unknown error'}`);
+      }
+    }
 
     return {
       success: result.success || true,

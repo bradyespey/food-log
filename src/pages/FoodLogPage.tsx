@@ -624,7 +624,7 @@ ${entry.prompt}`;
                   className="text-sm"
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
-                  {isLogging ? 'Logging...' : 'Log to Lose It!'}
+                  {isLogging ? 'Logging... (up to 15 min)' : 'Log to Lose It!'}
                 </Button>
               </div>
             </div>
@@ -766,7 +766,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, i
         <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
-            Verifying...
+            Verifying... (up to 15 min)
           </div>
         </div>
       )}

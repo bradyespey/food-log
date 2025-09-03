@@ -484,7 +484,7 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
       foodName: foodName.substring(0, 60), // Limit to 60 chars as per spec
       date: date,
       meal: meal,
-      brand: request.brand,
+      brand: extractValue([/Brand:\s*(.+)/i], request.brand), // Extract brand from AI response
               icon: validateIcon(extractValue([/Icon:\s*(.+)/i], 'Default')),
         serving: {
           amount: servingAmount,

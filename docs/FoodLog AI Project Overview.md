@@ -283,6 +283,8 @@ npm run preview
 - **Selenium Automation Robustness**: Added page refresh logic to handle modal overlays and prevent infinite retries
 - **Placeholder Text Clearing**: Fixed food entry automation getting stuck on "NoExistFood99887766" placeholder text
 - **TypeScript Build Fixes**: Resolved all build errors including unused imports, type mismatches, and parameter cleanup
+- **Brand Extraction Fix**: Fixed AI parsing to extract brand names from AI response instead of defaulting to "Multiple Restaurants"
+- **Verification Timeout UI**: Added "(up to 15 min)" to logging buttons and verification spinners to clarify Selenium operation duration
 
 ### 🔄 In Progress
 - **Error Monitoring**: Enhanced Sentry integration for API endpoints
@@ -458,6 +460,18 @@ npm run preview
 - Fixed placeholder text clearing in food entry automation
 - Cleaned up TypeScript build errors and unused code
 **Status**: ✅ Resolved - Multi-card sample loading works, all dates display correctly, backend logs to proper dates
+
+### 17. Multi-Entry Brand and Meal Mapping Bug
+**Problem**: 
+- AI analysis was correctly generating food items with proper date/meal/brand per form entry in prompt instructions
+- However, `parseIndividualFoodItem` function was overriding brand with `request.brand` (hardcoded "Multiple Restaurants")
+- This caused all food items to inherit the same generic brand instead of their specific restaurant brands
+- Items were also inheriting meal types from wrong entries due to parsing logic issues
+**Solution**: 
+- Modified `parseIndividualFoodItem` to extract brand from AI response using regex: `extractValue([/Brand:\s*(.+)/i], request.brand)`
+- AI was already providing correct brands per item based on form entry context, parsing just needed to respect that
+- Enhanced system prompt already had proper instructions for brand mapping per entry
+**Status**: ✅ Resolved - Each food item now gets correct brand name from its corresponding form entry
 
 ## Next Steps
 

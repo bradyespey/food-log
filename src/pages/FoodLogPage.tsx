@@ -53,45 +53,7 @@ const FoodLogPage: React.FC = () => {
   const estimatedCost = estimateCost('', totalImages) + (totalPromptLength / 1000) * 0.001;
   const isFormValid = validEntries.length > 0;
 
-  // ── Image Compression Utility ────────────────────────────────────
-  const compressImageFile = async (file: File): Promise<File> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-      const img = new Image();
-      
-      img.onload = () => {
-        // Limit to 1280px max width/height
-        const maxSize = 1280;
-        let { width, height } = img;
-        
-        if (width > maxSize || height > maxSize) {
-          if (width > height) {
-            height = (height * maxSize) / width;
-            width = maxSize;
-          } else {
-            width = (width * maxSize) / height;
-            height = maxSize;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
-            resolve(compressedFile);
-          } else {
-            resolve(file);
-          }
-        }, 'image/jpeg', 0.8);
-      };
-      
-      img.src = URL.createObjectURL(file);
-    });
-  };
+
 
   // ── Sample Data Loading ──────────────────────────────────────────
   const loadSampleDataFunction = useCallback(async () => {
@@ -100,7 +62,13 @@ const FoodLogPage: React.FC = () => {
     yesterday.setDate(yesterday.getDate() - 1);
     
     // Sample data for different scenarios
-    const sampleData = [
+    const sampleData: Array<{
+      date: string;
+      meal: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
+      brand: string;
+      prompt: string;
+      images: Promise<File>[];
+    }> = [
       {
         date: getLocalDateString(today), // Today (local time)
         meal: 'Dinner' as const,
@@ -127,9 +95,12 @@ const FoodLogPage: React.FC = () => {
 
     try {
       // Resolve all images (no compression here - let OpenAI handle it)
-      for (const data of sampleData) {
-        data.images = await Promise.all(data.images);
-      }
+      const resolvedSampleData = await Promise.all(
+        sampleData.map(async (data) => ({
+          ...data,
+          images: await Promise.all(data.images)
+        }))
+      );
 
       // Update existing food entries with sample data
       setFoodEntries(prevEntries => {
@@ -137,8 +108,8 @@ const FoodLogPage: React.FC = () => {
         
         // Fill each existing card with sample data (cycling through if more cards than samples)
         for (let i = 0; i < updatedEntries.length; i++) {
-          const sampleIndex = i % sampleData.length;
-          const sample = sampleData[sampleIndex];
+          const sampleIndex = i % resolvedSampleData.length;
+          const sample = resolvedSampleData[sampleIndex];
           
           updatedEntries[i] = {
             ...updatedEntries[i],
@@ -416,7 +387,7 @@ ${entry.prompt}`;
   const formatForChatGPT = useCallback((result: any) => {
     if (!result?.items) return '';
     
-    const formattedItems = result.items.map((item: FoodItem, index: number) => {
+    const formattedItems = result.items.map((item: FoodItem) => {
       // Use the processed item data directly - it already has correct date/meal/brand
       const itemDate = item.date;
       const itemMeal = item.meal;
@@ -650,9 +621,6 @@ ${entry.prompt}`;
                   item={item} 
                   verificationStatus={verificationStatus[index]}
                   isLogging={isLogging}
-                  index={index}
-                  validEntries={validEntries}
-                  analysisResult={analysisResult}
                 />
               ))}
             </div>
@@ -693,12 +661,9 @@ interface FoodItemCardProps {
   item: FoodItem;
   verificationStatus?: any;
   isLogging: boolean;
-  index: number;
-  validEntries: FoodEntryCard[];
-  analysisResult: any;
 }
 
-const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, isLogging, index, validEntries, analysisResult }) => {
+const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, isLogging }) => {
   return (
     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
       {/* Header with Food Name, Date, Meal, and Food Type */}

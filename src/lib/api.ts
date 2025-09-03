@@ -16,19 +16,10 @@ interface LogFoodResponse {
 }
 
 // Convert FoodItem to the text format expected by the Selenium automation
-const formatFoodItemForLogging = (item: FoodItem, date: string, meal: string, entryDates?: any[], index?: number): string => {
-  let itemDate = date;
-  let itemMeal = meal;
-  
-  // If we have multiple entry dates, map items to their corresponding entry dates
-  if (entryDates && entryDates.length > 1 && index !== undefined) {
-    const entryIndex = Math.min(index, entryDates.length - 1);
-    const entry = entryDates[entryIndex];
-    if (entry) {
-      itemDate = entry.date;
-      itemMeal = entry.meal;
-    }
-  }
+const formatFoodItemForLogging = (item: FoodItem, date: string, meal: string): string => {
+  // Use the item's individual date and meal directly (they're already correctly mapped)
+  const itemDate = date;
+  const itemMeal = meal;
 
   const lines = [
     `Food Name: ${item.foodName}`,
@@ -77,8 +68,8 @@ export const logFoodToBackend = async (
       formattedItems = analysisResult.food_items;
     } else if (analysisResult.items && Array.isArray(analysisResult.items)) {
       // Structured items from AI analysis - convert to text format
-      formattedItems = analysisResult.items.map((item: FoodItem, index: number) =>
-        formatFoodItemForLogging(item, analysisResult.date, analysisResult.meal, analysisResult.entryDates, index)
+      formattedItems = analysisResult.items.map((item: FoodItem) =>
+        formatFoodItemForLogging(item, item.date, item.meal)
       );
     } else {
       throw new Error('No valid food items found in the analysis result');
@@ -99,11 +90,7 @@ export const logFoodToBackend = async (
       headers['Authorization'] = `Basic ${btoa(`${apiUsername}:${apiPassword}`)}`;
     }
 
-    // Debug header disabled until backend CORS confirms allow-list for X-Debug-Mode
-    // const debugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
-    // if (debugMode) {
-    //   headers['X-Debug-Mode'] = 'true';
-    // }
+    // Debug mode is now controlled by .env HEADLESS_MODE on the Flask server
 
     const response = await fetch(`${apiBaseUrl}/food_log`, {
       method: 'POST',
@@ -128,9 +115,21 @@ export const logFoodToBackend = async (
   } catch (error) {
     console.error('Food logging error:', error);
     
+    // Provide clearer error messages for common issues
+    let errorMessage = 'Failed to log food';
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+        errorMessage = 'Cannot connect to API server. Please ensure the Flask API is running.';
+      } else if (error.message.includes('502') || error.message.includes('Bad Gateway')) {
+        errorMessage = 'API server is not responding. Please check if the Flask API is running.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to log food',
+      message: errorMessage,
     };
   }
 };

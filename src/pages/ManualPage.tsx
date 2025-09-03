@@ -351,7 +351,7 @@ Protein (g): 20`;
                 size="sm"
                 className="text-sm"
               >
-                {isLogging ? 'Logging...' : 'Log Food'}
+                {isLogging ? 'Logging... (up to 15 min)' : 'Log Food'}
               </Button>
             </div>
           </div>

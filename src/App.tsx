@@ -57,8 +57,10 @@ function DashboardWrapper() {
 
 // Wrapper component for manual page to handle sample data loading
 function ManualWrapper() {
+  const { loadSampleData } = useSampleData();
+  
   return (
-    <Layout onLoadSample={() => {}}>
+    <Layout onLoadSample={loadSampleData}>
       <ManualPage />
     </Layout>
   );

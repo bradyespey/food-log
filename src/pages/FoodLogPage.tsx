@@ -338,7 +338,24 @@ ${entry.prompt}`;
       }
     } catch (error) {
       console.error('Logging failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to log food';
+      
+      // Enhanced error handling with specific messages
+      let errorMessage = 'Failed to log food';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Cannot connect to API server') || 
+            error.message.includes('Failed to fetch') || 
+            error.message.includes('CORS')) {
+          errorMessage = 'API server is not running. Please start the Flask API server.';
+        } else if (error.message.includes('502') || error.message.includes('Bad Gateway')) {
+          errorMessage = 'API server is not responding. Check server status.';
+        } else if (error.message.includes('API error')) {
+          errorMessage = `API Error: ${error.message}`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast.error(errorMessage);
     } finally {
       setIsLogging(false);

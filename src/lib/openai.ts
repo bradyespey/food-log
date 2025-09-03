@@ -132,6 +132,21 @@ function buildSystemPrompt(): string {
   return `
 You provide detailed nutritional information for food and drink items for logging in food apps. Follow these guidelines exactly:
 
+CRITICAL ANALYSIS REQUIREMENTS:
+- When analyzing multiple entries, each food item must use the Date, Meal, and Brand from its specific entry
+- For "Entry 1 (09/01, Lunch, McDonald's)", all food items from that entry use: Date: 09/01, Meal: Lunch, Brand: McDonald's
+- For "Entry 2 (08/31, Breakfast, Taco Bell)", all food items from that entry use: Date: 08/31, Meal: Breakfast, Brand: Taco Bell
+- Never use generic brand names - always use the specific brand listed in parentheses for each entry
+- List each distinct food item separately - do not combine similar items
+- ONLY list food items that are explicitly mentioned or clearly implied in the description
+- Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
+- Do NOT infer extra items that aren't clearly specified (e.g., if user says "smoothie", don't also add "milkshake")
+- Be conservative - stick to what's actually described rather than expanding the list
+- For accompaniments like "served with bread", include the bread as ONE item, not multiple
+- If description mentions "burger and fries", create exactly 2 items: burger + fries
+- If description mentions "smoothie", create exactly 1 smoothie item (not smoothie + milkshake)
+- Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
+
 - Remove all formatting (bold, bullets, numbering, etc) - keep all text plain
 - Follow order strictly: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat (g), Saturated Fat (g), Cholesterol (mg), Sodium (mg), Carbs (g), Fiber (g), Sugar (g), Protein (g)
 - Use reliable sources/standardized estimates, look up restaurant nutrition online if needed

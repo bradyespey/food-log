@@ -16,10 +16,18 @@ import { useSampleData } from '../App';
 const FoodLogPage: React.FC = () => {
   const { setLoadSampleData } = useSampleData();
   
+  // Helper function to get local date string (not UTC)
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // ── Multi-Entry State ────────────────────────────────────────────
   const [foodEntries, setFoodEntries] = useState<FoodEntryCard[]>([{
     id: '1',
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(new Date()),
     meal: 'Breakfast',
     brand: '',
     prompt: '',
@@ -45,11 +53,119 @@ const FoodLogPage: React.FC = () => {
   const estimatedCost = estimateCost('', totalImages) + (totalPromptLength / 1000) * 0.001;
   const isFormValid = validEntries.length > 0;
 
+  // ── Image Compression Utility ────────────────────────────────────
+  const compressImageFile = async (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        // Limit to 1280px max width/height
+        const maxSize = 1280;
+        let { width, height } = img;
+        
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            resolve(compressedFile);
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', 0.8);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // ── Sample Data Loading ──────────────────────────────────────────
+  const loadSampleDataFunction = useCallback(async () => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Sample data for different scenarios
+    const sampleData = [
+      {
+        date: getLocalDateString(today), // Today (local time)
+        meal: 'Dinner' as const,
+        brand: 'Sample Restaurant',
+        prompt: '- Hummus, served with house bread (had maybe half the hummus and all of the side bread)\n- Big League (mocktail), ritual tequila substitute, lime, orgeat, strawberry\n- SHAWARMA-SPICED PRIME SKIRT STEAK FRITES* za\'atar, feta, berbere red wine jus',
+        images: [
+          // Load sample images from public folder
+          fetch('/big-league-mocktail.jpeg').then(r => r.blob()).then(blob => new File([blob], 'big-league-mocktail.jpeg', { type: 'image/jpeg' })),
+          fetch('/hummus-and-bread.jpeg').then(r => r.blob()).then(blob => new File([blob], 'hummus-and-bread.jpeg', { type: 'image/jpeg' })),
+          fetch('/house-bread.jpeg').then(r => r.blob()).then(blob => new File([blob], 'house-bread.jpeg', { type: 'image/jpeg' })),
+          fetch('/shawarma-steak-frites.jpeg').then(r => r.blob()).then(blob => new File([blob], 'shawarma-steak-frites.jpeg', { type: 'image/jpeg' }))
+        ]
+      },
+      {
+        date: getLocalDateString(yesterday), // Yesterday (local time)
+        meal: 'Lunch' as const,
+        brand: 'Sample Smoothie Shop',
+        prompt: '"Bro" smoothie with a blend of banana, peanut butter, protein powder, almond milk',
+        images: [
+          fetch('/bro-smoothie.jpeg').then(r => r.blob()).then(blob => new File([blob], 'bro-smoothie.jpeg', { type: 'image/jpeg' }))
+        ]
+      }
+    ];
+
+    try {
+      // Resolve all images (no compression here - let OpenAI handle it)
+      for (const data of sampleData) {
+        data.images = await Promise.all(data.images);
+      }
+
+      // Update existing food entries with sample data
+      setFoodEntries(prevEntries => {
+        const updatedEntries = [...prevEntries];
+        
+        // Fill each existing card with sample data (cycling through if more cards than samples)
+        for (let i = 0; i < updatedEntries.length; i++) {
+          const sampleIndex = i % sampleData.length;
+          const sample = sampleData[sampleIndex];
+          
+          updatedEntries[i] = {
+            ...updatedEntries[i],
+            date: sample.date,
+            meal: sample.meal,
+            brand: sample.brand,
+            prompt: sample.prompt,
+            images: [...sample.images] // Create a copy of the images array
+          };
+        }
+        
+        // Only show one toast message
+        return updatedEntries;
+      });
+      
+      toast.success(`Loaded sample data into ${foodEntries.length} food card${foodEntries.length > 1 ? 's' : ''}`);
+    } catch (error) {
+      console.error('Error loading sample data:', error);
+      toast.error('Failed to load sample data');
+    }
+  }, [foodEntries.length]);
+
   // ── Handlers ────────────────────────────────────────────────────
   const addFoodEntry = useCallback(() => {
     const newEntry: FoodEntryCard = {
       id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(new Date()),
       meal: 'Breakfast',
       brand: '',
       prompt: '',
@@ -86,11 +202,10 @@ const FoodLogPage: React.FC = () => {
     toast.dismiss();
     
     try {
-      // Combine all valid entries into a single prompt with individual dates
-      const combinedPrompt = validEntries.map((entry) => {
-        const mealLabel = validEntries.length > 1 ? `${entry.meal} (${entry.brand})` : `${entry.brand}`;
+      // Combine all valid entries into a single prompt
+      const combinedPrompt = validEntries.map((entry, index) => {
         const formattedDate = entry.date.split('-').slice(1).join('/'); // Convert YYYY-MM-DD to MM/DD
-        return `**${mealLabel} - ${formattedDate}:**
+        return `Entry ${index + 1} (${formattedDate}, ${entry.meal}, ${entry.brand}):
 ${entry.prompt}`;
       }).join('\n\n');
 
@@ -111,7 +226,7 @@ ${entry.prompt}`;
       const hasMultipleMeals = new Set(validEntries.map(e => e.meal)).size > 1;
       const meal = hasMultipleMeals ? 'Mixed' as any : firstEntry.meal;
       
-      // Don't override individual brands with 'Multiple' - let AI use actual brand names
+      // Don't override brands - preserve individual brand names from entries
 
 
 
@@ -126,7 +241,7 @@ ${entry.prompt}`;
           images: allImages,
           date: firstEntry.date,
           meal: meal,
-          brand: firstEntry.brand, // Use actual brand name, not 'Multiple'
+          brand: 'Multiple Restaurants',
         }) as Promise<any>,
         timeoutPromise
       ]);
@@ -142,13 +257,61 @@ ${entry.prompt}`;
         setQuestions(data.questions);
         toast.error('AI needs more information to provide accurate analysis');
       } else if (data?.items && data.items.length > 0) {
-        // Successful analysis - preserve individual entry dates
+        // Successful analysis - map AI items to entry dates
+        const processedItems = data.items.map((item: any, index: number) => {
+          // Find which entry this item belongs to based on the AI's analysis
+          let targetEntry = validEntries[0]; // Default to first entry
+          
+          // First try exact date match (most reliable for multi-entry scenarios)
+          const dateMatch = validEntries.find(entry => {
+            const entryDate = entry.date.split('-').slice(1).join('/'); // Convert to MM/DD
+            return item.date === entryDate;
+          });
+          
+          if (dateMatch) {
+            targetEntry = dateMatch;
+          } else {
+            // Try to match by brand name
+            const brandMatch = validEntries.find(entry => 
+              item.brand && (
+                entry.brand.toLowerCase().includes(item.brand.toLowerCase()) ||
+                item.brand.toLowerCase().includes(entry.brand.toLowerCase())
+              )
+            );
+            
+            if (brandMatch) {
+              targetEntry = brandMatch;
+            } else {
+              // Try to match by meal
+              const mealMatch = validEntries.find(entry => 
+                entry.meal.toLowerCase() === item.meal?.toLowerCase()
+              );
+              
+              if (mealMatch) {
+                targetEntry = mealMatch;
+              } else {
+                // Fall back to round-robin for unmatched items
+                const entryIndex = index % validEntries.length;
+                targetEntry = validEntries[entryIndex];
+              }
+            }
+          }
+          
+          // Use the matched entry's values
+          return {
+            ...item,
+            date: targetEntry.date.split('-').slice(1).join('/'),
+            meal: targetEntry.meal,
+            brand: targetEntry.brand
+          };
+        });
+
         const analysisData = {
           date: validEntries.length === 1 
             ? firstEntry.date.split('-').slice(1).join('/') // Single entry: use its date
             : 'Multiple Dates', // Multiple entries: indicate mixed dates
           meal: meal,
-          items: data.items,
+          items: processedItems, // Use processed items with correct entry data
           plainText: data.plainText || '',
           // Store individual entry info for proper date handling
           entryDates: validEntries.map(entry => ({
@@ -211,70 +374,15 @@ ${entry.prompt}`;
     }
   }, [analysisResult, logWater]);
 
-  const handleSampleData = useCallback(async () => {
-    const samplePrompt = `- Hummus, served with house bread (had maybe half the hummus and all of the side bread)
-- Big League (mocktail), ritual tequila substitute, lime, orgeat, strawberry  
-- SHAWARMA-SPICED PRIME SKIRT STEAK FRITES* za'atar, feta. berbere red wine jus`;
-
-    try {
-      // Convert the actual photos to File objects
-      const photoUrls = [
-        '/57E8E1E8-DF20-45B7-9B45-5B845A525770_1_105_c.jpeg',
-        '/10056C94-9E35-4980-AEB9-9C78DB4057B5_1_105_c.jpeg',
-        '/B26AFF03-F186-44A5-A9B7-293AE8003AE6_1_105_c.jpeg',
-        '/BF08A753-0D81-4CB3-8116-AB7588354C73_1_105_c.jpeg'
-      ];
-
-      const photoNames = [
-        'Big League Mocktail',
-        'Hummus & Bread', 
-        'House Bread',
-        'Shawarma Steak'
-      ];
-
-      // Fetch and convert photos to File objects
-      const photoFiles = await Promise.all(
-        photoUrls.map(async (url, index) => {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          const file = new File([blob], photoNames[index].toLowerCase().replace(/\s+/g, '-') + '.jpeg', { type: 'image/jpeg' });
-          return file;
-        })
-      );
-
-      // Find first entry with empty fields, or use the first entry
-      const targetEntryId = foodEntries.find(entry => !entry.prompt && !entry.brand)?.id || foodEntries[0]?.id;
-      
-      if (targetEntryId) {
-        setFoodEntries(prev => prev.map(entry => 
-          entry.id === targetEntryId 
-            ? {
-                ...entry,
-                date: new Date().toISOString().split('T')[0],
-                meal: 'Dinner',
-                brand: 'Sample Restaurant',
-                prompt: samplePrompt,
-                images: photoFiles,
-              }
-            : entry
-        ));
-        toast.success('Sample data and photos loaded! Click Analyze to process.');
-      }
-    } catch (error) {
-      console.error('Error creating sample images:', error);
-      toast.error('Failed to create sample images');
-    }
-  }, [foodEntries]);
-
-  // Register handleSampleData with context for navbar access
+  // Register loadSampleDataFunction with context for navbar access
   useEffect(() => {
-    setLoadSampleData(handleSampleData);
-  }, [setLoadSampleData, handleSampleData]);
+    setLoadSampleData(loadSampleDataFunction);
+  }, [setLoadSampleData, loadSampleDataFunction]);
 
   const handleClear = useCallback(() => {
     setFoodEntries([{
       id: '1',
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(new Date()),
       meal: 'Breakfast',
       brand: '',
       prompt: '',
@@ -309,20 +417,9 @@ ${entry.prompt}`;
     if (!result?.items) return '';
     
     const formattedItems = result.items.map((item: FoodItem, index: number) => {
-      // Map items to their corresponding entries based on order
-      let itemDate = result.date;
-      let itemMeal = result.meal;
-      
-      if (result.entryDates && result.entryDates.length > 1) {
-        // For multiple entries, try to map items to entries based on order
-        // This assumes the AI returns items in roughly the same order as the entries
-        const entryIndex = Math.min(index, result.entryDates.length - 1);
-        const entry = result.entryDates[entryIndex];
-        if (entry) {
-          itemDate = entry.date;
-          itemMeal = entry.meal;
-        }
-      }
+      // Use the processed item data directly - it already has correct date/meal/brand
+      const itemDate = item.date;
+      const itemMeal = item.meal;
       
       // Format serving size exactly like your old site
       const servingSize = item.serving.descriptor 
@@ -372,21 +469,31 @@ ${entry.prompt}`;
         const match = line.match(/Logging item (\d+) of (\d+):/);
         if (match) {
           currentItemIndex = parseInt(match[1]) - 1; // Convert to 0-based index
+          
+          // Check if there are error indicators for this item in subsequent lines
+          const hasError = lines.some(errorLine => 
+            errorLine.includes('Error') || 
+            errorLine.includes('Failed') ||
+            errorLine.includes('element click intercepted') ||
+            errorLine.includes('Traceback') ||
+            errorLine.includes('Exception')
+          );
+          
           verification[currentItemIndex] = {
-            foodName: { verified: true, matches: true },
-            brand: { verified: true, matches: true },
-            icon: { verified: true, matches: true },
-            serving: { verified: true, matches: true },
-            calories: { verified: true, matches: true },
-            fatG: { verified: true, matches: true },
-            satFatG: { verified: true, matches: true },
-            cholesterolMg: { verified: true, matches: true },
-            sodiumMg: { verified: true, matches: true },
-            carbsG: { verified: true, matches: true },
-            fiberG: { verified: true, matches: true },
-            sugarG: { verified: true, matches: true },
-            proteinG: { verified: true, matches: true },
-            allFieldsMatch: true,
+            foodName: { verified: !hasError, matches: !hasError },
+            brand: { verified: !hasError, matches: !hasError },
+            icon: { verified: !hasError, matches: !hasError },
+            serving: { verified: !hasError, matches: !hasError },
+            calories: { verified: !hasError, matches: !hasError },
+            fatG: { verified: !hasError, matches: !hasError },
+            satFatG: { verified: !hasError, matches: !hasError },
+            cholesterolMg: { verified: !hasError, matches: !hasError },
+            sodiumMg: { verified: !hasError, matches: !hasError },
+            carbsG: { verified: !hasError, matches: !hasError },
+            fiberG: { verified: !hasError, matches: !hasError },
+            sugarG: { verified: !hasError, matches: !hasError },
+            proteinG: { verified: !hasError, matches: !hasError },
+            allFieldsMatch: !hasError,
             verificationComplete: true
           };
         }
@@ -543,6 +650,9 @@ ${entry.prompt}`;
                   item={item} 
                   verificationStatus={verificationStatus[index]}
                   isLogging={isLogging}
+                  index={index}
+                  validEntries={validEntries}
+                  analysisResult={analysisResult}
                 />
               ))}
             </div>
@@ -583,9 +693,12 @@ interface FoodItemCardProps {
   item: FoodItem;
   verificationStatus?: any;
   isLogging: boolean;
+  index: number;
+  validEntries: FoodEntryCard[];
+  analysisResult: any;
 }
 
-const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, isLogging }) => {
+const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, isLogging, index, validEntries, analysisResult }) => {
   return (
     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
       {/* Header with Food Name, Date, Meal, and Food Type */}
@@ -595,7 +708,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, verificationStatus, i
           <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {item.date}
+              {item.date || 'N/A'}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />

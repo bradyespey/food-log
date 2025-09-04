@@ -221,6 +221,8 @@ npm run preview
 - **Smart Button Placement**: Add Another Food Item button in each Food Entry card, action buttons in Analysis Results header
 - **Side-by-Side Layout**: Food items display in responsive grid for better space utilization
 - **Food Type Display**: Shows actual food type text (e.g., "Dip", "Beef") instead of generic dinner plate icons
+- **Expandable Manual Textarea**: Vertical resizing capability for the Manual page food log text box for easier editing of large amounts of food data
+- **Smart Date Inheritance**: New food entry cards automatically inherit the date from the most recently updated entry
 
 ## Current Status
 
@@ -285,6 +287,17 @@ npm run preview
 - **TypeScript Build Fixes**: Resolved all build errors including unused imports, type mismatches, and parameter cleanup
 - **Brand Extraction Fix**: Fixed AI parsing to extract brand names from AI response instead of defaulting to "Multiple Restaurants"
 - **Verification Timeout UI**: Added "(up to 15 min)" to logging buttons and verification spinners to clarify Selenium operation duration
+- **Multi-Card Date/Meal/Brand Inheritance Fix**: Enhanced AI parsing with improved regex patterns to properly extract date, meal, and brand from AI responses instead of inheriting from first entry
+- **Smart Date Inheritance**: New food entry cards now automatically inherit the date from the most recently updated entry, making backlog processing much easier
+- **Expandable Manual Textarea**: Added vertical resizing capability to the Manual page food log text box for easier editing of large amounts of food data
+- **Invalid Serving Unit Validation**: Enhanced serving size validation to automatically convert invalid units like "plate", "bowl", "platter" to valid "serving" units with smart estimation
+- **Editable Analysis Results**: Complete inline editing system with edit/save/cancel buttons for all food item fields
+- **Nutrition Multiplier**: Custom multiplier input with quick buttons (0.5x, 1.5x, 2x) and onBlur/Enter functionality
+- **Delete Food Items**: Ability to remove individual food items from analysis results
+- **Enhanced Tab Navigation**: Proper tab order in edit mode following nutritional layout (left column then right column)
+- **Auto-scroll to Results**: Analysis results automatically scroll into view after completion
+- **Navbar Clear Button**: Clear functionality moved to navbar with responsive mobile design
+- **Fixed Edit Logging**: Edited food items now properly log to backend instead of original analysis
 
 ### 🔄 In Progress
 - **Error Monitoring**: Enhanced Sentry integration for API endpoints
@@ -473,6 +486,40 @@ npm run preview
 - Enhanced system prompt already had proper instructions for brand mapping per entry
 **Status**: ✅ Resolved - Each food item now gets correct brand name from its corresponding form entry
 
+### 18. Multi-Card Date/Meal/Brand Inheritance Issue
+**Problem**: 
+- Multi-card food entries were inheriting date, meal, and brand from the first card instead of using their respective values
+- This made it difficult to process backlog photos spanning multiple dates
+- Users had to manually correct each food item after AI analysis
+**Solution**: 
+- Enhanced regex patterns in `parseIndividualFoodItem` for better extraction of date, meal, and brand from AI responses
+- Added multiple pattern variations: `/Date:\s*(.+)/i`, `/^Date:\s*(.+)/i`, `/Date\s*:\s*(.+)/i`
+- Improved system prompt to explicitly require proper Date/Meal/Brand format in AI responses
+- Added fallback patterns for "Restaurant:" field in addition to "Brand:"
+**Status**: ✅ Resolved - Each food item now properly extracts and uses its correct date, meal, and brand
+
+### 19. Smart Date Inheritance for New Food Entry Cards
+**Problem**: 
+- New food entry cards always used today's date, making it difficult to work with backlog photos
+- Users had to manually change the date for each new card when processing historical photos
+**Solution**: 
+- Modified `addFoodEntry` function to inherit date from the most recently updated entry
+- Added fallback to today's date only when no entries exist
+- Other fields (meal, brand, prompt, images) remain blank for new cards
+**Status**: ✅ Resolved - New cards now automatically inherit the date from the previous entry
+
+### 20. Invalid Serving Unit Validation
+**Problem**: 
+- AI was generating invalid serving units like "1 plate (approximately 400 grams)" and "1 bowl (approximately 500 grams)"
+- These units are not valid for the Selenium automation system
+- Users had to manually correct serving sizes after AI analysis
+**Solution**: 
+- Enhanced system prompt to explicitly prohibit "bowl", "plate", "platter", "dish", "portion" units
+- Added smart validation logic in `normalizeServingSize` to detect and convert invalid units
+- Implemented intelligent estimation: "1 plate" → "1 serving", "2 plates" → "2 servings", "1 bowl" → "1 serving"
+- Added fallback to "1 serving" for other invalid units
+**Status**: ✅ Resolved - Invalid serving units are automatically converted to valid "serving" units
+
 ## Next Steps
 
 ### Immediate (Next Session)
@@ -496,6 +543,10 @@ npm run preview
 - **Date Accuracy**: Local timezone handling ensures correct dates in UI and backend logging
 - **Robust Automation**: Page refresh logic handles modal overlays and prevents infinite retries
 - **Build System**: TypeScript compilation passes without errors, ready for deployment
+- **Smart Date Inheritance**: New food entry cards automatically inherit dates for easier backlog processing
+- **Enhanced Validation**: Invalid serving units automatically converted to valid "serving" units
+- **Improved Parsing**: Multi-card analysis now properly preserves individual entry details
+- **Expandable UI**: Manual page textarea can be resized for better editing experience
 
 ### Short Term
 1. **Daily Usage**: Use the system for regular food logging to identify any edge cases

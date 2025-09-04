@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../ThemeProvider';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/DropdownMenu';
 import { useState } from 'react';
+import { useSampleData } from '../../App';
 
 interface NavbarProps {
   onLoadSample?: () => void;
@@ -17,6 +18,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
   const { pathname } = useLocation();
   const { theme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { clearData } = useSampleData();
 
   const isActive = (path: string) => pathname === path;
 
@@ -65,6 +67,12 @@ export function Navbar({ onLoadSample }: NavbarProps) {
           </div>
           {/* Theme toggle and sign out (always visible) */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Clear Button (on both AI Food Log and Manual pages) */}
+            {clearData && (
+              <Button variant="outline" size="sm" onClick={clearData}>
+                Clear
+              </Button>
+            )}
             {/* Load Sample Data Button (on both AI Food Log and Manual pages) */}
             {onLoadSample && (
               <Button variant="outline" size="sm" onClick={onLoadSample}>
@@ -117,6 +125,14 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                   {label}
                 </Link>
               ))}
+              {/* Clear Button for mobile */}
+              {clearData && (
+                <div className="px-4 pt-2">
+                  <Button variant="outline" size="sm" onClick={clearData} className="w-full">
+                    Clear
+                  </Button>
+                </div>
+              )}
               {/* Load Sample Data Button for mobile */}
               {onLoadSample && (
                 <div className="px-4 pt-2">

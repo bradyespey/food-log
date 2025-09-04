@@ -183,6 +183,37 @@ function normalizeServingSize(fields: Fields, idx: number) {
   // Fix common malformed patterns first
   let cleaned = raw.replace(/\s+/g, ' ').trim();
   
+  // Check for invalid units like "plate", "bowl", "platter", "dish", "portion"
+  const invalidUnits = ['plate', 'bowl', 'platter', 'dish', 'portion', 'plates', 'bowls', 'platters', 'dishes', 'portions'];
+  const hasInvalidUnit = invalidUnits.some(unit => 
+    cleaned.toLowerCase().includes(` ${unit}`) || 
+    cleaned.toLowerCase().includes(` ${unit}(`) ||
+    cleaned.toLowerCase().endsWith(` ${unit}`)
+  );
+  
+  if (hasInvalidUnit) {
+    console.warn(`Invalid serving unit detected: "${cleaned}", attempting to estimate serving size`);
+    
+    // Try to extract amount from the invalid unit for better estimation
+    const amountMatch = cleaned.match(/^(\d+\.?\d*)\s+/);
+    const amount = amountMatch ? parseFloat(amountMatch[1]) : 1;
+    
+    // Estimate based on common patterns
+    if (cleaned.toLowerCase().includes('plate')) {
+      // Small plate = 1 serving, large plate = 2-3 servings
+      const estimatedServings = amount <= 1 ? 1 : Math.min(amount, 3);
+      fields["Serving Size"] = `${estimatedServings} serving`;
+    } else if (cleaned.toLowerCase().includes('bowl')) {
+      // Small bowl = 1 serving, large bowl = 2 servings
+      const estimatedServings = amount <= 1 ? 1 : Math.min(amount, 2);
+      fields["Serving Size"] = `${estimatedServings} serving`;
+    } else {
+      // Default fallback
+      fields["Serving Size"] = "1 serving";
+    }
+    return;
+  }
+  
   // Fix "0.5 5 serving" → "0.5 serving" (decimal + space + number + serving)
   if (cleaned.match(/^(\d+\.\d+)\s+\d+\s+serving$/i)) {
     const amount = parseFloat(cleaned.match(/^(\d+\.\d+)\s+\d+\s+serving$/i)![1]);

@@ -138,7 +138,9 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - For "Entry 2 (08/31, Breakfast, Taco Bell)", all food items from that entry use: Date: 08/31, Meal: Breakfast, Brand: Taco Bell
 - Never use generic brand names - always use the specific brand listed in parentheses for each entry
 - When user provides partial nutrition data (e.g., "Calories: 690, Fat: 43g, Carbs: 43g, Protein: 40g"), estimate the missing values (like sodium, cholesterol, fiber, sugar) based on the food type - do NOT set them to 0
-- Use valid serving sizes from SERVING_TYPES only - never use "bowl", "platter", or similar invalid units
+- Use valid serving sizes from SERVING_TYPES only - NEVER use "bowl", "plate", "platter", "dish", "portion", or similar invalid units
+- If you're unsure about serving size, default to "1 serving" instead of using invalid units
+- Estimate based on photo context: small plate = 1 serving, large plate = 2-3 servings, etc.
 - List each distinct food item separately - do not combine similar items
 - ONLY list food items that are explicitly mentioned or clearly implied in the description
 - Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
@@ -151,6 +153,10 @@ CRITICAL ANALYSIS REQUIREMENTS:
 
 - Remove all formatting (bold, bullets, numbering, etc) - keep all text plain
 - Follow order strictly: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat (g), Saturated Fat (g), Cholesterol (mg), Sodium (mg), Carbs (g), Fiber (g), Sugar (g), Protein (g)
+- CRITICAL: Each food item MUST include the exact Date, Meal, and Brand from its corresponding entry in the format:
+  Date: MM/DD
+  Meal: Breakfast/Lunch/Dinner/Snacks  
+  Brand: [exact brand name from entry]
 - Use reliable sources/standardized estimates, look up restaurant nutrition online if needed
 - Meal must be: Breakfast, Lunch, Dinner, or Snacks
 - Max 60 character food names, shorten where possible (e.g., "w/" for "with"), proper case
@@ -459,9 +465,19 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
     const foodName = extractValue([/Food Name:\s*(.+)/i, /Item.*:\s*(.+)/i, /^(.+?):/i], 'Unknown Food');
     if (foodName === 'Unknown Food' || foodName === '') return null;
     
-    // Extract date and meal from the AI response
-    const date = extractValue([/Date:\s*(.+)/i], request.date);
-    const extractedMeal = extractValue([/Meal:\s*(.+)/i], request.meal);
+    // Extract date and meal from the AI response with improved patterns
+    const date = extractValue([
+      /Date:\s*(.+)/i, 
+      /^Date:\s*(.+)/i,
+      /Date\s*:\s*(.+)/i
+    ], request.date);
+    
+    const extractedMeal = extractValue([
+      /Meal:\s*(.+)/i, 
+      /^Meal:\s*(.+)/i,
+      /Meal\s*:\s*(.+)/i
+    ], request.meal);
+    
     const meal = (extractedMeal === 'Breakfast' || extractedMeal === 'Lunch' || extractedMeal === 'Dinner' || extractedMeal === 'Snacks') 
       ? extractedMeal 
       : request.meal as 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
@@ -484,7 +500,13 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
       foodName: foodName.substring(0, 60), // Limit to 60 chars as per spec
       date: date,
       meal: meal,
-      brand: extractValue([/Brand:\s*(.+)/i], request.brand), // Extract brand from AI response
+      brand: extractValue([
+        /Brand:\s*(.+)/i, 
+        /^Brand:\s*(.+)/i,
+        /Brand\s*:\s*(.+)/i,
+        /Restaurant:\s*(.+)/i,
+        /^Restaurant:\s*(.+)/i
+      ], request.brand), // Extract brand from AI response with improved patterns
               icon: validateIcon(extractValue([/Icon:\s*(.+)/i], 'Default')),
         serving: {
           amount: servingAmount,

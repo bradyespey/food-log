@@ -23,7 +23,7 @@ export default function ManualPage() {
   });
 
   // Sample data context
-  const { setLoadSampleData } = useSampleData();
+  const { setLoadSampleData, setClearData } = useSampleData();
 
   // Sample data loading function for Manual page
   const loadSampleDataFunction = useCallback(() => {
@@ -38,12 +38,12 @@ export default function ManualPage() {
       return `${month}/${day}`;
     };
 
-    const sampleData = `Food Name: Hummus w/ House Bread
+    const sampleData = `Food Name: Test Hummus w/ House Bread
 Date: ${getLocalDateString(today)}
 Meal: Dinner
 Brand: Sample Restaurant
 Icon: Dip, Green
-Serving Size: 4 ounces
+Serving Size: 4.5 ounces
 Calories: 300
 Fat (g): 15
 Saturated Fat (g): 2
@@ -54,12 +54,12 @@ Fiber (g): 5
 Sugar (g): 2
 Protein (g): 8
 
-Food Name: Big League Mocktail
+Food Name: Test Big League Mocktail
 Date: ${getLocalDateString(today)}
 Meal: Dinner
 Brand: Sample Restaurant
 Icon: Mixed Drink
-Serving Size: 12 fluid ounces
+Serving Size: 12.33 fluid ounces
 Calories: 150
 Fat (g): 0
 Saturated Fat (g): 0
@@ -70,7 +70,7 @@ Fiber (g): 0
 Sugar (g): 30
 Protein (g): 0
 
-Food Name: Shawarma-Spiced Prime Skirt Steak Frites
+Food Name: Test Shawarma-Spiced Prime Skirt Steak Frites
 Date: ${getLocalDateString(today)}
 Meal: Dinner
 Brand: Sample Restaurant
@@ -86,12 +86,12 @@ Fiber (g): 5
 Sugar (g): 2
 Protein (g): 50
 
-Food Name: Bro Smoothie
+Food Name: Test Bro Smoothie
 Date: ${getLocalDateString(yesterday)}
 Meal: Lunch
 Brand: Sample Smoothie Shop
 Icon: Smoothie
-Serving Size: 16 fluid ounces
+Serving Size: 16.74 fluid ounces
 Calories: 400
 Fat (g): 15
 Saturated Fat (g): 3
@@ -147,7 +147,19 @@ Protein (g): 20`;
       }, logWater);
       
       if (result.success) {
-        setLogResult(`✅ ${result.message}\n\n${result.output || ''}`);
+        // Create custom success message with food items and dates
+        let successMessage = `✅ ${result.message}\n\n`;
+        
+        // Add each food item with its date
+        foodItems.forEach((item, index) => {
+          const lines = item.split('\n');
+          const foodName = lines.find(line => line.startsWith('Food Name:'))?.replace('Food Name:', '').trim() || `Item ${index + 1}`;
+          const date = lines.find(line => line.startsWith('Date:'))?.replace('Date:', '').trim() || 'Unknown Date';
+          successMessage += `• ${foodName} (${date})\n`;
+        });
+        
+        successMessage += `\n${result.output || ''}`;
+        setLogResult(successMessage);
         toast.success(`Food logged successfully! (${foodItems.length} items)`);
         
         if (logWater) {
@@ -285,7 +297,15 @@ Protein (g): 20`;
     setFoodText('');
     setLogResult('');
     toast.success('Cleared all data');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // Register clear function with context for navbar access
+  useEffect(() => {
+    setClearData(handleClear);
+  }, [setClearData, handleClear]);
 
 
 
@@ -335,15 +355,6 @@ Protein (g): 20`;
             </CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
-                variant="outline"
-                onClick={handleClear}
-                disabled={isLogging}
-                size="sm"
-                className="text-sm"
-              >
-                Clear
-              </Button>
-              <Button
                 onClick={handleLogFood}
                 disabled={!foodText.trim() || isLogging}
                 isLoading={isLogging}
@@ -382,7 +393,7 @@ Protein (g): 1
             value={foodText}
             onChange={(e) => setFoodText(e.target.value)}
             rows={20}
-            className="font-mono text-sm resize-none"
+            className="font-mono text-sm resize-y min-h-[500px]"
           />
 
           {/* Item count indicator */}

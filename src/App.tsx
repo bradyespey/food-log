@@ -11,13 +11,17 @@ import ManualPage from './pages/ManualPage'
 import { ThemeProvider } from './components/ThemeProvider'
 import React, { createContext, useContext, useState } from 'react'
 
-// Create a context for sample data loading
+// Create a context for sample data loading and clearing
 const SampleDataContext = createContext<{
   loadSampleData: () => void;
   setLoadSampleData: (fn: () => void) => void;
+  clearData: () => void;
+  setClearData: (fn: () => void) => void;
 }>({
   loadSampleData: () => {},
   setLoadSampleData: () => {},
+  clearData: () => {},
+  setClearData: () => {},
 });
 
 export const useSampleData = () => useContext(SampleDataContext);
@@ -26,6 +30,7 @@ export const useSampleData = () => useContext(SampleDataContext);
 // Provider component
 function SampleDataProvider({ children }: { children: React.ReactNode }) {
   const [loadSampleDataFn, setLoadSampleDataFn] = useState<(() => void) | null>(null);
+  const [clearDataFn, setClearDataFn] = useState<(() => void) | null>(null);
 
   const loadSampleData = () => {
     if (loadSampleDataFn) {
@@ -37,8 +42,18 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
     setLoadSampleDataFn(() => fn);
   };
 
+  const clearData = () => {
+    if (clearDataFn) {
+      clearDataFn();
+    }
+  };
+
+  const setClearData = (fn: () => void) => {
+    setClearDataFn(() => fn);
+  };
+
   return (
-    <SampleDataContext.Provider value={{ loadSampleData, setLoadSampleData }}>
+    <SampleDataContext.Provider value={{ loadSampleData, setLoadSampleData, clearData, setClearData }}>
       {children}
     </SampleDataContext.Provider>
   );

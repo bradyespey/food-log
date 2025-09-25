@@ -62,7 +62,7 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
 - 🏗️ **Build**: `npm run build` — Build for production with TypeScript compilation
 - 🔍 **Lint**: `npm run lint` — ESLint code checking
 - 👀 **Preview**: `npm run preview` — Preview production build
-- 🔒 **Security**: Pre-commit hooks prevent API key leaks
+- 🔒 **Security**: Pre-commit hooks prevent API key leaks (see `scripts/` folder)
 - 🧪 **Testing**: Production test suite with 4 essential tests (login, food, water, comprehensive)
 
 ### Windows Backend API Endpoints
@@ -97,7 +97,7 @@ FoodLog/
 │   ├── context/             # AuthContext for Firebase authentication
 │   └── types/               # TypeScript type definitions
 ├── flask/                   # Legacy Flask implementation (archived)
-├── scripts/                 # Pre-commit hooks for security
+├── scripts/                 # Pre-commit hooks for API key protection
 └── netlify.toml            # Netlify deployment configuration
 ```
 

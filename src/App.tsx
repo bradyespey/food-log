@@ -2,7 +2,6 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import { RequireAuth } from './components/Layout/RequireAuth'
 import { Layout } from './components/Layout/Layout'
 import { LoginPage } from './pages/LoginPage'
 import { AuthCallback } from './pages/AuthCallback'

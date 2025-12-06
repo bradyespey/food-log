@@ -6,14 +6,15 @@ import { CheckCircle, Droplets, Copy, PenTool } from 'lucide-react';
 import { logFoodToBackend } from '../lib/api';
 import { toast, Toaster } from 'react-hot-toast';
 import { useSampleData } from '../App';
-
-
-
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function ManualPage() {
   const [isLogging, setIsLogging] = useState(false);
   const [logResult, setLogResult] = useState('');
   const [foodText, setFoodText] = useState('');
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [logWater, setLogWater] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('foodlog-logwater');
@@ -119,6 +120,12 @@ Protein (g): 20`;
   }, [logWater]);
 
   const handleLogFood = useCallback(async () => {
+    if (!session?.isAuthenticated) {
+      toast.error('Please sign in to log food');
+      navigate('/login');
+      return;
+    }
+
     if (!foodText.trim()) {
       toast.error('Please paste food items to log');
       return;

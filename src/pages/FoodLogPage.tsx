@@ -12,9 +12,13 @@ import { analyzeFood, estimateCost } from '../lib/openai';
 import { logFoodToBackend } from '../lib/api';
 import type { FoodItem, FoodEntryCard } from '../types';
 import { useSampleData } from '../App';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const FoodLogPage: React.FC = () => {
   const { setLoadSampleData, setClearData } = useSampleData();
+  const { session } = useAuth();
+  const navigate = useNavigate();
   
   // Helper function to get local date string (not UTC)
   const getLocalDateString = (date: Date): string => {
@@ -420,6 +424,12 @@ ${entry.prompt}`;
   }, []);
 
   const handleLogFood = useCallback(async () => {
+    if (!session?.isAuthenticated) {
+      toast.error('Please sign in to log food to Lose It!');
+      navigate('/login');
+      return;
+    }
+
     const currentResult = editedAnalysisResult || analysisResult;
     if (!currentResult) return;
 

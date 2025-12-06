@@ -14,7 +14,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ onLoadSample }: NavbarProps) {
-  const { signOut } = useAuth();
+  const { signOut, session } = useAuth();
   const { pathname } = useLocation();
   const { theme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -102,9 +102,17 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={signOut}>
-              Sign Out
-            </Button>
+            {session?.isAuthenticated ? (
+              <Button variant="outline" size="sm" onClick={signOut}>
+                Sign Out
+              </Button>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
         {/* Mobile Dropdown Menu */}
@@ -166,9 +174,17 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button variant="outline" size="sm" onClick={signOut}>
-                  Sign Out
-                </Button>
+                {session?.isAuthenticated ? (
+                  <Button variant="outline" size="sm" onClick={signOut}>
+                    Sign Out
+                  </Button>
+                ) : (
+                  <Link to="/login">
+                    <Button variant="outline" size="sm">
+                      Sign In
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>

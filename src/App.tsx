@@ -83,7 +83,7 @@ function ManualWrapper() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="foodlog-theme">
+    <ThemeProvider defaultTheme="system" storageKey="foodlog-theme">
       <BrowserRouter>
         <AuthProvider>
           <SampleDataProvider>
@@ -92,21 +92,17 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* Protected */}
+            {/* Protected / Demo Accessible */}
             <Route
               path="/dashboard"
               element={
-                <RequireAuth>
-                  <DashboardWrapper />
-                </RequireAuth>
+                <DashboardWrapper />
               }
             />
             <Route
               path="/manual"
               element={
-                <RequireAuth>
-                  <ManualWrapper />
-                </RequireAuth>
+                <ManualWrapper />
               }
             />
 

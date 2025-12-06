@@ -214,24 +214,6 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       request.images.map(compressImage)
     );
 
-    // Build input for Responses API with web search
-    // const input = [
-    //   {
-    //     role: 'system',
-    //     content: systemPrompt,
-    //   },
-    //   {
-    //     role: 'user',
-    //     content: request.images.length > 0 
-    //       ? `Analyze the food shown in the images: ${request.prompt}`
-    //       : `Analyze this food description: ${request.prompt}`,
-    //   },
-    // ] as const;
-
-    // Try with web search enabled (primary and fallback)
-    // const toolsPrimary = [{ type: "web_search" as const }];
-    // const toolsFallback = [{ type: "web_search_preview" as const }];
-
     // Build the API request
     const apiRequest = {
       model,

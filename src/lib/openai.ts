@@ -199,106 +199,74 @@ Protein (g): 50
 
 export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenAIResponse> => {
   try {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    const model = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini';
-    
-    if (!apiKey) {
-      throw new Error('OpenAI API key not configured');
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    const apiUsername = import.meta.env.VITE_API_USERNAME;
+    const apiPassword = import.meta.env.VITE_API_PASSWORD;
+
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
     }
 
-    // Build simplified system prompt
-    const systemPrompt = buildSystemPrompt();
-
-    // Compress images
+    // Compress images to base64
     const compressedImages = await Promise.all(
       request.images.map(compressImage)
     );
 
-    // Build the API request
-    const apiRequest = {
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `${request.images.length > 0 
-  ? `Analyze the food shown in the ${request.images.length} image(s). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Account for ice in drinks. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`
-  : `Analyze these food entries. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`}`,
-            },
-            ...compressedImages.map(imageData => ({
-              type: 'image_url',
-              image_url: {
-                url: imageData,
-              },
-            })),
-          ],
-        },
-      ],
-      max_tokens: 1500,
-      temperature: 0.2,
+    // Extract base64 data from data URLs
+    const base64Images = compressedImages.map(imgData => {
+      if (imgData.startsWith('data:image')) {
+        return imgData.split(',')[1];
+      }
+      return imgData;
+    });
+
+    // Build request payload
+    const payload = {
+      prompt: request.images.length > 0 
+        ? `Analyze the food shown in the ${request.images.length} image(s). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Account for ice in drinks. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`
+        : `Analyze these food entries. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`,
+      images: base64Images,
+      date: request.date,
+      meal: request.meal,
+      brand: request.brand,
     };
 
-    // Try with web search first
-    let resp;
-    try {
-      resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...apiRequest,
-          tools: [{ type: "web_search" }],
-        }),
-      });
+    // Make API call with basic authentication
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
 
-      // If web search fails, fall back to standard completion
-      if (!resp.ok && resp.status === 400) {
-        console.warn('Web search failed, falling back to standard completion');
-        resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(apiRequest),
-        });
-      }
-    } catch (e: any) {
-      // If any error occurs, try standard completion
-      console.warn('API error, falling back to standard completion:', e);
-      resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiRequest),
-      });
+    if (apiUsername && apiPassword) {
+      headers['Authorization'] = `Basic ${btoa(`${apiUsername}:${apiPassword}`)}`;
     }
 
-    if (!resp.ok) {
-      throw new Error(`OpenAI API error: ${resp.status}`);
+    const response = await fetch(`${apiBaseUrl}/food_log/analyze`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `API error: ${response.status}`);
     }
 
-    const data = await resp.json();
-    const aiResponse = data.choices?.[0]?.message?.content;
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Analysis failed');
+    }
+
+    const aiResponse = result.data?.plainText;
 
     if (!aiResponse) {
-      throw new Error('No response from OpenAI');
+      throw new Error('No response from API');
     }
 
     // ALWAYS apply serving size fixes first, before any parsing
     const fixedResponse = fixServingSizes(aiResponse);
 
-    // Parse the fixed response directly - skip validation for now
+    // Parse the fixed response directly
     const parsedResult = parseOpenAIResponse(fixedResponse, request);
     
     // Always use the fixed response for plainText

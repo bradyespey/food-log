@@ -22,8 +22,6 @@ interface OpenAIResponse {
 }
 
 // Keep these centralized so you can edit without touching the prompt text
-const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams, Ounces, Pounds; Serving Volume: Cups, Dessertspoons, Fluid Ounce, Gallons, Imperial Fluid Ounces, Imperial Pints, Imperial Quarts, Liters, Metric Cups, Milliliters, Pints, Quarts, Tablespoons, Teaspoons; Serving Amount: Bottle, Box, Can, Container, Cube, Dry Cup, Each, Jar, Package, Piece, Pot, Pouch, Punnet, Scoop, Serving, Slice, Stick, Tablet";
-
 const ICON_LIST = "Alcohol; Alcohol, White; Almond; Almond Butter; Apple; Apple Sauce; Apple, Gala; Apple, Granny Smith; Apple, Honey Crisp; Apple, Macintosh; Artichoke; Asparagus; Avocado; Bacon; Bagel; Bagel, Blueberry; Bagel, Chocolate Chip; Bagel, Sesame; Baguette; Baked Beans; Balsamic Vinaigrette; Bamboo; Banana; Banana Pepper; Bar; Bean, Black; Bean, Green; Bean, Red; Bean, White; Beef; Beer; BeerDark; Beet; Bell Pepper, Green; Bell Pepper, Red; Bell Pepper, Yellow; Biscuit; Biscuit Cracker; Blackberry; Blueberry; Breadsticks; Breakfast; Breakfast Sandwich; Broccoli; Brownie; Brussels Sprout; Burrito; Butter; Cabbage; Cake; CakeDark; CakeWhite; CakeWhiteDark; Calamari; Calories; Can; Candy; Candy Bar; Carrot; Carrots; Cashew; Casserole; Cauliflower; Celery; Cereal; Cereal Bar; CerealCheerios; CerealCornFlakes; CerealFruitLoops; Cheese; CheeseAmerican; CheeseBlue; CheeseBrie; Cheeseburger; Cheesecake; CheeseCheddar; CheeseGouda; CheesePepperjack; Cherry; CherryMaraschino; Chestnut; Chicken; Chicken Tenders; ChickenGrilled; ChickenWing; Chickpea; Chocolate; Chocolate Chip; Chocolate Chips; ChocolateDark; Churro; Cider; Cinnamon Roll; Clam; Coconut; Coffee; Coleslaw; Com; Combread; Cookie; Cookie, Christmas; Cookie, Molasses; Cookie, Red Velvet; Cookie, Sugar; Cottage Cheese; Crab; Cracker; Cranberry; Cream; Croissant; Crouton; Crumpet; Cucumber; Cupcake; Cupcake, Carrot; Cupcake, Vanilla; Curry; Date; Default; Deli Meat; Dinner Roll; Dip, Green; Dip, Red; Dish; Donut; Donut, Chocolate Iced; Donut, Strawberry Iced; DoubleCheeseburger; Dressing, Ranch; Dumpling; Eclair; Egg; Egg McMuffin; Egg Roll; Eggplant; Enchilada; Falafel; Fern; Fig; Filbert; Fish; Food, Can; Fowl; French Fries; French Toast; Fritter; Frosting, Chocolate; Frosting, Yellow; Fruit Cocktail; Fruit Leather; FruitCake; Game; Garlic; Gobo Root; Gourd; Graham Cracker; Grain; Grapefruit; Grapes; Grilled Cheese; Guava; Gummy Bear; Hamburger; Hamburger Bun; Hamburger Patty; Hamburger, Double; Hash; Hazelnut; Honey; Horseradish; Hot Dog; Hot Dog Bun; Hot Pot; Ice Cream; Ice Cream Bar; Ice Cream Sandwich; Ice Cream, Chocolate; Ice Cream, Strawberry; Iced Coffee; Iced Tea; Jam; Jicama; Juice; Kale; Kebab; Ketchup; Kiwi; Lamb; Lasagna; Latte; Leeks; Lemon; Lemonade; Lime; Liquid; Lobster; Mac And Cheese; Macadamia; Mango; Marshmallow; Mayonnaise; Meatballs; Melon; Milk; Milk Shake; Milk Shake, Chocolate; Milk Shake, Strawberry; Mixed Drink; Mixed Drink, Martini; Mixed Nuts; Muffin; Mushroom; Mustard; Nigiri Sushi; Oatmeal; Octopus; Oil; Okra; Olive, Black; Olive, Green; Omelette; Onion; Orange; Orange Chicken; Orange Juice; Pancakes; Papaya; Parfait; Parsley; Parsnip; Pasta; Pastry; Patty Sandwich; Pavlova; Peach; Peanut; Peanut Butter; Pear; Peas; Pecan; Peppers; Persimmon; Pickle; Pie; Pie, Apple; Pill; Pine Nut; Pineapple; Pistachio; Pita Sandwich; Pizza; Plum; Pocky; Pomegranate; Popcom; Popsicle; Pork; Pork Chop; Pot Pie; Potato; Potato Chip; Potato Salad; Powdered Drink; Prawn; Pretzel; Prune; Pudding; Pumpkin; Quesadilla; Quiche; Radish; Raisin; Raspberry; Ravioli; Recipe; Relish; Rhubarb; Ribs; Rice; Rice Cake; Roll; Romaine Lettuce; Salad; Salad Dressing, Balsamic; Salt; Sandwich; Sauce; Sausage; Seaweed; Seed; Shallot; Shrimp; Smoothie; Snack; Snap Bean; Soft Drink; SoftServeChocolate; SoftServeSwirl; SoftServeVanilla; Souffle; Soup; Sour Cream; Soy Nut; Soy Sauce; Spice, Brown; Spice, Green; Spice, Red; Spice, Yellow; Spinach; Spring Roll; Sprouts; Squash; Squash, Spaghetti; Starfruit; Stew, Brown; Stew, Yellow; Stir Fry; Stir Fry Noodles; Strawberry; Stuffing; Sub Sandwich; Sugar Cookie; Sugar, Brown; Sugar, White; Sushi; Syrup; Taco; Taro; Tater Tots; Tea; Tempura; Toast; Toaster Pastry; Tofu; Tomato; Tomato Soup; Tortilla; Tortilla Chip; Tostada; Turkey; Turnip; Turnover; Vegetable; Waffles; Walnut; Water; Water Chestnut; Watermelon; White Bread; Wine, Red; Wine, White; Wrap; Yam; Yogurt; Zucchini";
 
 // Simple icon validation - let the AI handle most of it with better prompting
@@ -125,76 +123,6 @@ function fixServingSizes(text: string): string {
   fixed = fixed.replace(/Serving Size: (\d+\.?\d*)\s+\d+\.?\d*\s+(\w+)/g, 'Serving Size: $1 $2');
   
   return fixed;
-}
-
-// Build system prompt based on successful Custom GPT approach
-function buildSystemPrompt(): string {
-  return `
-You provide detailed nutritional information for food and drink items for logging in food apps. Follow these guidelines exactly:
-
-CRITICAL ANALYSIS REQUIREMENTS:
-- When analyzing multiple entries, each food item must use the Date, Meal, and Brand from its specific entry
-- For "Entry 1 (09/01, Lunch, McDonald's)", all food items from that entry use: Date: 09/01, Meal: Lunch, Brand: McDonald's
-- For "Entry 2 (08/31, Breakfast, Taco Bell)", all food items from that entry use: Date: 08/31, Meal: Breakfast, Brand: Taco Bell
-- Never use generic brand names - always use the specific brand listed in parentheses for each entry
-- When user provides partial nutrition data (e.g., "Calories: 690, Fat: 43g, Carbs: 43g, Protein: 40g"), estimate the missing values (like sodium, cholesterol, fiber, sugar) based on the food type - do NOT set them to 0
-- Use valid serving sizes from SERVING_TYPES only - NEVER use "bowl", "plate", "platter", "dish", "portion", or similar invalid units
-- If you're unsure about serving size, default to "1 serving" instead of using invalid units
-- Estimate based on photo context: small plate = 1 serving, large plate = 2-3 servings, etc.
-- List each distinct food item separately - do not combine similar items
-- ONLY list food items that are explicitly mentioned or clearly implied in the description
-- Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
-- Do NOT infer extra items that aren't clearly specified (e.g., if user says "smoothie", don't also add "milkshake")
-- Be conservative - stick to what's actually described rather than expanding the list
-- For accompaniments like "served with bread", include the bread as ONE item, not multiple
-- If description mentions "burger and fries", create exactly 2 items: burger + fries
-- If description mentions "smoothie", create exactly 1 smoothie item (not smoothie + milkshake)
-- Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
-
-- Remove all formatting (bold, bullets, numbering, etc) - keep all text plain
-- Follow order strictly: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat (g), Saturated Fat (g), Cholesterol (mg), Sodium (mg), Carbs (g), Fiber (g), Sugar (g), Protein (g)
-- CRITICAL: Each food item MUST include the exact Date, Meal, and Brand from its corresponding entry in the format:
-  Date: MM/DD
-  Meal: Breakfast/Lunch/Dinner/Snacks  
-  Brand: [exact brand name from entry]
-- Use reliable sources/standardized estimates, look up restaurant nutrition online if needed
-- Meal must be: Breakfast, Lunch, Dinner, or Snacks
-- Max 60 character food names, shorten where possible (e.g., "w/" for "with"), proper case
-- For Icons, select exactly from the ICON_LIST below
-- For serving sizes, use standard types from SERVING_TYPES and convert fractions to decimals (1/4 = 0.25)
-- List drinks/smoothies/soups in fluid ounces first for water intake tracking
-- Base estimates on photos when provided - account for ice in drinks
-- If photos include nutritional labels, use those exact values combined with visual portion context
-- For example: if you see a plate of spaghetti with nutrition labels from the box/sauce/meat, calculate based on the actual portion shown on the plate using the label data
-- List each food item separately with blank line between items
-- Use today's date unless specified
-- Values must be clean numbers without extra text
-- Include sodium from salt/tajin on rims when applicable
-- User context: 6'1" 200lb male for portion estimation
-
-SERVING_TYPES (use exactly one):
-${SERVING_TYPES}
-
-ICON_LIST (use exactly one):
-${ICON_LIST}
-
-Example format:
-Food Name: Brisket Tacos
-Date: 6/30
-Meal: Lunch
-Brand: Torchy's Tacos
-Icon: Taco
-Serving Size: 3.5 each
-Calories: 1100
-Fat (g): 67
-Saturated Fat (g): 27
-Cholesterol (mg): 210
-Sodium (mg): 3000
-Carbs (g): 80
-Fiber (g): 10
-Sugar (g): 5
-Protein (g): 50
-`.trim();
 }
 
 export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenAIResponse> => {

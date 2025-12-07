@@ -739,7 +739,7 @@ ${entry.prompt}`;
                 </Button>
                 <Button
                   onClick={handleLogFood}
-                  disabled={isLogging}
+                  disabled={isLogging || !session?.isAuthenticated}
                   isLoading={isLogging}
                   size="sm"
                   className="text-sm"

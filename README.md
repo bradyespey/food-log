@@ -2,7 +2,7 @@
 **Scope**: This README replaces prior selected overview docs
 
 ## Overview
-Modern React app that analyzes food photos with AI and logs to Lose It! automatically. Replaces manual food logging with intelligent estimation from restaurant photos and descriptions. Uses OpenAI GPT-4o-mini for nutritional analysis via Flask backend proxy (CORS-compliant) and connects to a Windows-based Flask API for Selenium automation. Supports public demo mode with authentication required only for logging actions.
+Modern React app that analyzes food photos with AI and logs to Lose It! automatically. Replaces manual food logging with intelligent estimation from restaurant photos and descriptions. Uses OpenAI GPT-4o-mini with Structured Outputs (JSON schema) for nutritional analysis via Flask backend proxy (CORS-compliant) and connects to a Windows-based Flask API for Selenium automation. Supports public demo mode with authentication required only for logging actions. Features proper title case formatting, 60-character food name limits, and comprehensive validation for accurate parsing.
 
 ## Live and Admin
 - 🌐 **App URL**: https://foodlog.theespeys.com
@@ -69,7 +69,7 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
 ### Windows Backend API Endpoints
 - **POST /food_log** — Log food items to Lose It! with verification
 - **GET /health** — API health check
-- **POST /food_log/analyze** — AI food analysis with image upload
+- **POST /food_log/analyze** — AI food analysis with image upload using OpenAI Structured Outputs (JSON schema)
 
 ## Deploy
 - 🚀 **Frontend**: Automatic via GitHub integration to Netlify
@@ -92,7 +92,7 @@ FoodLog/
 │   │   └── Layout/          # Layout components (Navbar, RequireAuth)
 │   ├── pages/               # App pages (FoodLogPage, ManualPage, LoginPage)
 │   ├── lib/
-│   │   ├── openai.ts        # AI analysis via Flask backend proxy with serving size fixes
+│   │   ├── openai.ts        # AI analysis via Flask backend proxy with Structured Outputs, proper casing, and 60-char name limits
 │   │   ├── api.ts            # Backend API client for food logging
 │   │   ├── foodValidator.ts  # TypeScript validation for AI output
 │   │   └── firebaseConfig.ts # Firebase configuration
@@ -108,10 +108,11 @@ FoodLog/
 - ⏱️ **Firebase Timeout**: Improved offline detection and timeout handling
 - 🔧 **TypeScript Build**: All unused variables and imports cleaned up
 - 🖼️ **Photo Upload**: WebP compression with 1280px max dimension
-- 🤖 **AI Analysis**: Multi-level regex fixes for malformed serving sizes, backend proxy handles OpenAI API calls
+- 🤖 **AI Analysis**: Uses OpenAI Structured Outputs (JSON schema) for reliable parsing. Fallback text parsing handles malformed serving sizes and markdown formatting. Backend proxy handles OpenAI API calls with comprehensive system prompts
 - 🔐 **API Keys**: Pre-commit hooks prevent accidental commits of sensitive data
 - 🌐 **Chrome Profile**: Run setup scripts to create initial profile for Lose It! login
 - 🎨 **Theme**: Defaults to system theme preference, supports light/dark/system modes
+- 📝 **AI Output Format**: Structured JSON response with proper title case formatting, 60-character food name limits, and validation against defined serving types/icons lists
 
 ## AI Handoff
 Read this README, scan the repo, prioritize core functions and env-safe areas, keep env and rules aligned with this file. The OpenAI prompt is implemented in `src/lib/openai.ts` with comprehensive nutritional analysis capabilities and serving size validation.

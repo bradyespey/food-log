@@ -363,7 +363,7 @@ Protein (g): 20`;
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
                 onClick={handleLogFood}
-                disabled={!foodText.trim() || isLogging}
+                disabled={!foodText.trim() || isLogging || !session?.isAuthenticated}
                 isLoading={isLogging}
                 leftIcon={<CheckCircle className="w-4 h-4" />}
                 size="sm"

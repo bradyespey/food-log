@@ -26,7 +26,10 @@ const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams,
 
 const ICON_LIST = "Alcohol; Alcohol, White; Almond; Almond Butter; Apple; Apple Sauce; Apple, Gala; Apple, Granny Smith; Apple, Honey Crisp; Apple, Macintosh; Artichoke; Asparagus; Avocado; Bacon; Bagel; Bagel, Blueberry; Bagel, Chocolate Chip; Bagel, Sesame; Baguette; Baked Beans; Balsamic Vinaigrette; Bamboo; Banana; Banana Pepper; Bar; Bean, Black; Bean, Green; Bean, Red; Bean, White; Beef; Beer; BeerDark; Beet; Bell Pepper, Green; Bell Pepper, Red; Bell Pepper, Yellow; Biscuit; Biscuit Cracker; Blackberry; Blueberry; Breadsticks; Breakfast; Breakfast Sandwich; Broccoli; Brownie; Brussels Sprout; Burrito; Butter; Cabbage; Cake; CakeDark; CakeWhite; CakeWhiteDark; Calamari; Calories; Can; Candy; Candy Bar; Carrot; Carrots; Cashew; Casserole; Cauliflower; Celery; Cereal; Cereal Bar; CerealCheerios; CerealCornFlakes; CerealFruitLoops; Cheese; CheeseAmerican; CheeseBlue; CheeseBrie; Cheeseburger; Cheesecake; CheeseCheddar; CheeseGouda; CheesePepperjack; Cherry; CherryMaraschino; Chestnut; Chicken; Chicken Tenders; ChickenGrilled; ChickenWing; Chickpea; Chocolate; Chocolate Chip; Chocolate Chips; ChocolateDark; Churro; Cider; Cinnamon Roll; Clam; Coconut; Coffee; Coleslaw; Com; Combread; Cookie; Cookie, Christmas; Cookie, Molasses; Cookie, Red Velvet; Cookie, Sugar; Cottage Cheese; Crab; Cracker; Cranberry; Cream; Croissant; Crouton; Crumpet; Cucumber; Cupcake; Cupcake, Carrot; Cupcake, Vanilla; Curry; Date; Default; Deli Meat; Dinner Roll; Dip, Green; Dip, Red; Dish; Donut; Donut, Chocolate Iced; Donut, Strawberry Iced; DoubleCheeseburger; Dressing, Ranch; Dumpling; Eclair; Egg; Egg McMuffin; Egg Roll; Eggplant; Enchilada; Falafel; Fern; Fig; Filbert; Fish; Food, Can; Fowl; French Fries; French Toast; Fritter; Frosting, Chocolate; Frosting, Yellow; Fruit Cocktail; Fruit Leather; FruitCake; Game; Garlic; Gobo Root; Gourd; Graham Cracker; Grain; Grapefruit; Grapes; Grilled Cheese; Guava; Gummy Bear; Hamburger; Hamburger Bun; Hamburger Patty; Hamburger, Double; Hash; Hazelnut; Honey; Horseradish; Hot Dog; Hot Dog Bun; Hot Pot; Ice Cream; Ice Cream Bar; Ice Cream Sandwich; Ice Cream, Chocolate; Ice Cream, Strawberry; Iced Coffee; Iced Tea; Jam; Jicama; Juice; Kale; Kebab; Ketchup; Kiwi; Lamb; Lasagna; Latte; Leeks; Lemon; Lemonade; Lime; Liquid; Lobster; Mac And Cheese; Macadamia; Mango; Marshmallow; Mayonnaise; Meatballs; Melon; Milk; Milk Shake; Milk Shake, Chocolate; Milk Shake, Strawberry; Mixed Drink; Mixed Drink, Martini; Mixed Nuts; Muffin; Mushroom; Mustard; Nigiri Sushi; Oatmeal; Octopus; Oil; Okra; Olive, Black; Olive, Green; Omelette; Onion; Orange; Orange Chicken; Orange Juice; Pancakes; Papaya; Parfait; Parsley; Parsnip; Pasta; Pastry; Patty Sandwich; Pavlova; Peach; Peanut; Peanut Butter; Pear; Peas; Pecan; Peppers; Persimmon; Pickle; Pie; Pie, Apple; Pill; Pine Nut; Pineapple; Pistachio; Pita Sandwich; Pizza; Plum; Pocky; Pomegranate; Popcom; Popsicle; Pork; Pork Chop; Pot Pie; Potato; Potato Chip; Potato Salad; Powdered Drink; Prawn; Pretzel; Prune; Pudding; Pumpkin; Quesadilla; Quiche; Radish; Raisin; Raspberry; Ravioli; Recipe; Relish; Rhubarb; Ribs; Rice; Rice Cake; Roll; Romaine Lettuce; Salad; Salad Dressing, Balsamic; Salt; Sandwich; Sauce; Sausage; Seaweed; Seed; Shallot; Shrimp; Smoothie; Snack; Snap Bean; Soft Drink; SoftServeChocolate; SoftServeSwirl; SoftServeVanilla; Souffle; Soup; Sour Cream; Soy Nut; Soy Sauce; Spice, Brown; Spice, Green; Spice, Red; Spice, Yellow; Spinach; Spring Roll; Sprouts; Squash; Squash, Spaghetti; Starfruit; Stew, Brown; Stew, Yellow; Stir Fry; Stir Fry Noodles; Strawberry; Stuffing; Sub Sandwich; Sugar Cookie; Sugar, Brown; Sugar, White; Sushi; Syrup; Taco; Taro; Tater Tots; Tea; Tempura; Toast; Toaster Pastry; Tofu; Tomato; Tomato Soup; Tortilla; Tortilla Chip; Tostada; Turkey; Turnip; Turnover; Vegetable; Waffles; Walnut; Water; Water Chestnut; Watermelon; White Bread; Wine, Red; Wine, White; Wrap; Yam; Yogurt; Zucchini";
 
-// Simple icon validation - let the AI handle most of it with better prompting
+/**
+ * Validates and normalizes icon names against the allowed icon list.
+ * Returns the icon if valid, or a mapped fallback, or 'Default'.
+ */
 function validateIcon(icon: string): string {
   const iconList = ICON_LIST.split('; ').map(i => i.trim());
   
@@ -46,7 +49,10 @@ function validateIcon(icon: string): string {
   return iconMap[icon] || 'Default';
 }
 
-// Image compression utility
+/**
+ * Compresses an image file to WebP format with max 1280px dimension.
+ * Returns base64 data URL.
+ */
 const compressImage = async (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
@@ -77,9 +83,15 @@ const compressImage = async (file: File): Promise<string> => {
   });
 };
 
-// Comprehensive post-processing to fix malformed serving sizes
+/**
+ * Fixes malformed serving sizes in AI responses.
+ * Removes markdown formatting, fixes duplicate numbers, and normalizes patterns.
+ */
 function fixServingSizes(text: string): string {
   let fixed = text;
+  
+  // Remove markdown formatting (bolding)
+  fixed = fixed.replace(/\*\*/g, '');
   
   // Fix "0.5 5 serving" → "0.5 serving" (decimal + space + number + serving)
   fixed = fixed.replace(/Serving Size:\s*(\d+\.\d+)\s+\d+\s+serving/gi, 'Serving Size: $1 serving');
@@ -139,8 +151,9 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - Never use generic brand names - always use the specific brand listed in parentheses for each entry
 - When user provides partial nutrition data (e.g., "Calories: 690, Fat: 43g, Carbs: 43g, Protein: 40g"), estimate the missing values (like sodium, cholesterol, fiber, sugar) based on the food type - do NOT set them to 0
 - Use valid serving sizes from SERVING_TYPES only - NEVER use "bowl", "plate", "platter", "dish", "portion", or similar invalid units
-- If you're unsure about serving size, default to "1 serving" instead of using invalid units
-- Estimate based on photo context: small plate = 1 serving, large plate = 2-3 servings, etc.
+- CRITICAL: "portion" is NOT a valid serving type - use "Serving" from Serving Amount category instead
+- If you're unsure about serving size, default to "1 Serving" (capital S, from Serving Amount category) instead of using invalid units
+- Estimate based on photo context: small plate = 1 Serving, large plate = 2-3 Serving, etc.
 - List each distinct food item separately - do not combine similar items
 - ONLY list food items that are explicitly mentioned or clearly implied in the description
 - Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
@@ -151,6 +164,11 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - If description mentions "smoothie", create exactly 1 smoothie item (not smoothie + milkshake)
 - Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
 
+- CRITICAL: PRESERVE FULL FOOD NAMES - Do NOT strip or shorten food names unless they exceed 60 characters
+- If user says "Big League (mocktail)", use "Big League" as the Food Name, NOT just "Mocktail"
+- If user says "SHAWARMA-SPICED PRIME SKIRT STEAK FRITES", preserve the full name or split into "Shawarma-Spiced Prime Skirt Steak" and "Frites" as separate items
+- Do NOT strip descriptive words like "Shawarma-Spiced", "Prime", "Skirt" from food names
+- Only shorten if the name exceeds 60 characters, and then use abbreviations like "w/" for "with"
 - Remove all formatting (bold, bullets, numbering, etc) - keep all text plain
 - Follow order strictly: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat (g), Saturated Fat (g), Cholesterol (mg), Sodium (mg), Carbs (g), Fiber (g), Sugar (g), Protein (g)
 - CRITICAL: Each food item MUST include the exact Date, Meal, and Brand from its corresponding entry in the format:
@@ -159,9 +177,11 @@ CRITICAL ANALYSIS REQUIREMENTS:
   Brand: [exact brand name from entry]
 - Use reliable sources/standardized estimates, look up restaurant nutrition online if needed
 - Meal must be: Breakfast, Lunch, Dinner, or Snacks
-- Max 60 character food names, shorten where possible (e.g., "w/" for "with"), proper case
-- For Icons, select exactly from the ICON_LIST below
+- Max 60 character food names, but preserve full names when possible - only shorten if necessary
+- For Icons, select exactly from the ICON_LIST below - Icon must ALWAYS be one of the listed types
 - For serving sizes, use standard types from SERVING_TYPES and convert fractions to decimals (1/4 = 0.25)
+- CRITICAL: Serving Size unit MUST be one of: Grams, Kilograms, Micrograms, Milligrams, Ounces, Pounds, Cups, Dessertspoons, Fluid Ounce, Gallons, Imperial Fluid Ounces, Imperial Pints, Imperial Quarts, Liters, Metric Cups, Milliliters, Pints, Quarts, Tablespoons, Teaspoons, Bottle, Box, Can, Container, Cube, Dry Cup, Each, Jar, Package, Piece, Pot, Pouch, Punnet, Scoop, Serving, Slice, Stick, Tablet
+- NEVER use "portion" - use "Serving" from the Serving Amount category instead
 - List drinks/smoothies/soups in fluid ounces first for water intake tracking
 - Base estimates on photos when provided - account for ice in drinks
 - If photos include nutritional labels, use those exact values combined with visual portion context
@@ -194,111 +214,237 @@ Carbs (g): 80
 Fiber (g): 10
 Sugar (g): 5
 Protein (g): 50
+
+CRITICAL EXAMPLES - Preserve Full Names:
+- If user says "Big League (mocktail)", Food Name should be "Big League" (NOT "Mocktail")
+- If user says "SHAWARMA-SPICED PRIME SKIRT STEAK FRITES", create:
+  Food Name: Shawarma-Spiced Prime Skirt Steak
+  Food Name: Frites
+  (NOT "Steak" and "Wine")
+- Always preserve the full descriptive name from the user's input
+- If a dish has multiple components, list them separately but keep their full names
 `.trim();
 }
 
+/**
+ * Converts a string to proper title case, handling common words, parentheses, and special characters.
+ * - Capitalizes first and last words
+ * - Lowercases common words (a, an, and, as, at, but, by, for, from, in, into, nor, of, on, or, the, to, with)
+ * - Capitalizes words inside parentheses (e.g., "Mocktail" in "Big League (Mocktail)")
+ * - Removes trailing asterisks
+ */
+function toProperCase(str: string): string {
+  if (!str) return str;
+  
+  // Words to keep lowercase (unless first/last word)
+  const lowercaseWords = new Set([
+    'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'from', 'in', 'into',
+    'nor', 'of', 'on', 'or', 'the', 'to', 'with', 'w/', 'w'
+  ]);
+  
+  // Remove trailing asterisks and clean up
+  let cleaned = str.replace(/\*+$/, '').trim();
+  
+  // Track if we're inside parentheses
+  let inParens = false;
+  const allParts = cleaned.split(/([\s\-(),]+)/);
+  const result: string[] = [];
+  let wordIndex = 0;
+  const actualWords: string[] = [];
+  
+  // First pass: collect actual words
+  for (const part of allParts) {
+    if (part && !/[\s\-(),]/.test(part)) {
+      actualWords.push(part);
+    }
+  }
+  
+  // Second pass: process with context
+  for (let i = 0; i < allParts.length; i++) {
+    const part = allParts[i];
+    
+    // Track parentheses state
+    if (part.includes('(')) inParens = true;
+    if (part.includes(')')) inParens = false;
+    
+    // Preserve separators
+    if (/[\s\-(),]/.test(part)) {
+      result.push(part);
+      continue;
+    }
+    
+    if (!part) continue;
+    
+    const lowerPart = part.toLowerCase();
+    const isFirstWord = wordIndex === 0;
+    const isLastWord = wordIndex === actualWords.length - 1;
+    wordIndex++;
+    
+    // Always capitalize first and last word
+    if (isFirstWord || isLastWord) {
+      result.push(capitalizeWord(part));
+      continue;
+    }
+    
+    // Words in parentheses should be capitalized (e.g., "Mocktail")
+    if (inParens) {
+      result.push(capitalizeWord(part));
+      continue;
+    }
+    
+    // Lowercase common words, capitalize others
+    if (lowercaseWords.has(lowerPart)) {
+      result.push(lowerPart);
+    } else {
+      result.push(capitalizeWord(part));
+    }
+  }
+  
+  return result.join('');
+}
+
+/**
+ * Capitalizes a single word, handling all-caps, mixed case, and normal words.
+ */
+function capitalizeWord(word: string): string {
+  if (!word) return word;
+  // Handle all caps (SHAWARMA -> Shawarma)
+  if (word === word.toUpperCase() && word.length > 1) {
+    return word.charAt(0) + word.slice(1).toLowerCase();
+  }
+  // Handle mixed case (preserve existing like "McDonald's")
+  if (word.charAt(0) === word.charAt(0).toUpperCase()) {
+    return word.charAt(0) + word.slice(1).toLowerCase();
+  }
+  // Default: capitalize first letter
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+/**
+ * Truncates food name to specified max length (default 60 characters).
+ */
+function truncateFoodName(name: string, maxLength: number = 60): string {
+  if (!name || name.length <= maxLength) return name;
+  return name.substring(0, maxLength).trim();
+}
+
+/**
+ * Main function to analyze food from images and text using OpenAI via Flask backend.
+ * Returns structured food items with nutritional data, proper casing, and 60-char name limits.
+ */
 export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenAIResponse> => {
   try {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    const model = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini';
-    
-    if (!apiKey) {
-      throw new Error('OpenAI API key not configured');
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    const apiUsername = import.meta.env.VITE_API_USERNAME;
+    const apiPassword = import.meta.env.VITE_API_PASSWORD;
+
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
     }
 
-    // Build simplified system prompt
+    // Build system prompt to send to backend
     const systemPrompt = buildSystemPrompt();
 
-    // Compress images
+    // Compress images to base64
     const compressedImages = await Promise.all(
       request.images.map(compressImage)
     );
 
-    // Build the API request
-    const apiRequest = {
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `${request.images.length > 0 
-  ? `Analyze the food shown in the ${request.images.length} image(s). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Account for ice in drinks. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`
-  : `Analyze these food entries. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`}`,
-            },
-            ...compressedImages.map(imageData => ({
-              type: 'image_url',
-              image_url: {
-                url: imageData,
-              },
-            })),
-          ],
-        },
-      ],
-      max_tokens: 1500,
-      temperature: 0.2,
+    // Extract base64 data from data URLs
+    const base64Images = compressedImages.map(imgData => {
+      if (imgData.startsWith('data:image')) {
+        return imgData.split(',')[1];
+      }
+      return imgData;
+    });
+
+    // Build request payload
+    const payload = {
+      systemPrompt: systemPrompt,
+      prompt: request.images.length > 0 
+        ? `Analyze the food shown in the ${request.images.length} image(s). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Account for ice in drinks. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`
+        : `Analyze these food entries. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`,
+      images: base64Images,
+      date: request.date,
+      meal: request.meal,
+      brand: request.brand,
     };
 
-    // Try with web search first
-    let resp;
-    try {
-      resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...apiRequest,
-          tools: [{ type: "web_search" }],
-        }),
-      });
+    // Make API call with basic authentication
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
 
-      // If web search fails, fall back to standard completion
-      if (!resp.ok && resp.status === 400) {
-        console.warn('Web search failed, falling back to standard completion');
-        resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(apiRequest),
-        });
-      }
-    } catch (e: any) {
-      // If any error occurs, try standard completion
-      console.warn('API error, falling back to standard completion:', e);
-      resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiRequest),
-      });
+    if (apiUsername && apiPassword) {
+      headers['Authorization'] = `Basic ${btoa(`${apiUsername}:${apiPassword}`)}`;
     }
 
-    if (!resp.ok) {
-      throw new Error(`OpenAI API error: ${resp.status}`);
+    const response = await fetch(`${apiBaseUrl}/food_log/analyze`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `API error: ${response.status}`);
     }
 
-    const data = await resp.json();
-    const aiResponse = data.choices?.[0]?.message?.content;
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Analysis failed');
+    }
+
+    // Handle Structured Outputs (JSON response)
+    if (result.data?.items && Array.isArray(result.data.items) && result.data.items.length > 0) {
+      const structuredItems = result.data.items.map((item: any) => ({
+        foodName: truncateFoodName(toProperCase(item.food_name)),
+        date: item.date,
+        meal: item.meal,
+        brand: item.brand || '',
+        icon: validateIcon(item.icon),
+        serving: {
+          amount: item.serving_amount,
+          unit: item.serving_unit,
+          descriptor: ''
+        },
+        calories: item.calories,
+        fatG: item.fat_g,
+        satFatG: item.saturated_fat_g,
+        cholesterolMg: item.cholesterol_mg,
+        sodiumMg: item.sodium_mg,
+        carbsG: item.carbs_g,
+        fiberG: item.fiber_g,
+        sugarG: item.sugar_g,
+        proteinG: item.protein_g,
+        hydration: {
+          isLiquid: false, // Default, can be inferred if needed
+          fluidOz: 0
+        }
+      }));
+
+      return {
+        success: true,
+        data: {
+          items: structuredItems,
+          plainText: JSON.stringify(result.data.items, null, 2),
+          needsMoreInfo: false
+        }
+      };
+    }
+
+    // Fallback for text response (if structured output wasn't used or failed)
+    const aiResponse = result.data?.plainText;
 
     if (!aiResponse) {
-      throw new Error('No response from OpenAI');
+      throw new Error('No response from API');
     }
 
     // ALWAYS apply serving size fixes first, before any parsing
     const fixedResponse = fixServingSizes(aiResponse);
 
-    // Parse the fixed response directly - skip validation for now
+    // Parse the fixed response directly
     const parsedResult = parseOpenAIResponse(fixedResponse, request);
     
     // Always use the fixed response for plainText
@@ -348,30 +494,18 @@ const parseOpenAIResponse = (aiResponse: string, request: OpenAIAnalysisRequest)
   try {
     const items = parseNutritionalData(aiResponse, request);
     
-    // If parsing failed and we got 0 values, use fallback
-    if (items.length > 0 && items.every(item => item.calories === 0)) {
-      const fallbackItems = createFallbackItems(aiResponse, request);
-      return {
-        items: fallbackItems,
-        plainText: aiResponse, // Keep original for fallback
-        needsMoreInfo: false,
-      };
+    if (items.length === 0) {
+       throw new Error("No food items found in AI response");
     }
     
     return {
       items,
-      plainText: aiResponse, // This should be the fixed response
+      plainText: aiResponse,
       needsMoreInfo: false,
     };
   } catch (error) {
-    console.error('Parsing error, using fallback:', error);
-    // If parsing fails, use fallback items
-    const fallbackItems = createFallbackItems(aiResponse, request);
-    return {
-      items: fallbackItems,
-      plainText: aiResponse, // Keep original for fallback
-      needsMoreInfo: false,
-    };
+    console.error('Parsing error:', error);
+    throw error; // Re-throw to show error instead of fallback
   }
 };
 
@@ -387,7 +521,25 @@ const parseNutritionalData = (response: string, request: OpenAIAnalysisRequest):
   
   // Strategy 1: Look for "Food Name:" patterns
   if (cleanedResponse.includes('Food Name:')) {
-    itemSections = cleanedResponse.split(/(?=Food Name:)/gi).filter(s => s.trim());
+    const introPatterns = [
+      /^here'?s?\s+(the|a|an)/i,
+      /^this\s+is/i,
+      /^based\s+on/i,
+      /^nutritional\s+analysis/i,
+      /^analysis\s+for/i,
+      /^food\s+items?\s+based/i,
+    ];
+    
+    itemSections = cleanedResponse.split(/(?=Food Name:)/gi)
+      .filter(s => {
+        const trimmed = s.trim();
+        // Skip sections that are just introductory text
+        if (!trimmed || trimmed.length < 10) return false;
+        // Skip if it matches intro patterns
+        if (introPatterns.some(pattern => pattern.test(trimmed))) return false;
+        // Only include sections that start with "Food Name:" or have nutritional data
+        return trimmed.startsWith('Food Name:') || /(Food Name|Calories|Fat|Carbs|Protein|Serving Size):/i.test(trimmed);
+      });
   }
   
   // Strategy 2: Look for numbered items (1., 2., etc.)
@@ -412,11 +564,11 @@ const parseNutritionalData = (response: string, request: OpenAIAnalysisRequest):
     }
   }
   
-  // If still no items, create fallback items based on description
-  if (items.length === 0) {
-    const fallbackItems = createFallbackItems(response, request);
-    items.push(...fallbackItems);
-  }
+  // If still no items, do NOT create fallback
+  // if (items.length === 0) {
+  //   const fallbackItems = createFallbackItems(response, request);
+  //   items.push(...fallbackItems);
+  // }
   
   return items;
 };
@@ -444,8 +596,33 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
       return isNaN(num) ? defaultValue : num;
     };
     
-    const foodName = extractValue([/Food Name:\s*(.+)/i, /Item.*:\s*(.+)/i, /^(.+?):/i], 'Unknown Food');
+    const foodName = extractValue([/Food Name:\s*(.+)/i, /Item.*:\s*(.+)/i], 'Unknown Food');
+    
+    // Skip sections that are just introductory text or don't have actual food data
     if (foodName === 'Unknown Food' || foodName === '') return null;
+    
+    // Filter out common introductory phrases that might be parsed as food names
+    const introPhrases = [
+      /^here'?s?\s+(the|a|an)/i,
+      /^this\s+is/i,
+      /^based\s+on/i,
+      /^nutritional\s+analysis/i,
+      /^analysis\s+for/i,
+      /^food\s+items?\s+based/i,
+    ];
+    
+    if (introPhrases.some(pattern => pattern.test(foodName))) {
+      return null;
+    }
+    
+    // Also skip if this section doesn't have any nutritional data
+    const hasNutritionData = lines.some(line => 
+      /(Calories|Fat|Carbs|Protein|Serving Size):/i.test(line)
+    );
+    
+    if (!hasNutritionData) {
+      return null;
+    }
     
     // Extract date and meal from the AI response with improved patterns
     const date = extractValue([
@@ -518,71 +695,12 @@ const parseIndividualFoodItem = (section: string, request: OpenAIAnalysisRequest
   }
 };
 
-const createFallbackItem = (_response: string, request: OpenAIAnalysisRequest): FoodItem | null => {
-  // Create a basic item from whatever information we can extract
-  return {
-    foodName: request.prompt.substring(0, 60) || 'Unknown Food',
-    date: request.date,
-    meal: request.meal,
-    brand: request.brand,
-    icon: 'Default',
-    serving: {
-      amount: 1,
-      unit: 'portion',
-      descriptor: '',
-    },
-    calories: 0,
-    fatG: 0,
-    satFatG: 0,
-    cholesterolMg: 0,
-    sodiumMg: 0,
-    carbsG: 0,
-    fiberG: 0,
-    sugarG: 0,
-    proteinG: 0,
-    hydration: {
-      isLiquid: false,
-      fluidOz: 0,
-    },
-  };
-};
 
-const createFallbackItems = (_response: string, request: OpenAIAnalysisRequest): FoodItem[] => {
-  // Extract food items from the user's description as fallback
-  const items: FoodItem[] = [];
-  const prompt = request.prompt.toLowerCase();
-  
-  // Common food patterns to extract multiple items
-  const foodIndicators = [
-    'hummus', 'bread', 'mocktail', 'steak', 'fries', 'salad', 'chicken', 'pizza',
-    'burger', 'sandwich', 'soup', 'pasta', 'rice', 'fish', 'beef', 'pork',
-    'dessert', 'cake', 'ice cream', 'cocktail', 'drink', 'wine', 'beer'
-  ];
-  
-  for (const food of foodIndicators) {
-    if (prompt.includes(food)) {
-      items.push({
-        foodName: food.charAt(0).toUpperCase() + food.slice(1),
-        date: request.date,
-        meal: request.meal,
-        brand: request.brand,
-        icon: 'Default',
-        serving: { amount: 1, unit: 'portion', descriptor: '' },
-        calories: 200, // Reasonable default
-        fatG: 8, satFatG: 2, cholesterolMg: 10, sodiumMg: 300,
-        carbsG: 20, fiberG: 2, sugarG: 3, proteinG: 12,
-        hydration: { 
-          isLiquid: ['mocktail', 'cocktail', 'drink', 'wine', 'beer'].includes(food), 
-          fluidOz: ['mocktail', 'cocktail', 'drink'].includes(food) ? 8 : 0 
-        },
-      });
-    }
-  }
-  
-  return items.length > 0 ? items : [createFallbackItem(_response, request)!];
-};
 
-// Estimate cost for the request
+/**
+ * Estimates the cost of an OpenAI API request based on prompt length and image count.
+ * Uses gpt-4o-mini pricing.
+ */
 export const estimateCost = (prompt: string, imageCount: number): number => {
   const textTokens = Math.ceil(prompt.length / 4); // Rough token estimate
   const textCost = (textTokens / 1000) * 0.00015; // gpt-4o-mini pricing

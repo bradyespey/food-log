@@ -2,7 +2,7 @@
 **Scope**: This README replaces prior selected overview docs
 
 ## Overview
-Modern React app that analyzes food photos with AI and logs to Lose It! automatically. Replaces manual food logging with intelligent estimation from restaurant photos and descriptions. Uses OpenAI GPT-4o-mini for nutritional analysis and connects to a Windows-based Flask API for Selenium automation.
+Modern React app that analyzes food photos with AI and logs to Lose It! automatically. Replaces manual food logging with intelligent estimation from restaurant photos and descriptions. Uses OpenAI GPT-4o-mini for nutritional analysis via Flask backend proxy (CORS-compliant) and connects to a Windows-based Flask API for Selenium automation. Supports public demo mode with authentication required only for logging actions.
 
 ## Live and Admin
 - 🌐 **App URL**: https://foodlog.theespeys.com
@@ -62,6 +62,7 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
 - 🏗️ **Build**: `npm run build` — Build for production with TypeScript compilation
 - 🔍 **Lint**: `npm run lint` — ESLint code checking
 - 👀 **Preview**: `npm run preview` — Preview production build
+- 🚀 **Deploy Watch**: `npm run deploy:watch` — Push to GitHub and monitor Netlify build completion
 - 🔒 **Security**: Pre-commit hooks prevent API key leaks (see `scripts/` folder)
 - 🧪 **Testing**: Production test suite with 4 essential tests (login, food, water, comprehensive)
 
@@ -77,8 +78,8 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
 - 🌐 **Domains**: foodlog.theespeys.com (primary), foodlog-theespeys.netlify.app
 
 ## App Pages / Routes
-- 🤖 **AI Analysis**: Main food logging interface with photo upload, AI analysis, and multi-card food entry system
-- ✏️ **Manual Entry**: Direct food entry without AI for pre-formatted food items
+- 🤖 **AI Analysis**: Main food logging interface with photo upload, AI analysis, and multi-card food entry system (public demo, auth required for logging)
+- ✏️ **Manual Entry**: Direct food entry without AI for pre-formatted food items (public demo, auth required for logging)
 - 🔐 **Login**: Firebase Google authentication with email whitelist
 - 🔄 **Auth Callback**: OAuth flow completion handler
 
@@ -91,24 +92,26 @@ FoodLog/
 │   │   └── Layout/          # Layout components (Navbar, RequireAuth)
 │   ├── pages/               # App pages (FoodLogPage, ManualPage, LoginPage)
 │   ├── lib/
-│   │   ├── openai.ts        # AI analysis with serving size fixes
-│   │   ├── foodValidator.ts # TypeScript validation for AI output
+│   │   ├── openai.ts        # AI analysis via Flask backend proxy with serving size fixes
+│   │   ├── api.ts            # Backend API client for food logging
+│   │   ├── foodValidator.ts  # TypeScript validation for AI output
 │   │   └── firebaseConfig.ts # Firebase configuration
 │   ├── context/             # AuthContext for Firebase authentication
 │   └── types/               # TypeScript type definitions
 ├── flask/                   # Legacy Flask implementation (archived)
-├── scripts/                 # Pre-commit hooks for API key protection
+├── scripts/                 # Pre-commit hooks and deploy:watch script
 └── netlify.toml            # Netlify deployment configuration
 ```
 
 ## Troubleshooting
-- 🔗 **CORS Issues**: Resolved by proper API endpoint configuration and credentials
+- 🔗 **CORS Issues**: OpenAI API calls routed through Flask backend proxy for CORS compliance
 - ⏱️ **Firebase Timeout**: Improved offline detection and timeout handling
 - 🔧 **TypeScript Build**: All unused variables and imports cleaned up
 - 🖼️ **Photo Upload**: WebP compression with 1280px max dimension
-- 🤖 **AI Analysis**: Multi-level regex fixes for malformed serving sizes
+- 🤖 **AI Analysis**: Multi-level regex fixes for malformed serving sizes, backend proxy handles OpenAI API calls
 - 🔐 **API Keys**: Pre-commit hooks prevent accidental commits of sensitive data
 - 🌐 **Chrome Profile**: Run setup scripts to create initial profile for Lose It! login
+- 🎨 **Theme**: Defaults to system theme preference, supports light/dark/system modes
 
 ## AI Handoff
 Read this README, scan the repo, prioritize core functions and env-safe areas, keep env and rules aligned with this file. The OpenAI prompt is implemented in `src/lib/openai.ts` with comprehensive nutritional analysis capabilities and serving size validation.

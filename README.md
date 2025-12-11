@@ -104,7 +104,7 @@ FoodLog/
 ```
 
 ## Troubleshooting
-- 🔗 **CORS Issues**: OpenAI API calls routed through Flask backend proxy for CORS compliance
+- 🔗 **CORS Issues**: Flask API server configured to allow requests from localhost:5177 (development) and production domains
 - ⏱️ **Firebase Timeout**: Improved offline detection and timeout handling
 - 🔧 **TypeScript Build**: All unused variables and imports cleaned up
 - 🖼️ **Photo Upload**: WebP compression with 1280px max dimension

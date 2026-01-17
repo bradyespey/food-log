@@ -1047,7 +1047,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
             />
           </div>
         ) : (
-          `${item.serving.amount} ${item.serving.unit} ${item.serving.descriptor && `(${item.serving.descriptor})`}`
+          `${item.serving.amount} ${item.serving.unit === 'Fluid Ounce' ? 'fl oz' : item.serving.unit} ${item.serving.descriptor && `(${item.serving.descriptor})`}`
         )}
       </div>
       
@@ -1227,7 +1227,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
               tabIndex={12}
             />
           ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg}mg</span>
+            <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg.toLocaleString()}mg</span>
           )}
         </div>
         <div className="flex justify-between items-center">

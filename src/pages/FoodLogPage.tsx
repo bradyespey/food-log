@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 
 const FoodLogPage: React.FC = () => {
   const { setLoadSampleData, setClearData } = useSampleData();
-  const { session, loading: authLoading } = useAuth();
+  const { session } = useAuth();
   const navigate = useNavigate();
   
   // Helper function to get local date string (not UTC)
@@ -747,16 +747,22 @@ ${entry.prompt}`;
                   <Copy className="w-4 h-4 mr-1" />
                   Copy Results
                 </Button>
+                {!session?.isAuthenticated && (
+                  <div className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Sign in required to log food
+                  </div>
+                )}
                 <Button
                   onClick={handleLogFood}
-                  disabled={isLogging || authLoading || !session?.isAuthenticated}
+                  disabled={isLogging || !session?.isAuthenticated}
                   isLoading={isLogging}
                   size="sm"
-                  className="text-sm"
-                  title={authLoading ? 'Checking authentication...' : !session?.isAuthenticated ? 'Please sign in to log food' : ''}
+                  className={`text-sm ${!session?.isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={!session?.isAuthenticated ? 'Please sign in to log food to Lose It!' : ''}
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
-                  {isLogging ? 'Logging... (up to 15 min)' : authLoading ? 'Loading...' : 'Log to Lose It!'}
+                  {isLogging ? 'Logging... (up to 15 min)' : !session?.isAuthenticated ? 'Sign in to Log' : 'Log to Lose It!'}
                 </Button>
               </div>
             </div>

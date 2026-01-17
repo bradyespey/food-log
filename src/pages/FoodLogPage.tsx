@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 
 const FoodLogPage: React.FC = () => {
   const { setLoadSampleData, setClearData } = useSampleData();
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
   // Helper function to get local date string (not UTC)
@@ -749,13 +749,14 @@ ${entry.prompt}`;
                 </Button>
                 <Button
                   onClick={handleLogFood}
-                  disabled={isLogging || !session?.isAuthenticated}
+                  disabled={isLogging || authLoading || !session?.isAuthenticated}
                   isLoading={isLogging}
                   size="sm"
                   className="text-sm"
+                  title={authLoading ? 'Checking authentication...' : !session?.isAuthenticated ? 'Please sign in to log food' : ''}
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
-                  {isLogging ? 'Logging... (up to 15 min)' : 'Log to Lose It!'}
+                  {isLogging ? 'Logging... (up to 15 min)' : authLoading ? 'Loading...' : 'Log to Lose It!'}
                 </Button>
               </div>
             </div>

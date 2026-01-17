@@ -90,7 +90,10 @@ export const logFoodToBackend = async (
       headers['Authorization'] = `Basic ${btoa(`${apiUsername}:${apiPassword}`)}`;
     }
 
-    // Debug mode is now controlled by .env HEADLESS_MODE on the Flask server
+    // Send debug mode header if running on localhost (disables headless mode for testing)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')) {
+      headers['X-Debug-Mode'] = 'true';
+    }
 
     // Create an AbortController for timeout control
     const controller = new AbortController();

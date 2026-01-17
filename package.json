@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "op run --env-file=.env -- vite",
-    "dev:local": "vite",
+    "dev": "./scripts/load-env-and-run.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

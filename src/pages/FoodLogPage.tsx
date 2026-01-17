@@ -8,9 +8,10 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
 import ImageUpload from '../components/ui/ImageUpload';
-import { analyzeFood, estimateCost } from '../lib/openai';
+import { analyzeFood, estimateCost, ICON_OPTIONS, SERVING_UNIT_OPTIONS } from '../lib/openai';
 import { logFoodToBackend } from '../lib/api';
 import type { FoodItem, FoodEntryCard } from '../types';
+import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { useSampleData } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -193,6 +194,7 @@ const FoodLogPage: React.FC = () => {
       const combinedPrompt = validEntries.map((entry, index) => {
         const formattedDate = entry.date.split('-').slice(1).join('/'); // Convert YYYY-MM-DD to MM/DD
         return `Entry ${index + 1} (${formattedDate}, ${entry.meal}, ${entry.brand}):
+EntryID: ${entry.id}
 ${entry.prompt}`;
       }).join('\n\n');
 
@@ -249,6 +251,13 @@ ${entry.prompt}`;
           // Find which entry this item belongs to based on the AI's analysis
           let targetEntry = validEntries[0]; // Default to first entry
           
+          // First: if we have EntryID, use it (most reliable when dates/brands overlap)
+          const entryIdMatch = item.entryId
+            ? validEntries.find((e) => e.id === String(item.entryId))
+            : undefined;
+          if (entryIdMatch) {
+            targetEntry = entryIdMatch;
+          } else {
           // First try exact date match (most reliable for multi-entry scenarios)
           const dateMatch = validEntries.find(entry => {
             const entryDate = entry.date.split('-').slice(1).join('/'); // Convert to MM/DD
@@ -282,6 +291,7 @@ ${entry.prompt}`;
                 targetEntry = validEntries[entryIndex];
               }
             }
+          }
           }
           
           // Use the matched entry's values
@@ -920,9 +930,21 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full whitespace-nowrap">
-            {item.icon}
-          </span>
+          {isEditing ? (
+            <SearchableSelect
+              options={ICON_OPTIONS}
+              value={editedItem.icon}
+              onChange={(value) => setEditedItem({...editedItem, icon: value})}
+              placeholder="Select icon"
+              className="w-32"
+              onKeyDown={handleKeyDown}
+              tabIndex={5}
+            />
+          ) : (
+            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full whitespace-nowrap">
+              {item.icon}
+            </span>
+          )}
         </div>
       </div>
 
@@ -991,18 +1013,19 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
               onKeyDown={handleKeyDown}
               className="w-16 h-6 text-xs p-1"
               placeholder="1"
-              tabIndex={5}
-            />
-            <Input
-              value={editedItem.serving.unit}
-              onChange={(e) => setEditedItem({
-                ...editedItem, 
-                serving: {...editedItem.serving, unit: e.target.value}
-              })}
-              onKeyDown={handleKeyDown}
-              placeholder="serving"
-              className="w-20 h-6 text-xs p-1"
               tabIndex={6}
+            />
+            <SearchableSelect
+              options={SERVING_UNIT_OPTIONS}
+              value={editedItem.serving.unit}
+              onChange={(value) => setEditedItem({
+                ...editedItem, 
+                serving: {...editedItem.serving, unit: value}
+              })}
+              placeholder="Select unit"
+              className="w-32"
+              onKeyDown={handleKeyDown}
+              tabIndex={7}
             />
             <Input
               value={editedItem.serving.descriptor}
@@ -1013,7 +1036,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
               onKeyDown={handleKeyDown}
               placeholder="descriptor (optional)"
               className="w-24 h-6 text-xs p-1"
-              tabIndex={7}
+              tabIndex={8}
             />
           </div>
         ) : (
@@ -1030,7 +1053,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
             onChange={(e) => setEditedItem({...editedItem, calories: parseInt(e.target.value) || 0})}
             onKeyDown={handleKeyDown}
             className="text-center text-2xl font-bold w-24 mx-auto"
-            tabIndex={8}
+            tabIndex={9}
           />
         ) : (
           <div className="text-4xl font-bold text-gray-900 dark:text-white">{item.calories}</div>

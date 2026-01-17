@@ -26,15 +26,27 @@ const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams,
 
 const ICON_LIST = "Alcohol; Alcohol, White; Almond; Almond Butter; Apple; Apple Sauce; Apple, Gala; Apple, Granny Smith; Apple, Honey Crisp; Apple, Macintosh; Artichoke; Asparagus; Avocado; Bacon; Bagel; Bagel, Blueberry; Bagel, Chocolate Chip; Bagel, Sesame; Baguette; Baked Beans; Balsamic Vinaigrette; Bamboo; Banana; Banana Pepper; Bar; Bean, Black; Bean, Green; Bean, Red; Bean, White; Beef; Beer; BeerDark; Beet; Bell Pepper, Green; Bell Pepper, Red; Bell Pepper, Yellow; Biscuit; Biscuit Cracker; Blackberry; Blueberry; Breadsticks; Breakfast; Breakfast Sandwich; Broccoli; Brownie; Brussels Sprout; Burrito; Butter; Cabbage; Cake; CakeDark; CakeWhite; CakeWhiteDark; Calamari; Calories; Can; Candy; Candy Bar; Carrot; Carrots; Cashew; Casserole; Cauliflower; Celery; Cereal; Cereal Bar; CerealCheerios; CerealCornFlakes; CerealFruitLoops; Cheese; CheeseAmerican; CheeseBlue; CheeseBrie; Cheeseburger; Cheesecake; CheeseCheddar; CheeseGouda; CheesePepperjack; Cherry; CherryMaraschino; Chestnut; Chicken; Chicken Tenders; ChickenGrilled; ChickenWing; Chickpea; Chocolate; Chocolate Chip; Chocolate Chips; ChocolateDark; Churro; Cider; Cinnamon Roll; Clam; Coconut; Coffee; Coleslaw; Com; Combread; Cookie; Cookie, Christmas; Cookie, Molasses; Cookie, Red Velvet; Cookie, Sugar; Cottage Cheese; Crab; Cracker; Cranberry; Cream; Croissant; Crouton; Crumpet; Cucumber; Cupcake; Cupcake, Carrot; Cupcake, Vanilla; Curry; Date; Default; Deli Meat; Dinner Roll; Dip, Green; Dip, Red; Dish; Donut; Donut, Chocolate Iced; Donut, Strawberry Iced; DoubleCheeseburger; Dressing, Ranch; Dumpling; Eclair; Egg; Egg McMuffin; Egg Roll; Eggplant; Enchilada; Falafel; Fern; Fig; Filbert; Fish; Food, Can; Fowl; French Fries; French Toast; Fritter; Frosting, Chocolate; Frosting, Yellow; Fruit Cocktail; Fruit Leather; FruitCake; Game; Garlic; Gobo Root; Gourd; Graham Cracker; Grain; Grapefruit; Grapes; Grilled Cheese; Guava; Gummy Bear; Hamburger; Hamburger Bun; Hamburger Patty; Hamburger, Double; Hash; Hazelnut; Honey; Horseradish; Hot Dog; Hot Dog Bun; Hot Pot; Ice Cream; Ice Cream Bar; Ice Cream Sandwich; Ice Cream, Chocolate; Ice Cream, Strawberry; Iced Coffee; Iced Tea; Jam; Jicama; Juice; Kale; Kebab; Ketchup; Kiwi; Lamb; Lasagna; Latte; Leeks; Lemon; Lemonade; Lime; Liquid; Lobster; Mac And Cheese; Macadamia; Mango; Marshmallow; Mayonnaise; Meatballs; Melon; Milk; Milk Shake; Milk Shake, Chocolate; Milk Shake, Strawberry; Mixed Drink; Mixed Drink, Martini; Mixed Nuts; Muffin; Mushroom; Mustard; Nigiri Sushi; Oatmeal; Octopus; Oil; Okra; Olive, Black; Olive, Green; Omelette; Onion; Orange; Orange Chicken; Orange Juice; Pancakes; Papaya; Parfait; Parsley; Parsnip; Pasta; Pastry; Patty Sandwich; Pavlova; Peach; Peanut; Peanut Butter; Pear; Peas; Pecan; Peppers; Persimmon; Pickle; Pie; Pie, Apple; Pill; Pine Nut; Pineapple; Pistachio; Pita Sandwich; Pizza; Plum; Pocky; Pomegranate; Popcom; Popsicle; Pork; Pork Chop; Pot Pie; Potato; Potato Chip; Potato Salad; Powdered Drink; Prawn; Pretzel; Prune; Pudding; Pumpkin; Quesadilla; Quiche; Radish; Raisin; Raspberry; Ravioli; Recipe; Relish; Rhubarb; Ribs; Rice; Rice Cake; Roll; Romaine Lettuce; Salad; Salad Dressing, Balsamic; Salt; Sandwich; Sauce; Sausage; Seaweed; Seed; Shallot; Shrimp; Smoothie; Snack; Snap Bean; Soft Drink; SoftServeChocolate; SoftServeSwirl; SoftServeVanilla; Souffle; Soup; Sour Cream; Soy Nut; Soy Sauce; Spice, Brown; Spice, Green; Spice, Red; Spice, Yellow; Spinach; Spring Roll; Sprouts; Squash; Squash, Spaghetti; Starfruit; Stew, Brown; Stew, Yellow; Stir Fry; Stir Fry Noodles; Strawberry; Stuffing; Sub Sandwich; Sugar Cookie; Sugar, Brown; Sugar, White; Sushi; Syrup; Taco; Taro; Tater Tots; Tea; Tempura; Toast; Toaster Pastry; Tofu; Tomato; Tomato Soup; Tortilla; Tortilla Chip; Tostada; Turkey; Turnip; Turnover; Vegetable; Waffles; Walnut; Water; Water Chestnut; Watermelon; White Bread; Wine, Red; Wine, White; Wrap; Yam; Yogurt; Zucchini";
 
+export const ICON_OPTIONS = ICON_LIST.split('; ').map(i => i.trim());
+
+function parseServingUnitOptions(): string[] {
+  // SERVING_TYPES is organized by categories, we only need the unit tokens
+  const parts = SERVING_TYPES.split(';');
+  const units = parts.flatMap((part) => {
+    const afterColon = part.includes(':') ? part.split(':').slice(1).join(':') : part;
+    return afterColon.split(',').map((u) => u.trim()).filter(Boolean);
+  });
+  return Array.from(new Set(units));
+}
+
+export const SERVING_UNIT_OPTIONS = parseServingUnitOptions();
+
 /**
  * Validates and normalizes icon names against the allowed icon list.
  * Returns the icon if valid, or a mapped fallback, or 'Default'.
  */
 function validateIcon(icon: string): string {
-  const iconList = ICON_LIST.split('; ').map(i => i.trim());
-  
   // If exact match, return it
-  if (iconList.includes(icon)) {
+  if (ICON_OPTIONS.includes(icon)) {
     return icon;
   }
   
@@ -47,6 +59,198 @@ function validateIcon(icon: string): string {
   };
   
   return iconMap[icon] || 'Default';
+}
+
+function extractLeadingCount(foodName: string): number | null {
+  const m = foodName.trim().match(/^(\d+(?:\.\d+)?)\s+/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function stripLeadingCount(foodName: string): string {
+  return foodName.trim().replace(/^(\d+(?:\.\d+)?)\s+/, '').trim();
+}
+
+function standardizeFoodName(foodName: string, icon: string): string {
+  let name = foodName.trim().replace(/,+$/g, '').trim();
+
+  // Targeted cleanup for common phrases
+  name = name.replace(/\bwith\s+\d+\s+syrup\s+packets?\b/i, 'with Syrup');
+  name = name.replace(/\bneat\b/i, '').replace(/\s+/g, ' ').trim();
+
+  // Taco heuristic: simplify verbose taco descriptions
+  if (/taco/i.test(name) || icon === 'Taco') {
+    const lowered = name.toLowerCase();
+    const hasChicken = lowered.includes('chicken');
+    const hasCheese = lowered.includes('cheese');
+    const hasCornTortilla = lowered.includes('corn tortilla');
+    if (hasChicken && hasCheese) return 'Chicken and Cheese Tacos';
+    if (hasChicken) return 'Chicken Tacos';
+    if (hasCheese) return 'Cheese Tacos';
+    if (hasCornTortilla) return 'Corn Tortilla Tacos';
+    return 'Tacos';
+  }
+
+  // French toast: simplify "neat" wording
+  if (/french toast/i.test(name)) {
+    name = name.replace(/\bwith\s+syrup\s+packets?\b/i, 'with Syrup');
+    name = name.replace(/\bneat\b/i, '').replace(/\s+/g, ' ').trim();
+  }
+
+  // Remove leading quantity from name if present (quantity belongs in serving)
+  if (extractLeadingCount(name) !== null) {
+    name = stripLeadingCount(name);
+  }
+
+  return name;
+}
+
+function isLikelyLiquid(foodName: string, icon: string): boolean {
+  const liquidIcons = new Set([
+    'Juice',
+    'Smoothie',
+    'Coffee',
+    'Tea',
+    'Water',
+    'Milk',
+    'Soft Drink',
+    'Iced Coffee',
+    'Iced Tea',
+    'Beer',
+    'Wine, Red',
+    'Wine, White',
+    'Mixed Drink',
+    'Mixed Drink, Martini',
+  ]);
+  if (liquidIcons.has(icon)) return true;
+  return /juice|smoothie|coffee|tea|water|milk|beer|wine|martini|toddy|cocktail|mocktail|drink/i.test(foodName);
+}
+
+function normalizeServingForLoseIt(item: FoodItem): FoodItem {
+  const normalized: FoodItem = { ...item, serving: { ...item.serving } };
+  const name = normalized.foodName;
+  const icon = normalized.icon;
+  const isLiquid = isLikelyLiquid(name, icon);
+
+  // If countable item (tacos, burgers, etc.), force Each.
+  const countable = /taco|burger|sandwich|piece|pieces|wings?|nuggets?/i.test(name) || icon === 'Taco';
+  if (countable) {
+    const countFromName = extractLeadingCount(item.foodName);
+    if (countFromName !== null) {
+      normalized.serving.amount = countFromName;
+      normalized.foodName = stripLeadingCount(normalized.foodName);
+    }
+    normalized.serving.unit = 'Each';
+    return normalized;
+  }
+
+  if (isLiquid) {
+    const unit = normalized.serving.unit;
+    const amount = normalized.serving.amount;
+
+    // Convert metric to Fluid Ounce if needed
+    if (unit === 'Milliliters') {
+      const oz = amount / 29.5735;
+      normalized.serving.amount = Number.isFinite(oz) ? Math.max(1, Math.round(oz * 10) / 10) : 12;
+      normalized.serving.unit = 'Fluid Ounce';
+    } else if (unit === 'Liters') {
+      const oz = amount * 33.814;
+      normalized.serving.amount = Number.isFinite(oz) ? Math.max(1, Math.round(oz * 10) / 10) : 12;
+      normalized.serving.unit = 'Fluid Ounce';
+    } else if (unit !== 'Fluid Ounce') {
+      // Force Fluid Ounce for drinks
+      normalized.serving.unit = 'Fluid Ounce';
+      if (amount <= 2) {
+        if (/martini/i.test(name) || icon.includes('Martini')) normalized.serving.amount = 6;
+        else if (/toddy/i.test(name)) normalized.serving.amount = 10;
+        else if (icon === 'Juice') normalized.serving.amount = 12;
+        else if (icon === 'Smoothie') normalized.serving.amount = 16;
+        else normalized.serving.amount = 12;
+      }
+    }
+  }
+
+  return normalized;
+}
+
+function fillMissingNutrition(item: FoodItem): FoodItem {
+  const filled: FoodItem = { ...item };
+  const allZero =
+    (filled.calories ?? 0) === 0 &&
+    (filled.fatG ?? 0) === 0 &&
+    (filled.carbsG ?? 0) === 0 &&
+    (filled.proteinG ?? 0) === 0;
+
+  const isLiquid = isLikelyLiquid(filled.foodName, filled.icon);
+
+  // Only fill when it's clearly broken (all zeros).
+  if (allZero) {
+    if (filled.icon === 'Taco' || /taco/i.test(filled.foodName)) {
+      // Very rough but better than zeros; totals scale with count.
+      const count = filled.serving.unit === 'Each' ? Math.max(1, Number(filled.serving.amount) || 1) : 1;
+      const per = {
+        calories: 250,
+        fatG: 12,
+        satFatG: 4,
+        cholesterolMg: 60,
+        sodiumMg: 500,
+        carbsG: 25,
+        fiberG: 2,
+        sugarG: 2,
+        proteinG: 15,
+      };
+      filled.calories = per.calories * count;
+      filled.fatG = per.fatG * count;
+      filled.satFatG = per.satFatG * count;
+      filled.cholesterolMg = per.cholesterolMg * count;
+      filled.sodiumMg = per.sodiumMg * count;
+      filled.carbsG = per.carbsG * count;
+      filled.fiberG = per.fiberG * count;
+      filled.sugarG = per.sugarG * count;
+      filled.proteinG = per.proteinG * count;
+    } else if (isLiquid) {
+      // Mild defaults for broken drink estimates; user can still edit.
+      if (filled.icon === 'Juice') filled.calories = 140;
+      else if (filled.icon.includes('Mixed Drink')) filled.calories = 250;
+      else filled.calories = 120;
+    }
+  }
+
+  // Sodium 0 is often wrong for non-liquids with high calories (e.g., French toast).
+  if (!isLiquid && (filled.sodiumMg ?? 0) === 0 && (filled.calories ?? 0) >= 200) {
+    filled.sodiumMg = filled.brand?.toLowerCase() === 'homemade' ? 200 : 700;
+  }
+
+  return filled;
+}
+
+function normalizeFoodItem(item: FoodItem): FoodItem {
+  const standardizedName = standardizeFoodName(item.foodName, item.icon);
+  const withName = { ...item, foodName: standardizedName };
+  const servingNormalized = normalizeServingForLoseIt(withName);
+  return fillMissingNutrition(servingNormalized);
+}
+
+/**
+ * Removes duplicate food items based on foodName, date, meal, and brand.
+ * Keeps the first occurrence of each unique combination.
+ */
+function deduplicateItems<T extends { foodName: string; date: string; meal: string; brand: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  
+  for (const item of items) {
+    // Create a unique key from foodName, date, meal, and brand
+    const key = `${item.foodName.toLowerCase().trim()}|${item.date}|${item.meal}|${item.brand.toLowerCase().trim()}`;
+    
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(item);
+    }
+  }
+  
+  return unique;
 }
 
 /**
@@ -148,12 +352,26 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - When analyzing multiple entries, each food item must use the Date, Meal, and Brand from its specific entry
 - For "Entry 1 (09/01, Lunch, McDonald's)", all food items from that entry use: Date: 09/01, Meal: Lunch, Brand: McDonald's
 - For "Entry 2 (08/31, Breakfast, Taco Bell)", all food items from that entry use: Date: 08/31, Meal: Breakfast, Brand: Taco Bell
+- CRITICAL: Each entry includes an "EntryID: X" line. Every food item MUST copy that exact EntryID into the output field "entry_id".
 - Never use generic brand names - always use the specific brand listed in parentheses for each entry
+- CRITICAL: NUTRITIONAL INFO ESTIMATION - Always provide realistic nutritional estimates, NEVER set all values to 0
 - When user provides partial nutrition data (e.g., "Calories: 690, Fat: 43g, Carbs: 43g, Protein: 40g"), estimate the missing values (like sodium, cholesterol, fiber, sugar) based on the food type - do NOT set them to 0
+- For restaurant foods, use standard nutrition databases or similar restaurant items as reference
+- For homemade items, estimate based on ingredients: tacos with cheese/chicken typically have 300-500 calories, 15-25g fat, 20-40g carbs, 20-30g protein per taco
+- If you cannot determine exact values, provide reasonable estimates based on similar foods - NEVER return all zeros
+- For items with cheese, estimate 50-150mg sodium per serving; for processed foods, estimate 200-800mg sodium
+- For items with vegetables, estimate 2-5g fiber; for whole grains, estimate 3-7g fiber
+- CRITICAL: SERVING SIZE DETECTION - Pay close attention to quantity words in the description
+- If user says "3 tacos", "2 burgers", "4 pieces", etc., use "Each" as the unit with the number as the amount (e.g., "3 each", "2 each")
+- If user says "3 corn tortilla tacos", the serving should be "3 Each" (NOT "3 Tablespoons" or "3 Serving")
+- For drinks/beverages, ALWAYS use "Fluid Ounce" (NOT "Serving" or "Milliliters") - estimate from cup/glass size in photos
+- Estimate fluid ounces from photos: small cup = 8-12 fl oz, medium cup = 12-16 fl oz, large cup = 16-20 fl oz, standard glass = 8-12 fl oz
 - Use valid serving sizes from SERVING_TYPES only - NEVER use "bowl", "plate", "platter", "dish", "portion", or similar invalid units
 - CRITICAL: "portion" is NOT a valid serving type - use "Serving" from Serving Amount category instead
-- If you're unsure about serving size, default to "1 Serving" (capital S, from Serving Amount category) instead of using invalid units
+- If you're unsure about serving size for solid foods, default to "1 Serving" (capital S, from Serving Amount category) instead of using invalid units
 - Estimate based on photo context: small plate = 1 Serving, large plate = 2-3 Serving, etc.
+- CRITICAL: NO DUPLICATES - Before creating any food item, check if you've already created an identical item with the same name, date, meal, and brand
+- If you find a duplicate, DO NOT create it again - each unique food item should appear exactly ONCE
 - List each distinct food item separately - do not combine similar items
 - ONLY list food items that are explicitly mentioned or clearly implied in the description
 - Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
@@ -163,12 +381,16 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - If description mentions "burger and fries", create exactly 2 items: burger + fries
 - If description mentions "smoothie", create exactly 1 smoothie item (not smoothie + milkshake)
 - Do NOT create multiple versions of similar items (e.g., don't create both "bread" and "additional bread")
+- Before finalizing your response, review all items to ensure no duplicates exist
 
-- CRITICAL: PRESERVE FULL FOOD NAMES - Do NOT strip or shorten food names unless they exceed 60 characters
+- CRITICAL: FOOD NAME STANDARDIZATION - Create concise, standardized food names that capture the essence
+- Simplify verbose descriptions into clear, recognizable names (e.g., "3 corn tortilla tacos with lots of shredded cheese, chicken, and butter" → "Chicken and Cheese Tacos")
+- Remove quantity words from food names when they're in the serving size (e.g., "3 Corn Tortilla Tacos" → "Corn Tortilla Tacos" if serving is "3 each")
+- Remove filler words like "lots of", "with", "served with" - focus on main ingredients
+- For complex dishes, use the primary protein/main ingredient + dish type (e.g., "Chicken Tacos", "Beef Burger", "Shrimp Pasta")
 - If user says "Big League (mocktail)", use "Big League" as the Food Name, NOT just "Mocktail"
-- If user says "SHAWARMA-SPICED PRIME SKIRT STEAK FRITES", preserve the full name or split into "Shawarma-Spiced Prime Skirt Steak" and "Frites" as separate items
-- Do NOT strip descriptive words like "Shawarma-Spiced", "Prime", "Skirt" from food names
-- Only shorten if the name exceeds 60 characters, and then use abbreviations like "w/" for "with"
+- If user says "SHAWARMA-SPICED PRIME SKIRT STEAK FRITES", split into "Shawarma-Spiced Skirt Steak" and "Frites" as separate items
+- Keep names under 60 characters, but prioritize clarity and standardization over preserving every detail
 - Remove all formatting (bold, bullets, numbering, etc) - keep all text plain
 - Follow order strictly: Food Name, Date, Meal, Brand, Icon, Serving Size, Calories, Fat (g), Saturated Fat (g), Cholesterol (mg), Sodium (mg), Carbs (g), Fiber (g), Sugar (g), Protein (g)
 - CRITICAL: Each food item MUST include the exact Date, Meal, and Brand from its corresponding entry in the format:
@@ -178,7 +400,10 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - Use reliable sources/standardized estimates, look up restaurant nutrition online if needed
 - Meal must be: Breakfast, Lunch, Dinner, or Snacks
 - Max 60 character food names, but preserve full names when possible - only shorten if necessary
-- For Icons, select exactly from the ICON_LIST below - Icon must ALWAYS be one of the listed types
+- CRITICAL: Icon selection - You MUST select an appropriate icon from ICON_LIST for EVERY food item
+- NEVER use "Default" as an icon unless the food truly has no better match in the list
+- Icon examples: Hummus/Dips → "Dip, Green" or "Dip, Red", Smoothies → "Smoothie", Steak/Beef → "Beef", Mocktails/Cocktails → "Mixed Drink", Bread → "Breadsticks" or "Baguette"
+- For Icons, select exactly from the ICON_LIST below - Icon must ALWAYS be one of the listed types (NOT "Default" unless absolutely necessary)
 - For serving sizes, use standard types from SERVING_TYPES and convert fractions to decimals (1/4 = 0.25)
 - CRITICAL: Serving Size unit MUST be one of: Grams, Kilograms, Micrograms, Milligrams, Ounces, Pounds, Cups, Dessertspoons, Fluid Ounce, Gallons, Imperial Fluid Ounces, Imperial Pints, Imperial Quarts, Liters, Metric Cups, Milliliters, Pints, Quarts, Tablespoons, Teaspoons, Bottle, Box, Can, Container, Cube, Dry Cup, Each, Jar, Package, Piece, Pot, Pouch, Punnet, Scoop, Serving, Slice, Stick, Tablet
 - NEVER use "portion" - use "Serving" from the Serving Amount category instead
@@ -215,14 +440,26 @@ Fiber (g): 10
 Sugar (g): 5
 Protein (g): 50
 
-CRITICAL EXAMPLES - Preserve Full Names:
+Icon Selection Examples:
+- Hummus → Icon: Dip, Green (NOT "Default")
+- Smoothie → Icon: Smoothie (NOT "Default")
+- Steak/Beef → Icon: Beef (NOT "Default")
+- Mocktail/Cocktail → Icon: Mixed Drink (NOT "Default")
+- Bread → Icon: Breadsticks or Baguette (NOT "Default")
+
+CRITICAL EXAMPLES - Food Name Standardization:
+- If user says "3 corn tortilla tacos with lots of shredded cheese, chicken, and butter", create:
+  Food Name: Chicken and Cheese Tacos
+  Serving Size: 3 Each
+  (NOT "3 Corn Tortilla Tacos with Lots of Shredded Cheese, Chicken,")
 - If user says "Big League (mocktail)", Food Name should be "Big League" (NOT "Mocktail")
 - If user says "SHAWARMA-SPICED PRIME SKIRT STEAK FRITES", create:
-  Food Name: Shawarma-Spiced Prime Skirt Steak
+  Food Name: Shawarma-Spiced Skirt Steak
   Food Name: Frites
-  (NOT "Steak" and "Wine")
-- Always preserve the full descriptive name from the user's input
-- If a dish has multiple components, list them separately but keep their full names
+  (NOT "Shawarma-Spiced Prime Skirt Steak Frites" as one item)
+- Simplify verbose descriptions: "French Toast Neat with 2 Syrup Packets" → "French Toast with Syrup"
+- For drinks, estimate fluid ounces from cup size: small cup = 8-12 fl oz, medium = 12-16 fl oz, large = 16-20 fl oz
+- Always use "Each" for countable items (tacos, burgers, pieces) and "Fluid Ounce" for drinks
 `.trim();
 }
 
@@ -398,7 +635,8 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
 
     // Handle Structured Outputs (JSON response)
     if (result.data?.items && Array.isArray(result.data.items) && result.data.items.length > 0) {
-      const structuredItems = result.data.items.map((item: any) => ({
+      const structuredItems: FoodItem[] = result.data.items.map((item: any) => ({
+        entryId: item.entry_id,
         foodName: truncateFoodName(toProperCase(item.food_name)),
         date: item.date,
         meal: item.meal,
@@ -424,10 +662,14 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
         }
       }));
 
+      // Normalize for LoseIt constraints and remove duplicates
+      const normalizedItems = structuredItems.map(normalizeFoodItem);
+      const uniqueItems = deduplicateItems(normalizedItems);
+
       return {
         success: true,
         data: {
-          items: structuredItems,
+          items: uniqueItems,
           plainText: JSON.stringify(result.data.items, null, 2),
           needsMoreInfo: false
         }
@@ -445,7 +687,15 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
     const fixedResponse = fixServingSizes(aiResponse);
 
     // Parse the fixed response directly
-    const parsedResult = parseOpenAIResponse(fixedResponse, request);
+    const parsedResult = parseOpenAIResponse(fixedResponse, request) as {
+      items: FoodItem[];
+      plainText: string;
+      needsMoreInfo?: boolean;
+      questions?: string[];
+    };
+    
+    // Normalize for LoseIt constraints and remove duplicates
+    parsedResult.items = deduplicateItems(parsedResult.items.map(normalizeFoodItem));
     
     // Always use the fixed response for plainText
     parsedResult.plainText = fixedResponse;

@@ -15,6 +15,8 @@ export interface Session {
 // ── Food Analysis ───────────────────────────────────────────────────
 
 export interface FoodItem {
+  // Entry card identifier (used to map items back to the right entry when dates/brands overlap)
+  entryId?: string;
   foodName: string;
   date: string;
   meal: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';

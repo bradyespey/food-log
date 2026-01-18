@@ -1,7 +1,7 @@
 //src/pages/FoodLogPage.tsx
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, Plus, X, Clipboard, Calendar, Clock, Edit2, Save, XCircle, Trash2 } from 'lucide-react';
+import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, X, Clipboard, Calendar, Clock, Edit2, Save, XCircle, Trash2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';

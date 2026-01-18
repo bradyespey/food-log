@@ -335,8 +335,24 @@ Protein (g): 20`;
         toastOptions={{
           duration: 4000,
           style: {
-            background: 'var(--toast-bg)',
-            color: 'var(--toast-color)',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--card-foreground))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '0.5rem',
+            padding: '0.75rem 1rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          },
+          success: {
+            iconTheme: {
+              primary: 'hsl(var(--primary))',
+              secondary: 'hsl(var(--primary-foreground))',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: 'hsl(var(--destructive))',
+              secondary: 'hsl(var(--destructive-foreground))',
+            },
           },
         }}
       />

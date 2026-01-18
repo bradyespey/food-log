@@ -30,14 +30,24 @@ const FoodLogPage: React.FC = () => {
   };
 
   // ── Multi-Entry State ────────────────────────────────────────────
-  const [foodEntries, setFoodEntries] = useState<FoodEntryCard[]>([{
-    id: '1',
-    date: getLocalDateString(new Date()),
-    meal: 'Breakfast',
-    brand: '',
-    prompt: '',
-    images: [],
-  }]);
+  const [foodEntries, setFoodEntries] = useState<FoodEntryCard[]>([
+    {
+      id: '1',
+      date: getLocalDateString(new Date()),
+      meal: 'Breakfast',
+      brand: '',
+      prompt: '',
+      images: [],
+    },
+    {
+      id: '2',
+      date: getLocalDateString(new Date()),
+      meal: 'Breakfast',
+      brand: '',
+      prompt: '',
+      images: [],
+    }
+  ]);
   
   const [logWater, setLogWater] = useState(false);
 
@@ -413,14 +423,24 @@ ${entry.prompt}`;
   }, [editingItemIndex]);
 
   const handleClear = useCallback(() => {
-    setFoodEntries([{
-      id: Date.now().toString(),
-      date: getLocalDateString(new Date()),
-      meal: 'Breakfast',
-      brand: '',
-      prompt: '',
-      images: [],
-    }]);
+    setFoodEntries([
+      {
+        id: Date.now().toString(),
+        date: getLocalDateString(new Date()),
+        meal: 'Breakfast',
+        brand: '',
+        prompt: '',
+        images: [],
+      },
+      {
+        id: (Date.now() + 1).toString(),
+        date: getLocalDateString(new Date()),
+        meal: 'Breakfast',
+        brand: '',
+        prompt: '',
+        images: [],
+      }
+    ]);
     setAnalysisResult(null);
     setEditedAnalysisResult(null);
     setShowResults(false);
@@ -493,11 +513,13 @@ ${entry.prompt}`;
     }
   }, [editedAnalysisResult, analysisResult, logWater]);
 
-  // Register loadSampleDataFunction and clear function with context for navbar access
+  // Register loadSampleDataFunction, clear function, and addFoodEntry with context for navbar access
+  const { setAddFoodEntry } = useSampleData();
   useEffect(() => {
     setLoadSampleData(loadSampleDataFunction);
     setClearData(handleClear);
-  }, [setLoadSampleData, setClearData, loadSampleDataFunction, handleClear]);
+    setAddFoodEntry(addFoodEntry);
+  }, [setLoadSampleData, setClearData, setAddFoodEntry, loadSampleDataFunction, handleClear, addFoodEntry]);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -609,14 +631,30 @@ ${entry.prompt}`;
   }, []);
 
   return (
-    <div className="space-y-4 px-4 max-w-5xl mx-auto">
+    <div className="space-y-4 px-4 max-w-7xl mx-auto">
       <Toaster 
         position="top-center" 
         toastOptions={{
           duration: 4000,
           style: {
-            background: 'var(--toast-bg)',
-            color: 'var(--toast-color)',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--card-foreground))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '0.5rem',
+            padding: '0.75rem 1rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          },
+          success: {
+            iconTheme: {
+              primary: 'hsl(var(--primary))',
+              secondary: 'hsl(var(--primary-foreground))',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: 'hsl(var(--destructive))',
+              secondary: 'hsl(var(--destructive-foreground))',
+            },
           },
         }}
       />
@@ -633,7 +671,7 @@ ${entry.prompt}`;
       </div>
 
       {/* Food Entry Cards */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {foodEntries.map((entry, index) => (
           <FoodEntryCardComponent
             key={entry.id}
@@ -643,7 +681,6 @@ ${entry.prompt}`;
             onUpdate={updateFoodEntry}
             onRemove={removeFoodEntry}
             onImagesChange={handleImagesChange}
-            onAdd={addFoodEntry}
             isAnalyzing={isAnalyzing}
             isLogging={isLogging}
             isLastCard={index === foodEntries.length - 1}
@@ -735,7 +772,7 @@ ${entry.prompt}`;
                     size="sm"
                     className="text-sm text-orange-600 hover:text-orange-700"
                   >
-                    Reset Edits
+                    Reset All Edits
                   </Button>
                 )}
                 <Button
@@ -769,21 +806,25 @@ ${entry.prompt}`;
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Food Items */}
-            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
-              {(editedAnalysisResult || analysisResult).items?.map((item: FoodItem, index: number) => (
-                <FoodItemCard 
-                  key={index} 
-                  item={item} 
-                  verificationStatus={verificationStatus[index]}
-                  isLogging={isLogging}
-                  onEdit={handleEditItem}
-                  onDelete={handleDeleteItem}
-                  onMultiply={handleMultiplyItem}
-                  index={index}
-                  isEditing={editingItemIndex === index}
-                  onToggleEdit={handleToggleEdit}
-                />
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(editedAnalysisResult || analysisResult).items?.map((item: FoodItem, index: number) => {
+                const originalItem = analysisResult.items[index];
+                return (
+                  <FoodItemCard 
+                    key={index} 
+                    item={item}
+                    originalItem={originalItem}
+                    verificationStatus={verificationStatus[index]}
+                    isLogging={isLogging}
+                    onEdit={handleEditItem}
+                    onDelete={handleDeleteItem}
+                    onMultiply={handleMultiplyItem}
+                    index={index}
+                    isEditing={editingItemIndex === index}
+                    onToggleEdit={handleToggleEdit}
+                  />
+                );
+              })}
             </div>
 
                     {/* Date Information */}
@@ -821,6 +862,7 @@ ${entry.prompt}`;
 
 interface FoodItemCardProps {
   item: FoodItem;
+  originalItem?: FoodItem;
   verificationStatus?: any;
   isLogging: boolean;
   onEdit?: (index: number, updatedItem: FoodItem) => void;
@@ -833,6 +875,7 @@ interface FoodItemCardProps {
 
 const FoodItemCard: React.FC<FoodItemCardProps> = ({ 
   item, 
+  originalItem,
   verificationStatus, 
   isLogging, 
   onEdit, 
@@ -860,6 +903,14 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
     onToggleEdit?.(index);
   };
 
+  const handleReset = () => {
+    if (originalItem) {
+      setEditedItem(originalItem);
+      onEdit?.(index, originalItem);
+      toast.success('Item reset to original values');
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -867,148 +918,128 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
     }
   };
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-      {/* Header with Food Name, Date, Meal, and Food Type */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1 min-w-0">
-          {isEditing ? (
+    <div className={`bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${isEditing ? 'p-4' : 'p-3'}`}>
+      {/* Row 1: Food Name and Action Buttons */}
+      <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 ${isEditing ? 'mb-3' : 'mb-2'}`}>
+        {isEditing ? (
+          <>
             <Input
               value={editedItem.foodName}
               onChange={(e) => setEditedItem({...editedItem, foodName: e.target.value})}
               onKeyDown={handleKeyDown}
-              className="mb-2 text-base font-semibold"
+              className={`flex-1 font-semibold ${isEditing ? 'text-base' : 'text-sm'}`}
               placeholder="Food name"
               tabIndex={1}
             />
-          ) : (
-            <h4 className="font-semibold text-gray-900 dark:text-white text-base truncate">{item.foodName}</h4>
-          )}
-          <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-            {isEditing ? (
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  <Input
-                    value={editedItem.date}
-                    onChange={(e) => setEditedItem({...editedItem, date: e.target.value})}
-                    onKeyDown={handleKeyDown}
-                    placeholder="MM/DD"
-                    className="w-16 h-6 text-xs p-1"
-                    tabIndex={2}
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  <select
-                    value={editedItem.meal}
-                    onChange={(e) => setEditedItem({...editedItem, meal: e.target.value as 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks'})}
-                    onKeyDown={handleKeyDown}
-                    className="w-20 h-6 text-xs p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    tabIndex={3}
-                  >
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Dinner">Dinner</option>
-                    <option value="Snacks">Snacks</option>
-                  </select>
-                </div>
-                <Input
-                  value={editedItem.brand}
-                  onChange={(e) => setEditedItem({...editedItem, brand: e.target.value})}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Brand/Restaurant"
-                  className="w-24 h-6 text-xs p-1"
-                  tabIndex={4}
-                />
-              </div>
-            ) : (
-              <>
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {item.date || 'N/A'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {item.meal}
-                </span>
-                <span>{item.brand}</span>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {isEditing ? (
+            <div className="flex items-center gap-1.5 sm:gap-1">
+              {originalItem && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleReset}
+                  className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300"
+                  tabIndex={17}
+                  title="Reset to original"
+                >
+                  Reset
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSave}
+                className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                tabIndex={18}
+                title="Save changes"
+              >
+                <Save className="w-3 h-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancel}
+                className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                tabIndex={19}
+                title="Cancel editing"
+              >
+                <XCircle className="w-3 h-3" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{item.foodName}</h4>
+            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full whitespace-nowrap">
+              {item.icon}
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Row 2: Restaurant and Food Type */}
+      {isEditing ? (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs mb-3">
+            <Input
+              value={editedItem.brand}
+              onChange={(e) => setEditedItem({...editedItem, brand: e.target.value})}
+              onKeyDown={handleKeyDown}
+              placeholder="Restaurant"
+              className="flex-1 h-7 text-sm p-1.5"
+              tabIndex={2}
+            />
             <SearchableSelect
               options={ICON_OPTIONS}
               value={editedItem.icon}
               onChange={(value) => setEditedItem({...editedItem, icon: value})}
-              placeholder="Select icon"
-              className="w-32"
+              placeholder="Food Type"
+              className="w-full sm:w-28"
               onKeyDown={handleKeyDown}
-              tabIndex={5}
+              tabIndex={3}
             />
-          ) : (
-            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full whitespace-nowrap">
-              {item.icon}
-            </span>
-          )}
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-2">
+          <span className="flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            {item.date || 'N/A'}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {item.meal}
+          </span>
+          <span>{item.brand}</span>
+        </div>
+      )}
 
-      {/* Action buttons row - more prominent */}
-      <div className="flex justify-end gap-2 mb-3">
-        {!isEditing && (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onToggleEdit?.(index)}
-              className="text-xs px-2 py-1 h-7"
-            >
-              <Edit2 className="w-3 h-3 mr-1" />
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onDelete?.(index)}
-              className="text-xs px-2 py-1 h-7 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-            >
-              <Trash2 className="w-3 h-3 mr-1" />
-              Delete
-            </Button>
-          </>
-        )}
-        {isEditing && (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleSave}
-              className="text-xs px-2 py-1 h-7 text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
-              tabIndex={17}
-            >
-              <Save className="w-3 h-3 mr-1" />
-              Save
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleCancel}
-              className="text-xs px-2 py-1 h-7 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-              tabIndex={18}
-            >
-              <XCircle className="w-3 h-3 mr-1" />
-              Cancel
-            </Button>
-          </>
-        )}
-      </div>
+      {/* Action buttons row - only for non-editing mode */}
+      {!isEditing && (
+        <div className="flex justify-end gap-1.5 mb-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onToggleEdit?.(index)}
+            className="text-xs px-2 py-1 h-7"
+          >
+            <Edit2 className="w-3 h-3 mr-1" />
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onDelete?.(index)}
+            className="text-xs px-2 py-1 h-7 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+          >
+            <Trash2 className="w-3 h-3 mr-1" />
+            Delete
+          </Button>
+        </div>
+      )}
       
-      {/* Serving Size */}
-      <div className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-        {isEditing ? (
+      {/* Row 3: Serving and Calories */}
+      {isEditing ? (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs mb-3">
           <div className="flex items-center gap-2">
+            <span className="text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">Serving:</span>
             <Input
               type="number"
               step="0.1"
@@ -1018,9 +1049,9 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
                 serving: {...editedItem.serving, amount: parseFloat(e.target.value) || 1}
               })}
               onKeyDown={handleKeyDown}
-              className="w-16 h-6 text-xs p-1"
+              className="w-16 sm:w-12 h-7 text-sm p-1.5"
               placeholder="1"
-              tabIndex={6}
+              tabIndex={4}
             />
             <SearchableSelect
               options={SERVING_UNIT_OPTIONS}
@@ -1029,44 +1060,33 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
                 ...editedItem, 
                 serving: {...editedItem.serving, unit: value}
               })}
-              placeholder="Select unit"
-              className="w-32"
+              placeholder="Unit"
+              className="flex-1 sm:w-24"
               onKeyDown={handleKeyDown}
-              tabIndex={7}
+              tabIndex={5}
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">Calories:</span>
             <Input
-              value={editedItem.serving.descriptor}
-              onChange={(e) => setEditedItem({
-                ...editedItem, 
-                serving: {...editedItem.serving, descriptor: e.target.value}
-              })}
+              type="number"
+              value={editedItem.calories}
+              onChange={(e) => setEditedItem({...editedItem, calories: parseInt(e.target.value) || 0})}
               onKeyDown={handleKeyDown}
-              placeholder="descriptor (optional)"
-              className="w-24 h-6 text-xs p-1"
+              className="w-20 sm:w-16 h-7 text-sm p-1.5 text-center font-semibold"
               tabIndex={8}
             />
           </div>
-        ) : (
-          `${item.serving.amount} ${item.serving.unit === 'Fluid Ounce' ? 'fl oz' : item.serving.unit} ${item.serving.descriptor && `(${item.serving.descriptor})`}`
-        )}
-      </div>
-      
-      {/* Calories prominently displayed */}
-      <div className="text-center mb-3">
-        {isEditing ? (
-          <Input
-            type="number"
-            value={editedItem.calories}
-            onChange={(e) => setEditedItem({...editedItem, calories: parseInt(e.target.value) || 0})}
-            onKeyDown={handleKeyDown}
-            className="text-center text-2xl font-bold w-24 mx-auto"
-            tabIndex={9}
-          />
-        ) : (
-          <div className="text-4xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
-        )}
-        <div className="text-xs text-gray-500 dark:text-gray-400">Calories</div>
-      </div>
+        </div>
+      ) : (
+        <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+          {`${item.serving.amount} ${item.serving.unit === 'Fluid Ounce' ? 'fl oz' : item.serving.unit}`}
+          <div className="text-center mt-2">
+            <div className="text-3xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Calories</div>
+          </div>
+        </div>
+      )}
 
       {/* Custom multiplier - only show when not editing */}
       {!isEditing && (
@@ -1118,10 +1138,13 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
         </div>
       )}
       
-      {/* Compact nutrition grid */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Fat:</span>
+      {/* Row 4: Nutrition Grid - Left column: fat, sat fat, chol, sodium | Right column: carb, fiber, sugar, protein */}
+      {/* Tab order: cal(8), fat(9), sat(10), chol(11), sodium(12), carb(13), fiber(14), sugar(15), protein(16) */}
+      <div className="flex flex-col sm:flex-row gap-x-4 gap-y-2 sm:gap-y-0 text-xs">
+        {/* Left Column: Fat, Sat Fat, Chol, Sodium */}
+        <div className={`flex flex-col ${isEditing ? 'gap-y-1.5' : 'gap-y-0.5'} flex-1`}>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Fat:</span>
           {isEditing ? (
             <Input
               type="number"
@@ -1129,31 +1152,15 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
               value={editedItem.fatG}
               onChange={(e) => setEditedItem({...editedItem, fatG: parseFloat(e.target.value) || 0})}
               onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
+              className="w-16 h-6 text-sm p-1"
               tabIndex={9}
             />
           ) : (
             <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
           )}
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Carbs:</span>
-          {isEditing ? (
-            <Input
-              type="number"
-              step="0.1"
-              value={editedItem.carbsG}
-              onChange={(e) => setEditedItem({...editedItem, carbsG: parseFloat(e.target.value) || 0})}
-              onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
-              tabIndex={13}
-            />
-          ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
-          )}
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Sat Fat:</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sat Fat:</span>
           {isEditing ? (
             <Input
               type="number"
@@ -1161,90 +1168,110 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
               value={editedItem.satFatG}
               onChange={(e) => setEditedItem({...editedItem, satFatG: parseFloat(e.target.value) || 0})}
               onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
+              className="w-16 h-6 text-sm p-1"
               tabIndex={10}
             />
           ) : (
             <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
           )}
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Fiber:</span>
-          {isEditing ? (
-            <Input
-              type="number"
-              step="0.1"
-              value={editedItem.fiberG}
-              onChange={(e) => setEditedItem({...editedItem, fiberG: parseFloat(e.target.value) || 0})}
-              onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
-              tabIndex={14}
-            />
-          ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
-          )}
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Cholesterol:</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Chol:</span>
           {isEditing ? (
             <Input
               type="number"
               value={editedItem.cholesterolMg}
               onChange={(e) => setEditedItem({...editedItem, cholesterolMg: parseInt(e.target.value) || 0})}
               onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
+              className="w-16 h-6 text-sm p-1"
               tabIndex={11}
             />
           ) : (
             <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
           )}
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Sugar:</span>
-          {isEditing ? (
-            <Input
-              type="number"
-              step="0.1"
-              value={editedItem.sugarG}
-              onChange={(e) => setEditedItem({...editedItem, sugarG: parseFloat(e.target.value) || 0})}
-              onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
-              tabIndex={15}
-            />
-          ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
-          )}
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Sodium:</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sodium:</span>
           {isEditing ? (
             <Input
               type="number"
               value={editedItem.sodiumMg}
               onChange={(e) => setEditedItem({...editedItem, sodiumMg: parseInt(e.target.value) || 0})}
               onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
+              className="w-16 h-6 text-sm p-1"
               tabIndex={12}
             />
           ) : (
             <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg.toLocaleString()}mg</span>
           )}
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 dark:text-gray-400">Protein:</span>
-          {isEditing ? (
-            <Input
-              type="number"
-              step="0.1"
-              value={editedItem.proteinG}
-              onChange={(e) => setEditedItem({...editedItem, proteinG: parseFloat(e.target.value) || 0})}
-              onKeyDown={handleKeyDown}
-              className="w-12 h-5 text-xs p-1"
-              tabIndex={16}
-            />
-          ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
-          )}
+        </div>
+        {/* Right Column: Carbs, Fiber, Sugar, Protein */}
+        <div className={`flex flex-col ${isEditing ? 'gap-y-1.5' : 'gap-y-0.5'} flex-1`}>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Carbs:</span>
+            {isEditing ? (
+              <Input
+                type="number"
+                step="0.1"
+                value={editedItem.carbsG}
+                onChange={(e) => setEditedItem({...editedItem, carbsG: parseFloat(e.target.value) || 0})}
+                onKeyDown={handleKeyDown}
+                className="w-16 h-6 text-sm p-1"
+                tabIndex={13}
+              />
+            ) : (
+              <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Fiber:</span>
+            {isEditing ? (
+              <Input
+                type="number"
+                step="0.1"
+                value={editedItem.fiberG}
+                onChange={(e) => setEditedItem({...editedItem, fiberG: parseFloat(e.target.value) || 0})}
+                onKeyDown={handleKeyDown}
+                className="w-16 h-6 text-sm p-1"
+                tabIndex={14}
+              />
+            ) : (
+              <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sugar:</span>
+            {isEditing ? (
+              <Input
+                type="number"
+                step="0.1"
+                value={editedItem.sugarG}
+                onChange={(e) => setEditedItem({...editedItem, sugarG: parseFloat(e.target.value) || 0})}
+                onKeyDown={handleKeyDown}
+                className="w-16 h-6 text-sm p-1"
+                tabIndex={15}
+              />
+            ) : (
+              <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Protein:</span>
+            {isEditing ? (
+              <Input
+                type="number"
+                step="0.1"
+                value={editedItem.proteinG}
+                onChange={(e) => setEditedItem({...editedItem, proteinG: parseFloat(e.target.value) || 0})}
+                onKeyDown={handleKeyDown}
+                className="w-16 h-6 text-sm p-1"
+                tabIndex={16}
+              />
+            ) : (
+              <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
+            )}
+          </div>
         </div>
       </div>
       
@@ -1298,7 +1325,6 @@ interface FoodEntryCardProps {
   onUpdate: (id: string, field: keyof FoodEntryCard, value: any) => void;
   onRemove: (id: string) => void;
   onImagesChange: (id: string, images: File[]) => void;
-  onAdd: () => void;
   isAnalyzing: boolean;
   isLogging: boolean;
   isLastCard: boolean;
@@ -1314,7 +1340,6 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
   onUpdate, 
   onRemove, 
   onImagesChange, 
-  onAdd, 
   isAnalyzing, 
   isLogging, 
   isLastCard, 
@@ -1331,16 +1356,6 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
             Food Entry #{index + 1}
           </CardTitle>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <Button
-              onClick={onAdd}
-              variant="outline"
-              size="sm"
-              disabled={isAnalyzing || isLogging}
-              className="text-sm"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Another Food Item
-            </Button>
             {canRemove && (
               <Button
                 variant="outline"

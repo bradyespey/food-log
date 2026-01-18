@@ -18,7 +18,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
   const { pathname } = useLocation();
   const { theme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { clearData } = useSampleData();
+  const { clearData, addFoodEntry } = useSampleData();
 
   const isActive = (path: string) => pathname === path;
 
@@ -29,14 +29,20 @@ export function Navbar({ onLoadSample }: NavbarProps) {
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-10">
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center space-x-8">
             {/* Logo */}
-            <Link to="/dashboard" className="flex items-center space-x-2 text-xl font-semibold text-primary">
+            <button 
+              onClick={() => {
+                clearData();
+                setMobileMenuOpen(false);
+              }}
+              className="flex items-center space-x-2 text-xl font-semibold text-primary hover:opacity-80 transition-opacity"
+            >
               <img src="/food_log_image.png" alt="FoodLog AI" className="w-8 h-8" />
               <span>FoodLog AI</span>
-            </Link>
+            </button>
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center space-x-1">
               {navLinks.map(({ path, label }) => (
@@ -67,16 +73,22 @@ export function Navbar({ onLoadSample }: NavbarProps) {
           </div>
           {/* Theme toggle and sign out (always visible) */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Add Food Item Button (on AI Food Log page) */}
+            {addFoodEntry && pathname === '/dashboard' && (
+              <Button variant="outline" size="sm" onClick={addFoodEntry}>
+                Add Food Item
+              </Button>
+            )}
             {/* Clear Button (on both AI Food Log and Manual pages) */}
             {clearData && (
               <Button variant="outline" size="sm" onClick={clearData}>
                 Clear
               </Button>
             )}
-            {/* Load Sample Data Button (on both AI Food Log and Manual pages) */}
+            {/* Sample Data Button (on both AI Food Log and Manual pages) */}
             {onLoadSample && (
               <Button variant="outline" size="sm" onClick={onLoadSample}>
-                📋 Load Sample Data
+                Sample Data
               </Button>
             )}
             <DropdownMenu>
@@ -133,6 +145,14 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                   {label}
                 </Link>
               ))}
+              {/* Add Food Item Button for mobile */}
+              {addFoodEntry && pathname === '/dashboard' && (
+                <div className="px-4 pt-2">
+                  <Button variant="outline" size="sm" onClick={addFoodEntry} className="w-full">
+                    Add Food Item
+                  </Button>
+                </div>
+              )}
               {/* Clear Button for mobile */}
               {clearData && (
                 <div className="px-4 pt-2">
@@ -141,11 +161,11 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                   </Button>
                 </div>
               )}
-              {/* Load Sample Data Button for mobile */}
+              {/* Sample Data Button for mobile */}
               {onLoadSample && (
                 <div className="px-4 pt-2">
                   <Button variant="outline" size="sm" onClick={onLoadSample} className="w-full">
-                    📋 Load Sample Data
+                    Sample Data
                   </Button>
                 </div>
               )}

@@ -112,6 +112,10 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
 
 ## App Pages / Routes
 - 🤖 **AI Analysis**: Main food logging interface with photo upload, AI analysis, and multi-card food entry system (public demo, auth required for logging)
+  - **Multi-Entry System**: Starts with 2 food entry cards by default, supports adding more
+  - **Responsive Layout**: 3 cards per row on desktop, 2 on tablet, 1 on mobile
+  - **Edit Mode**: Reorganized layout with full-width food name, compact serving/calories, and two-column nutrition grid
+  - **Individual Reset**: Each food item card has its own Reset button in edit mode
 - ✏️ **Manual Entry**: Direct food entry without AI for pre-formatted food items (public demo, auth required for logging)
 - 🔐 **Login**: Firebase Google authentication with email whitelist
 - 🔄 **Auth Callback**: OAuth flow completion handler
@@ -138,10 +142,20 @@ FoodLog/
 
 ## Key Features
 
+### UI/UX Improvements
+- **Responsive Layout**: Analysis cards display 3 per row on desktop (lg), 2 on tablet (md), 1 on mobile
+- **Multi-Entry Default**: Starts with 2 food entry cards for faster workflow
+- **Navbar Integration**: Add Food Item button moved to navbar, logo click clears page
+- **Toast Styling**: Improved toast notifications that blend with theme colors
+- **Edit Card Layout**: Reorganized into clear rows with better spacing and mobile responsiveness
+- **Individual Reset**: Each food item in analysis results can be reset independently
+
 ### Food Item Editing
 - **Searchable Dropdowns**: Icon and serving unit fields use searchable dropdowns (SearchableSelect component) to prevent invalid values that break automation
 - **Icon Selection**: 350+ food icons available via searchable dropdown (e.g., type "Choc" to find all chocolate-related icons)
 - **Serving Unit Validation**: All serving units must match valid LoseIt types (prevents manual typing errors)
+- **Edit Mode Layout**: Organized into 4 rows: food name + buttons, restaurant + type, serving + calories, nutrition grid
+- **Mobile Optimized**: Edit card stacks vertically on mobile with larger touch targets
 
 ### AI Analysis & Normalization
 - **Food Name Standardization**: Automatically simplifies verbose descriptions (e.g., "3 corn tortilla tacos with lots of shredded cheese, chicken, and butter" → "Chicken and Cheese Tacos")
@@ -184,8 +198,34 @@ All AI responses go through normalization:
 ### `src/components/ui/SearchableSelect.tsx`
 - **`SearchableSelect`**: Reusable searchable dropdown component with keyboard navigation. Used for icon and serving unit selection in edit mode
 
+### `src/components/Layout/Navbar.tsx`
+- **Navbar Actions**: 
+  - Logo click clears/resets the page (equivalent to Clear button)
+  - "Add Food Item" button in navbar (dashboard page only)
+  - "Sample Data" button (renamed from "Load Sample Data")
+  - Toast notifications styled to blend with theme
+
 ### `src/pages/FoodLogPage.tsx`
 - **EntryID System**: Each food entry card has unique ID. Analysis prompt includes `EntryID: <id>` per entry. Frontend maps items back to correct entry using EntryID to prevent meal/date leakage
+- **Multi-Entry State**: Initializes with 2 food entry cards. Empty cards are automatically skipped during analysis
+- **Edit Mode Layout**: 
+  - Row 1: Food name (full width) + Reset/Save/Cancel buttons (top right)
+  - Row 2: Restaurant input + Food Type selector
+  - Row 3: Serving (amount + unit) + Calories input
+  - Row 4: Nutrition grid (left: fat, sat fat, chol, sodium | right: carbs, fiber, sugar, protein)
+- **Individual Reset**: Each food item in analysis results has a Reset button to revert to original values
+- **Responsive Design**: Edit card stacks vertically on mobile with larger touch targets
+
+### `src/App.tsx`
+- **SampleDataContext**: Provides global access to loadSampleData, clearData, and addFoodEntry functions for navbar integration
+- **Multi-Entry State**: Initializes with 2 food entry cards. Empty cards are automatically skipped during analysis
+- **Edit Mode Layout**: 
+  - Row 1: Food name (full width) + Reset/Save/Cancel buttons (top right)
+  - Row 2: Restaurant input + Food Type selector
+  - Row 3: Serving (amount + unit) + Calories input
+  - Row 4: Nutrition grid (left: fat, sat fat, chol, sodium | right: carbs, fiber, sugar, protein)
+- **Individual Reset**: Each food item in analysis results has a Reset button to revert to original values
+- **Responsive Design**: Edit card stacks vertically on mobile with larger touch targets
 
 ## AI Handoff
 Read this README, scan the repo, prioritize core functions and env-safe areas, keep env and rules aligned with this file. The OpenAI prompt is implemented in `src/lib/openai.ts` with comprehensive nutritional analysis capabilities, serving size validation, and post-processing normalization for LoseIt compatibility.

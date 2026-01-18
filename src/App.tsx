@@ -16,11 +16,15 @@ const SampleDataContext = createContext<{
   setLoadSampleData: (fn: () => void) => void;
   clearData: () => void;
   setClearData: (fn: () => void) => void;
+  addFoodEntry: () => void;
+  setAddFoodEntry: (fn: () => void) => void;
 }>({
   loadSampleData: () => {},
   setLoadSampleData: () => {},
   clearData: () => {},
   setClearData: () => {},
+  addFoodEntry: () => {},
+  setAddFoodEntry: () => {},
 });
 
 export const useSampleData = () => useContext(SampleDataContext);
@@ -30,6 +34,7 @@ export const useSampleData = () => useContext(SampleDataContext);
 function SampleDataProvider({ children }: { children: React.ReactNode }) {
   const [loadSampleDataFn, setLoadSampleDataFn] = useState<(() => void) | null>(null);
   const [clearDataFn, setClearDataFn] = useState<(() => void) | null>(null);
+  const [addFoodEntryFn, setAddFoodEntryFn] = useState<(() => void) | null>(null);
 
   const loadSampleData = () => {
     if (loadSampleDataFn) {
@@ -51,8 +56,18 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
     setClearDataFn(() => fn);
   };
 
+  const addFoodEntry = () => {
+    if (addFoodEntryFn) {
+      addFoodEntryFn();
+    }
+  };
+
+  const setAddFoodEntry = (fn: () => void) => {
+    setAddFoodEntryFn(() => fn);
+  };
+
   return (
-    <SampleDataContext.Provider value={{ loadSampleData, setLoadSampleData, clearData, setClearData }}>
+    <SampleDataContext.Provider value={{ loadSampleData, setLoadSampleData, clearData, setClearData, addFoodEntry, setAddFoodEntry }}>
       {children}
     </SampleDataContext.Provider>
   );

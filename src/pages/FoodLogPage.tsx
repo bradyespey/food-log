@@ -1,6 +1,6 @@
 //src/pages/FoodLogPage.tsx
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, X, Clipboard, Calendar, Clock, Edit2, Save, XCircle, Trash2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -49,7 +49,20 @@ const FoodLogPage: React.FC = () => {
     }
   ]);
   
-  const [logWater, setLogWater] = useState(false);
+  const [logWater, setLogWater] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('foodlog-logwater');
+      return saved ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+
+  // Save logWater state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('foodlog-logwater', JSON.stringify(logWater));
+    }
+  }, [logWater]);
 
   // ── UI State ────────────────────────────────────────────────────
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -873,7 +886,7 @@ interface FoodItemCardProps {
   onToggleEdit?: (index: number) => void;
 }
 
-const FoodItemCard: React.FC<FoodItemCardProps> = ({ 
+const FoodItemCard: React.FC<FoodItemCardProps> = memo(({ 
   item, 
   originalItem,
   verificationStatus, 
@@ -1314,7 +1327,9 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({
       )}
     </div>
   );
-};
+});
+
+FoodItemCard.displayName = 'FoodItemCard';
 
 // ── Food Entry Card Component ───────────────────────────────────────
 

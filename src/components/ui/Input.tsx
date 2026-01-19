@@ -1,6 +1,6 @@
 //src/components/ui/Input.tsx
 
-import React from 'react';
+import React, { useId, useMemo } from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,7 +10,8 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className = '', label, error, helperText, id, ...props }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const inputId = useMemo(() => id || generatedId, [id, generatedId]);
 
     return (
       <div className="space-y-1">

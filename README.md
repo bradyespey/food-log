@@ -116,7 +116,7 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
   - **Responsive Layout**: 3 cards per row on desktop, 2 on tablet, 1 on mobile
   - **Edit Mode**: Reorganized layout with full-width food name, compact serving/calories, and two-column nutrition grid
   - **Individual Reset**: Each food item card has its own Reset button in edit mode
-- ✏️ **Manual Entry**: Direct food entry without AI for pre-formatted food items (public demo, auth required for logging)
+- ✏️ **Manual Entry**: Direct food entry without AI for pre-formatted food items (public demo, auth required for logging). Accepts both line-by-line format (one field per line) and paragraph format (e.g. single-line paste from AI sidebar). Normalizes Serving Size variants like `12 (fluid ounces)` to `12 fluid ounces`. Separate multiple items with blank lines or by "Food Name:" in paragraph paste.
 - 🔐 **Login**: Firebase Google authentication with email whitelist
 - 🔄 **Auth Callback**: OAuth flow completion handler
 
@@ -194,6 +194,12 @@ All AI responses go through normalization:
 - **`validateIcon()`**: Validates icon names against ICON_LIST with fallback mappings
 - **`ICON_OPTIONS`**: Exported array of all valid food icons (350+)
 - **`SERVING_UNIT_OPTIONS`**: Exported array of all valid serving units
+
+### `src/pages/ManualPage.tsx`
+- **`parsePastedFoodText(raw)`**: Parses pasted text into food item strings. Supports (1) line-based format (fields on separate lines, items separated by blank lines) and (2) paragraph format (all fields on one line per item, e.g. from AI sidebar). Splits by double newline or by "Food Name:" for paragraph paste.
+- **`parseParagraphItem(paragraph)`**: Extracts key-value pairs from a single paragraph and returns line-based format for the backend.
+- **`normalizeServingSizeValue(val)`**: Converts "12 (fluid ounces)" to "12 fluid ounces" and "(ounces)" to "ounces" for backend compatibility.
+- **`isLineBasedFormat(block)`**: Detects whether a block is already line-based (multiple lines with "Date:" etc.) so it can be passed through unchanged.
 
 ### `src/components/ui/SearchableSelect.tsx`
 - **`SearchableSelect`**: Reusable searchable dropdown component with keyboard navigation. Used for icon and serving unit selection in edit mode

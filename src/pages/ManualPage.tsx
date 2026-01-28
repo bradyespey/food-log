@@ -9,6 +9,97 @@ import { useSampleData } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+const FOOD_KEYS = [
+  'Food Name',
+  'Date',
+  'Meal',
+  'Brand',
+  'Icon',
+  'Serving Size',
+  'Calories',
+  'Fat (g)',
+  'Saturated Fat (g)',
+  'Cholesterol (mg)',
+  'Sodium (mg)',
+  'Carbs (g)',
+  'Fiber (g)',
+  'Sugar (g)',
+  'Protein (g)',
+] as const;
+
+const KEY_REGEX = new RegExp(
+  `(${FOOD_KEYS.map((k) => k.replace(/[()]/g, '\\$&')).join('|')}):\\s*`,
+  'gi'
+);
+
+const CANONICAL_KEY_MAP: Record<string, (typeof FOOD_KEYS)[number]> = Object.fromEntries(
+  FOOD_KEYS.map((k) => [k.toLowerCase(), k])
+) as Record<string, (typeof FOOD_KEYS)[number]>;
+
+function toCanonicalKey(matched: string): (typeof FOOD_KEYS)[number] {
+  return CANONICAL_KEY_MAP[matched.toLowerCase()] ?? (matched as (typeof FOOD_KEYS)[number]);
+}
+
+function normalizeServingSizeValue(val: string): string {
+  return val
+    .replace(/\s*\(\s*fluid\s+ounces\s*\)/gi, ' fluid ounces')
+    .replace(/\s*\(\s*ounces\s*\)/gi, ' ounces')
+    .trim();
+}
+
+function parseParagraphItem(paragraph: string): string {
+  const pairs: { key: (typeof FOOD_KEYS)[number]; value: string }[] = [];
+  let lastIndex = 0;
+  let lastKey: (typeof FOOD_KEYS)[number] | null = null;
+  const matches = [...paragraph.matchAll(KEY_REGEX)];
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const key = toCanonicalKey(m[1]);
+    const keyStart = m.index!;
+    if (lastKey) {
+      const value = paragraph.slice(lastIndex, keyStart).trim();
+      pairs.push({ key: lastKey, value });
+    }
+    lastKey = key;
+    lastIndex = keyStart + m[0].length;
+  }
+  if (lastKey) {
+    const value = paragraph.slice(lastIndex).trim();
+    pairs.push({ key: lastKey, value });
+  }
+  return pairs
+    .map(({ key, value }) => {
+      const v = key === 'Serving Size' ? normalizeServingSizeValue(value) : value;
+      return `${key}: ${v}`;
+    })
+    .join('\n');
+}
+
+function isLineBasedFormat(block: string): boolean {
+  return /\n\s*Date:\s*/i.test(block) || (block.includes('Food Name:') && block.includes('\n') && block.trim().split('\n').length >= 3);
+}
+
+function parsePastedFoodText(raw: string): string[] {
+  const normalized = raw
+    .replace(/\s*\(\s*fluid\s+ounces\s*\)/gi, ' fluid ounces')
+    .replace(/\s*\(\s*ounces\s*\)/gi, ' ounces');
+  const byDoubleNewline = normalized
+    .split(/\n\s*\n/)
+    .map((s) => s.trim())
+    .filter((s) => s.includes('Food Name:'));
+  if (byDoubleNewline.length > 1) {
+    return byDoubleNewline.map((block) =>
+      isLineBasedFormat(block) ? block : parseParagraphItem(block)
+    );
+  }
+  const singleBlock = normalized.trim();
+  if (!singleBlock.includes('Food Name:')) return [];
+  const byFoodName = singleBlock.split(/(?=\s*Food Name:)/i).map((s) => s.trim()).filter(Boolean);
+  return byFoodName.map((block) =>
+    isLineBasedFormat(block) ? block : parseParagraphItem(block)
+  );
+}
+
 export default function ManualPage() {
   const [isLogging, setIsLogging] = useState(false);
   const [logResult, setLogResult] = useState('');
@@ -136,11 +227,7 @@ Protein (g): 20`;
     toast.dismiss();
     
     try {
-      // Split food items by double newlines and create individual food item strings
-      const foodItems = foodText.split('\n\n')
-        .filter(item => item.trim())
-        .map(item => item.trim())
-        .filter(item => item.includes('Food Name:')); // Only include valid food items
+      const foodItems = parsePastedFoodText(foodText);
 
       if (foodItems.length === 0) {
         toast.error('No food items found. Please paste in the correct format.');
@@ -395,7 +482,7 @@ Protein (g): 20`;
           <Textarea
             placeholder="Paste your food log text here...
 
-Example format:
+Line format (one field per line):
 Food Name: Cafe Vanilla Coffee
 Date: 08/17
 Meal: Breakfast
@@ -403,16 +490,12 @@ Brand: Keurig
 Icon: Coffee
 Serving Size: 8 fluid ounces
 Calories: 60
-Fat (g): 2
-Saturated Fat (g): 0.5
-Cholesterol (mg): 0
-Sodium (mg): 100
-Carbs (g): 10
-Fiber (g): 0
-Sugar (g): 8
-Protein (g): 1
+...
 
-(Separate multiple items with blank lines)"
+Paragraph format (e.g. from Gemini) also works:
+Food Name: Peppermint Mocha Date: 01/28 Meal: Snack Brand: Starbucks Icon: Hot Coffee Serving Size: 12 (fluid ounces) Calories: 260 ...
+
+Separate multiple items with blank lines."
             value={foodText}
             onChange={(e) => setFoodText(e.target.value)}
             rows={20}
@@ -422,7 +505,7 @@ Protein (g): 1
           {/* Item count indicator */}
           {foodText && (
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {foodText.split('\n\n').filter(item => item.trim()).length} food item(s) ready to log
+              {parsePastedFoodText(foodText).length} food item(s) ready to log
             </div>
           )}
         </CardContent>

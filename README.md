@@ -113,6 +113,7 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
 ## App Pages / Routes
 - 🤖 **AI Analysis**: Main food logging interface with photo upload, AI analysis, and multi-card food entry system (public demo, auth required for logging)
   - **Multi-Entry System**: Starts with 2 food entry cards by default, supports adding more
+  - **Photo Upload**: Drag from Finder or paste (⌘V) from clipboard. HEIC/HEIF converted to JPEG in-browser (heic2any). From Mac Photos, newest photos sometimes fail when dragged—use Copy (⌘C) in Photos then Paste (⌘V) here.
   - **Responsive Layout**: 3 cards per row on desktop, 2 on tablet, 1 on mobile
   - **Edit Mode**: Reorganized layout with full-width food name, compact serving/calories, and two-column nutrition grid
   - **Individual Reset**: Each food item card has its own Reset button in edit mode
@@ -125,7 +126,7 @@ VITE_ALLOWED_EMAILS=YOUR_EMAIL
 FoodLog/
 ├── src/
 │   ├── components/
-│   │   ├── ui/              # Reusable UI components (Button, Card, Input, ImageUpload, SearchableSelect)
+│   │   ├── ui/              # Reusable UI components (Button, Card, Input, ImageUpload with HEIC conversion, SearchableSelect)
 │   │   └── Layout/          # Layout components (Navbar, RequireAuth)
 │   ├── pages/               # App pages (FoodLogPage, ManualPage, LoginPage)
 │   ├── lib/
@@ -174,7 +175,7 @@ All AI responses go through normalization:
 - 🔗 **CORS Issues**: Flask API server configured to allow requests from localhost:5177 (development) and production domains. Production uses Nginx for CORS (no duplicate headers)
 - ⏱️ **Firebase Timeout**: Improved offline detection and timeout handling
 - 🔧 **TypeScript Build**: All unused variables and imports cleaned up
-- 🖼️ **Photo Upload**: WebP compression with 1280px max dimension
+- 🖼️ **Photo Upload**: WebP compression with 1280px max dimension. HEIC/HEIF from iPhone or Photos converted to JPEG in-browser. Mac Photos: drag works for many photos; if the newest photos fail, use Copy (⌘C) in Photos then Paste (⌘V) in the app. Global ⌘V adds clipboard image to first entry with room.
 - 🤖 **AI Analysis**: Uses OpenAI Structured Outputs (JSON schema) for reliable parsing. Post-processing normalization ensures LoseIt-compatible output. Fallback text parsing handles malformed serving sizes and markdown formatting
 - 🔐 **API Keys**: Pre-commit hooks prevent accidental commits of sensitive data
 - 🌐 **Chrome Profile**: Run setup scripts to create initial profile for Lose It! login
@@ -201,6 +202,12 @@ All AI responses go through normalization:
 - **`normalizeServingSizeValue(val)`**: Converts "12 (fluid ounces)" to "12 fluid ounces" and "(ounces)" to "ounces" for backend compatibility.
 - **`isLineBasedFormat(block)`**: Detects whether a block is already line-based (multiple lines with "Date:" etc.) so it can be passed through unchanged.
 
+### `src/components/ui/ImageUpload.tsx`
+- **`ImageUpload`**: Drag-and-drop and click-to-select image upload. Converts HEIC/HEIF to JPEG via heic2any for preview and analysis. Materializes size-0/no-type files (e.g. Mac Photos references). Retries read/conversion once for lazy Photos. Preview shows "Preview unavailable" on decode failure. Hint and error direct Mac Photos users to Copy (⌘C) then Paste (⌘V) when drag fails for newest photos.
+- **`convertHeicToJpeg(file)`**: Reads file into ArrayBuffer, passes blob to heic2any, returns JPEG File. Retries once on failure.
+- **`materializeFile(file)`**: For files with size 0 or no type, reads arrayBuffer and returns a new File with correct type so preview/analyze work.
+- **`isHeic(file)`**: True if type is image/heic or image/heif or filename ends in .heic/.heif.
+
 ### `src/components/ui/SearchableSelect.tsx`
 - **`SearchableSelect`**: Reusable searchable dropdown component with keyboard navigation. Used for icon and serving unit selection in edit mode
 
@@ -213,6 +220,7 @@ All AI responses go through normalization:
 
 ### `src/pages/FoodLogPage.tsx`
 - **EntryID System**: Each food entry card has unique ID. Analysis prompt includes `EntryID: <id>` per entry. Frontend maps items back to correct entry using EntryID to prevent meal/date leakage
+- **Global ⌘V / Ctrl+V**: Pastes image from clipboard into the first food entry that has fewer than 5 images. Skips when focus is in an input/textarea. Uses foodEntriesRef for current state. For Mac Photos workflow: Copy photo in Photos then Paste in app.
 - **Multi-Entry State**: Initializes with 2 food entry cards. Empty cards are automatically skipped during analysis
 - **Edit Mode Layout**: 
   - Row 1: Food name (full width) + Reset/Save/Cancel buttons (top right)

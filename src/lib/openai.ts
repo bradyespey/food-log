@@ -258,12 +258,14 @@ function deduplicateItems<T extends { foodName: string; date: string; meal: stri
  * Returns base64 data URL.
  */
 const compressImage = async (file: File): Promise<string> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
     const img = new Image();
-    
+    const url = URL.createObjectURL(file);
+
     img.onload = () => {
+      URL.revokeObjectURL(url);
       // Limit to 1280px max width/height
       const maxSize = 1280;
       let { width, height } = img;
@@ -282,8 +284,13 @@ const compressImage = async (file: File): Promise<string> => {
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/webp', 0.8));
     };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(`Image could not be loaded (${file.name}). Try exporting from Photos or use a screenshot.`));
+    };
     
-    img.src = URL.createObjectURL(file);
+    img.src = url;
   });
 };
 

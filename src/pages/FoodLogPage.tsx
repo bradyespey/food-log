@@ -78,6 +78,8 @@ const FoodLogPage: React.FC = () => {
   
   // Ref for auto-scrolling to analysis results
   const analysisResultsRef = useRef<HTMLDivElement>(null);
+  const foodEntriesRef = useRef(foodEntries);
+  foodEntriesRef.current = foodEntries;
 
   // ── Computed Values ─────────────────────────────────────────────
   const validEntries = foodEntries.filter(entry => 
@@ -198,6 +200,45 @@ const FoodLogPage: React.FC = () => {
   const handleImagesChange = useCallback((id: string, images: File[]) => {
     updateFoodEntry(id, 'images', images);
   }, [updateFoodEntry]);
+
+  // Global ⌘V / Ctrl+V: paste image from clipboard into first entry with room (for Mac Photos workflow)
+  useEffect(() => {
+    const onKeyDown = async (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        const target = e.target as Node;
+        if (target && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target as HTMLElement).isContentEditable)) return;
+        try {
+          const clipboardItems = await navigator.clipboard.read();
+          for (const item of clipboardItems) {
+            for (const type of item.types) {
+              if (type.startsWith('image/')) {
+                const blob = await item.getType(type);
+                const file = new File([blob], `pasted-${Date.now()}.png`, { type });
+                e.preventDefault();
+                const entries = foodEntriesRef.current;
+                const entry = entries.find((ent) => ent.images.length < 5);
+                if (!entry) {
+                  toast.error('Maximum 5 images per entry');
+                  return;
+                }
+                setFoodEntries((prev) =>
+                  prev.map((ent) =>
+                    ent.id === entry.id ? { ...ent, images: [...ent.images, file] } : ent
+                  )
+                );
+                toast.success('Image pasted');
+                return;
+              }
+            }
+          }
+        } catch {
+          // No clipboard access or no image; let default paste happen
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, []);
 
   const handleAnalyze = useCallback(async () => {
     if (!isFormValid || validEntries.length === 0) {
@@ -1469,9 +1510,10 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
               }}
               disabled={isAnalyzing || isLogging || entry.images.length >= 5}
               className="text-xs"
+              title="Paste image from clipboard (⌘V). From Photos: Copy photo first."
             >
               <Clipboard className="w-3 h-3 mr-1" />
-              Paste
+              Paste (⌘V)
             </Button>
           </div>
           <ImageUpload

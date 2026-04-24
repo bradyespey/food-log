@@ -52,9 +52,9 @@ const FoodLogPage: React.FC = () => {
   const [logWater, setLogWater] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('foodlog-logwater');
-      return saved ? JSON.parse(saved) : true;
+      return saved ? JSON.parse(saved) : false;
     }
-    return true;
+    return false;
   });
 
   // Save logWater state to localStorage whenever it changes
@@ -95,8 +95,8 @@ const FoodLogPage: React.FC = () => {
   // ── Sample Data Loading ──────────────────────────────────────────
   const loadSampleDataFunction = useCallback(async () => {
     const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
     
     // Sample data for different scenarios
     const sampleData: Array<{
@@ -120,10 +120,10 @@ const FoodLogPage: React.FC = () => {
         ]
       },
       {
-        date: getLocalDateString(yesterday), // Yesterday (local time)
+        date: getLocalDateString(twoDaysAgo), // Two days ago (local time)
         meal: 'Lunch' as const,
         brand: 'Sample Smoothie Shop',
-        prompt: '"Bro" smoothie with a blend of banana, peanut butter, protein powder, almond milk',
+        prompt: '"Bro" smoothie with a blend of banana, peanut butter, protein powder, almond milk, 12 1/3 fl oz',
         images: [
           fetch('/bro-smoothie.jpeg').then(r => r.blob()).then(blob => new File([blob], 'bro-smoothie.jpeg', { type: 'image/jpeg' }))
         ]

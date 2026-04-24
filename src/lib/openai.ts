@@ -22,7 +22,7 @@ interface OpenAIResponse {
 }
 
 // Keep these centralized so you can edit without touching the prompt text
-const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams, Ounces, Pounds; Serving Volume: Cups, Dessertspoons, Fluid Ounce, Gallons, Imperial Fluid Ounces, Imperial Pints, Imperial Quarts, Liters, Metric Cups, Milliliters, Pints, Quarts, Tablespoons, Teaspoons; Serving Amount: Bottle, Box, Can, Container, Cube, Dry Cup, Each, Jar, Package, Piece, Pot, Pouch, Punnet, Scoop, Serving, Slice, Stick, Tablet";
+const SERVING_TYPES = "Serving Weight: Grams, Kilograms, Micrograms, Milligrams, Ounces, Pounds; Serving Volume: Cups, Dessertspoons, Fluid Ounce, Gallons, Imperial Fluid Ounces, Imperial Gallons, Imperial Pints, Imperial Quarts, Liters, Metric Cups, Milliliters, Pints, Quarts, Tablespoons, Teaspoons; Serving Amount: Bottle, Box, Can, Container, Cube, Dry Cup, Each, Ind Package, Jar, Package, Piece, Pot, Pouch, Punnet, Scoop, Serving, Slice, Stick, Tablet";
 
 const ICON_LIST = "Alcohol; Alcohol, White; Almond; Almond Butter; Apple; Apple Sauce; Apple, Gala; Apple, Granny Smith; Apple, Honey Crisp; Apple, Macintosh; Artichoke; Asparagus; Avocado; Bacon; Bagel; Bagel, Blueberry; Bagel, Chocolate Chip; Bagel, Sesame; Baguette; Baked Beans; Balsamic Vinaigrette; Bamboo; Banana; Banana Pepper; Bar; Bean, Black; Bean, Green; Bean, Red; Bean, White; Beef; Beer; BeerDark; Beet; Bell Pepper, Green; Bell Pepper, Red; Bell Pepper, Yellow; Biscuit; Biscuit Cracker; Blackberry; Blueberry; Breadsticks; Breakfast; Breakfast Sandwich; Broccoli; Brownie; Brussels Sprout; Burrito; Butter; Cabbage; Cake; CakeDark; CakeWhite; CakeWhiteDark; Calamari; Calories; Can; Candy; Candy Bar; Carrot; Carrots; Cashew; Casserole; Cauliflower; Celery; Cereal; Cereal Bar; CerealCheerios; CerealCornFlakes; CerealFruitLoops; Cheese; CheeseAmerican; CheeseBlue; CheeseBrie; Cheeseburger; Cheesecake; CheeseCheddar; CheeseGouda; CheesePepperjack; Cherry; CherryMaraschino; Chestnut; Chicken; Chicken Tenders; ChickenGrilled; ChickenWing; Chickpea; Chocolate; Chocolate Chip; Chocolate Chips; ChocolateDark; Churro; Cider; Cinnamon Roll; Clam; Coconut; Coffee; Coleslaw; Com; Combread; Cookie; Cookie, Christmas; Cookie, Molasses; Cookie, Red Velvet; Cookie, Sugar; Cottage Cheese; Crab; Cracker; Cranberry; Cream; Croissant; Crouton; Crumpet; Cucumber; Cupcake; Cupcake, Carrot; Cupcake, Vanilla; Curry; Date; Default; Deli Meat; Dinner Roll; Dip, Green; Dip, Red; Dish; Donut; Donut, Chocolate Iced; Donut, Strawberry Iced; DoubleCheeseburger; Dressing, Ranch; Dumpling; Eclair; Egg; Egg McMuffin; Egg Roll; Eggplant; Enchilada; Falafel; Fern; Fig; Filbert; Fish; Food, Can; Fowl; French Fries; French Toast; Fritter; Frosting, Chocolate; Frosting, Yellow; Fruit Cocktail; Fruit Leather; FruitCake; Game; Garlic; Gobo Root; Gourd; Graham Cracker; Grain; Grapefruit; Grapes; Grilled Cheese; Guava; Gummy Bear; Hamburger; Hamburger Bun; Hamburger Patty; Hamburger, Double; Hash; Hazelnut; Honey; Horseradish; Hot Dog; Hot Dog Bun; Hot Pot; Ice Cream; Ice Cream Bar; Ice Cream Sandwich; Ice Cream, Chocolate; Ice Cream, Strawberry; Iced Coffee; Iced Tea; Jam; Jicama; Juice; Kale; Kebab; Ketchup; Kiwi; Lamb; Lasagna; Latte; Leeks; Lemon; Lemonade; Lime; Liquid; Lobster; Mac And Cheese; Macadamia; Mango; Marshmallow; Mayonnaise; Meatballs; Melon; Milk; Milk Shake; Milk Shake, Chocolate; Milk Shake, Strawberry; Mixed Drink; Mixed Drink, Martini; Mixed Nuts; Muffin; Mushroom; Mustard; Nigiri Sushi; Oatmeal; Octopus; Oil; Okra; Olive, Black; Olive, Green; Omelette; Onion; Orange; Orange Chicken; Orange Juice; Pancakes; Papaya; Parfait; Parsley; Parsnip; Pasta; Pastry; Patty Sandwich; Pavlova; Peach; Peanut; Peanut Butter; Pear; Peas; Pecan; Peppers; Persimmon; Pickle; Pie; Pie, Apple; Pill; Pine Nut; Pineapple; Pistachio; Pita Sandwich; Pizza; Plum; Pocky; Pomegranate; Popcom; Popsicle; Pork; Pork Chop; Pot Pie; Potato; Potato Chip; Potato Salad; Powdered Drink; Prawn; Pretzel; Prune; Pudding; Pumpkin; Quesadilla; Quiche; Radish; Raisin; Raspberry; Ravioli; Recipe; Relish; Rhubarb; Ribs; Rice; Rice Cake; Roll; Romaine Lettuce; Salad; Salad Dressing, Balsamic; Salt; Sandwich; Sauce; Sausage; Seaweed; Seed; Shallot; Shrimp; Smoothie; Snack; Snap Bean; Soft Drink; SoftServeChocolate; SoftServeSwirl; SoftServeVanilla; Souffle; Soup; Sour Cream; Soy Nut; Soy Sauce; Spice, Brown; Spice, Green; Spice, Red; Spice, Yellow; Spinach; Spring Roll; Sprouts; Squash; Squash, Spaghetti; Starfruit; Stew, Brown; Stew, Yellow; Stir Fry; Stir Fry Noodles; Strawberry; Stuffing; Sub Sandwich; Sugar Cookie; Sugar, Brown; Sugar, White; Sushi; Syrup; Taco; Taro; Tater Tots; Tea; Tempura; Toast; Toaster Pastry; Tofu; Tomato; Tomato Soup; Tortilla; Tortilla Chip; Tostada; Turkey; Turnip; Turnover; Vegetable; Waffles; Walnut; Water; Water Chestnut; Watermelon; White Bread; Wine, Red; Wine, White; Wrap; Yam; Yogurt; Zucchini";
 
@@ -169,6 +169,9 @@ function normalizeServingForLoseIt(item: FoodItem): FoodItem {
         else normalized.serving.amount = 12;
       }
     }
+  } else if (normalized.serving.unit === 'Fluid Ounce') {
+    // Solid food incorrectly tagged as Fluid Ounce by AI — convert to Ounces
+    normalized.serving.unit = 'Ounces';
   }
 
   return normalized;
@@ -372,6 +375,7 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - If user says "3 tacos", "2 burgers", "4 pieces", etc., use "Each" as the unit with the number as the amount (e.g., "3 each", "2 each")
 - If user says "3 corn tortilla tacos", the serving should be "3 Each" (NOT "3 Tablespoons" or "3 Serving")
 - For drinks/beverages, ALWAYS use "Fluid Ounce" (NOT "Serving" or "Milliliters") - estimate from cup/glass size in photos
+- CRITICAL: For solid foods (meat, steak, poultry, seafood, vegetables, grains, baked goods, fries, hummus, dips), NEVER use "Fluid Ounce" — use "Ounces" for weight-based measurements or "Each"/"Serving" for countable items
 - Estimate fluid ounces from photos: small cup = 8-12 fl oz, medium cup = 12-16 fl oz, large cup = 16-20 fl oz, standard glass = 8-12 fl oz
 - Use valid serving sizes from SERVING_TYPES only - NEVER use "bowl", "plate", "platter", "dish", "portion", or similar invalid units
 - CRITICAL: "portion" is NOT a valid serving type - use "Serving" from Serving Amount category instead
@@ -578,14 +582,6 @@ function truncateFoodName(name: string, maxLength: number = 60): string {
  */
 export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenAIResponse> => {
   try {
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    const apiUsername = import.meta.env.VITE_API_USERNAME;
-    const apiPassword = import.meta.env.VITE_API_PASSWORD;
-
-    if (!apiBaseUrl) {
-      throw new Error('API base URL not configured');
-    }
-
     // Build system prompt to send to backend
     const systemPrompt = buildSystemPrompt();
 
@@ -605,7 +601,7 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
     // Build request payload
     const payload = {
       systemPrompt: systemPrompt,
-      prompt: request.images.length > 0 
+      prompt: request.images.length > 0
         ? `Analyze the food shown in the ${request.images.length} image(s). Look carefully at portion sizes, plate/glass sizes, visible garnishes, rims, sides, and all details. Account for ice in drinks. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`
         : `Analyze these food entries. For each entry, use the exact Date, Meal, and Brand specified in parentheses.\n\nFood Entries:\n${request.prompt}`,
       images: base64Images,
@@ -614,18 +610,9 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
       brand: request.brand,
     };
 
-    // Make API call with basic authentication
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (apiUsername && apiPassword) {
-      headers['Authorization'] = `Basic ${btoa(`${apiUsername}:${apiPassword}`)}`;
-    }
-
-    const response = await fetch(`${apiBaseUrl}/food_log/analyze`, {
+    const response = await fetch('/.netlify/functions/food-analyze', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 

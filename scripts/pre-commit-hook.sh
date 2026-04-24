@@ -19,8 +19,8 @@ if git diff --cached | grep -q "sk-[a-zA-Z0-9]\{20,\}"; then
     exit 1
 fi
 
-# Check for .env files
-if git diff --cached --name-only | grep -q "\.env"; then
+# Check for .env files (allow .env.example which contains only empty placeholders)
+if git diff --cached --name-only | grep "\.env" | grep -qv "\.env\.example"; then
     echo "❌ ERROR: .env file detected in staged changes!"
     echo "   Environment files should never be committed."
     exit 1

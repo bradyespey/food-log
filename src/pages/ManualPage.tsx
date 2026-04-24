@@ -109,9 +109,9 @@ export default function ManualPage() {
   const [logWater, setLogWater] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('foodlog-logwater');
-      return saved ? JSON.parse(saved) : true;
+      return saved ? JSON.parse(saved) : false;
     }
-    return true;
+    return false;
   });
 
   // Sample data context
@@ -120,8 +120,8 @@ export default function ManualPage() {
   // Sample data loading function for Manual page
   const loadSampleDataFunction = useCallback(() => {
     const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
     
     // Helper function to get local date string
     const getLocalDateString = (date: Date): string => {
@@ -179,11 +179,11 @@ Sugar (g): 2
 Protein (g): 50
 
 Food Name: Test Bro Smoothie
-Date: ${getLocalDateString(yesterday)}
+Date: ${getLocalDateString(twoDaysAgo)}
 Meal: Lunch
 Brand: Sample Smoothie Shop
 Icon: Smoothie
-Serving Size: 16.74 fluid ounces
+Serving Size: 12.33 fluid ounces
 Calories: 400
 Fat (g): 15
 Saturated Fat (g): 3

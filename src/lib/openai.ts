@@ -618,7 +618,14 @@ export const analyzeFood = async (request: OpenAIAnalysisRequest): Promise<OpenA
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      const status = response.status;
+      if (status === 500 || status === 502 || status === 503 || status === 504) {
+        throw new Error(
+          errorData.error ||
+          'Analysis timed out or failed. Try fewer food cards, or split into two separate analyses.'
+        );
+      }
+      throw new Error(errorData.error || `Analysis failed (${status}). Please try again.`);
     }
 
     const result = await response.json();

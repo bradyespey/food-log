@@ -11,6 +11,12 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+[functions.food-analyze]
+  timeout = 26
+
+[functions.food-log]
+  timeout = 26
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

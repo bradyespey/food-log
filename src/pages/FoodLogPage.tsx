@@ -1355,12 +1355,12 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
             {verificationStatus.allFieldsMatch ? (
               <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
                 <CheckCircle className="w-3 h-3" />
-                All fields verified ✓
+                Logged to Lose It! ✓
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
                 <AlertCircle className="w-3 h-3" />
-                Verification issues detected ✗
+                Log failed ✗
               </div>
             )}
           </div>

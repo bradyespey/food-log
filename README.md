@@ -313,6 +313,8 @@ The old architecture is documented in [`docs/archive/selenium-architecture.md`](
 
 **Analysis is slow** — Normal for GPT-4o-mini with images: 3–8 seconds. The function calls OpenAI directly so there's no additional network hop.
 
+**Switching AI models** — If you notice consistent accuracy problems on complex plated dishes or unusual restaurant items, try `gpt-4.1-mini`. It's newer, slightly sharper, and still fast. Change `OPENAI_MODEL=gpt-4.1-mini` in `.env` and in Netlify env vars — no code change needed.
+
 **Port 5177 already in use** — Run `kill $(lsof -ti :5177)` then `npm run dev:all`. Vite is set to `strictPort: false` so this shouldn't happen, but stale processes can linger.
 
 **Firebase CORS errors in browser console** — Usually an ad blocker (uBlock Origin, etc.) blocking Firestore WebSocket traffic. Whitelist `localhost:8888` in your extension settings.

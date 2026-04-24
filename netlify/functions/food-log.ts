@@ -196,7 +196,7 @@ function buildSearchFoodsBody(query: string, headerPerm: string): string {
   return `7|0|${st.length}|${st.join('|')}|${params}|`
 }
 
-function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: string): { body: string; entryBytes: number[] } {
+function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: string): { body: string; foodBytes: number[] } {
   const foodName    = String(item['Food Name'] || '')
   const brand       = String(item['Brand'] || '')
   const mealName    = String(item['Meal'] || 'Dinner')
@@ -315,7 +315,8 @@ function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: st
     '30', '0', '1',
   ]
 
-  return { body: `7|0|${st.length}|${st.join('|')}|${p.join('|')}|`, entryBytes }
+  // getFood looks up the food item definition by foodUuid, not the log entry by entryUuid
+  return { body: `7|0|${st.length}|${st.join('|')}|${p.join('|')}|`, foodBytes }
 }
 
 // ── Diary readback (getFood) ───────────────────────────────────────────────────
@@ -323,7 +324,7 @@ function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: st
 // Calls getFood with the entry UUID bytes generated during saveCustomFoodLogEntry.
 // Response contains actual nutrient values in pattern: {value},18,{key}
 
-function buildGetFoodBody(entryBytes: number[]): string {
+function buildGetFoodBody(foodBytes: number[]): string {
   const st = [
     GWT_MODULE_BASE,
     GWT_BODY_PERMUTATION,
@@ -342,7 +343,7 @@ function buildGetFoodBody(entryBytes: number[]): string {
     '3',                                               // 3 params
     '5', '6', '7', '5', '0',                          // ServiceRequestToken
     '8', String(USER_ID), '9', String(TIMEZONE),      // UserId
-    '10', '11', '16', ...entryBytes.map(String), '0', // SimplePrimaryKey with entry UUID bytes
+    '10', '11', '16', ...foodBytes.map(String), '0', // SimplePrimaryKey with food item UUID bytes
   ]
   return `7|0|${st.length}|${st.join('|')}|${p.join('|')}|`
 }
@@ -598,7 +599,7 @@ export const handler: Handler = async (event) => {
     outputLines.push(`Logging item ${i + 1} of ${foodItemTexts.length}: ${name}`)
 
     try {
-      const { body: gwtBody, entryBytes } = buildSaveFoodBody(foodItem, headerPerm)
+      const { body: gwtBody, foodBytes } = buildSaveFoodBody(foodItem, headerPerm)
       const resp = await fetch(LOSEIT_SERVICE_URL, {
         method:  'POST',
         headers: gwtHeaders,
@@ -619,7 +620,7 @@ export const handler: Handler = async (event) => {
           const getResp = await fetch(LOSEIT_SERVICE_URL, {
             method:  'POST',
             headers: gwtHeaders,
-            body:    buildGetFoodBody(entryBytes),
+            body:    buildGetFoodBody(foodBytes),
             signal:  AbortSignal.timeout(15000),
           })
           readback = parseGetFoodResponse(await getResp.text())

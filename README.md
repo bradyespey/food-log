@@ -1,218 +1,318 @@
 # FoodLog AI
-**Scope**: This README replaces prior selected overview docs
 
-## Overview
-Modern React app that analyzes food photos with AI and logs to Lose It! automatically. Replaces manual food logging with intelligent estimation from restaurant photos and descriptions. Uses OpenAI GPT-4o-mini with Structured Outputs (JSON schema) for nutritional analysis via Flask backend proxy (CORS-compliant) and connects to a Windows-based Flask API for Selenium automation. Supports public demo mode with authentication required only for logging actions. Features proper title case formatting, 60-character food name limits, and comprehensive validation for accurate parsing.
+AI-powered food logging app for [Lose It!](https://www.loseit.com/). Take a photo of your meal, get instant nutritional analysis from GPT-4o-mini, and log it directly to your Lose It! diary — all without touching the Lose It! UI.
 
-## Live and Admin
-- 🌐 **App URL**: https://foodlog.theespeys.com
-- 🔥 **Firebase Console**: foodlog-318c3
-- 🚀 **Netlify Dashboard**: foodlog-theespeys
-- 🐍 **Flask API**: https://api.theespeys.com/food_log
-- 📊 **Monitoring**: Sentry integration for error tracking
+**Live app:** https://foodlog.theespeys.com
+
+---
+
+## How It Works
+
+```
+[Browser]
+    │
+    ├── POST /.netlify/functions/food-analyze  → OpenAI GPT-4o-mini (structured JSON)
+    └── POST /.netlify/functions/food-log      → Lose It! GWT RPC (direct API)
+```
+
+**Food analysis** — Upload a meal photo or type a description. GPT-4o-mini returns structured nutritional data: food name, brand, icon, serving size, and all 9 macros/micros.
+
+**Food logging** — Items are sent directly to Lose It!'s internal GWT RPC API. No browser automation, no Windows machine. Each item logs in ~0.3 seconds.
+
+This replaced a Selenium-based approach that required a Windows machine running Chrome 24/7 and took 10–20 seconds per item — roughly a **50× speed improvement**.
+
+> The GWT RPC integration is the foundation of an unofficial Lose It! API — similar in spirit to [hammem/monarchmoney](https://github.com/hammem/monarchmoney). Every Lose It! action (log food, log water, read diary, delete entries) is a direct API call reverse-engineered from browser HAR captures.
+
+---
 
 ## Tech Stack
-- ⚛️ **Frontend**: React 19 + TypeScript + Vite 7.1.2 + Tailwind CSS
-- 🔥 **Backend**: Firebase Google Auth + Windows Flask API
-- 🤖 **AI**: OpenAI GPT-4o-mini with web search capability
-- 🚀 **Hosting**: Netlify (frontend) + Windows API (backend)
-- 🎨 **UI**: Headless UI + Framer Motion + Lucide React icons
-- 🔐 **Auth**: Firebase Google OAuth (restricted: YOUR_EMAIL)
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + TypeScript + Vite + Tailwind CSS |
+| Functions | Netlify Functions (TypeScript, esbuild) |
+| AI Analysis | OpenAI GPT-4o-mini with Structured Outputs |
+| Food Logging | Lose It! GWT RPC — direct API (unofficial) |
+| Auth | Firebase Google OAuth |
+| Hosting | Netlify (auto-deploy from `main`) |
+
+---
 
 ## Quick Start
+
 ```bash
 git clone https://github.com/bradyespey/food-log
 cd FoodLog
 npm install
-npm run dev
+cp .env.example .env   # fill in your values
+npm run dev:all        # starts at localhost:8888
 ```
 
-## Environment
+**Requires** a Lose It! Premium account and a browser session cookie (see Environment below).
 
-Copy `.env.example` to `.env` and fill in values. See `.env.example` for all required variables.
+---
 
-### Required Environment Variables
+## Environment Variables
 
-All variables should be set in `.env` (copy from `.env.example`):
-
+Copy `.env.example` to `.env` and fill in all values.
 
 ```env
-# Firebase Configuration
-VITE_FIREBASE_API_KEY=YOUR_API_KEY
-VITE_FIREBASE_AUTH_DOMAIN=foodlog-318c3.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=foodlog-318c3
-VITE_FIREBASE_STORAGE_BUCKET=foodlog-318c3.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID
-VITE_FIREBASE_APP_ID=YOUR_APP_ID
+# Firebase (client-side)
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
 
-# OpenAI Configuration
-VITE_OPENAI_API_KEY=YOUR_OPENAI_API_KEY
-VITE_OPENAI_MODEL=gpt-4o-mini
+# Allowed users (comma-separated Google emails)
+VITE_ALLOWED_EMAILS=
 
-# API Configuration
-VITE_API_BASE_URL=https://api.theespeys.com
-VITE_API_USERNAME=YOUR_USERNAME
-VITE_API_PASSWORD=YOUR_PASSWORD
+# OpenAI — server-side only (used by food-analyze Netlify function)
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
 
-# Allowed Email Addresses
-VITE_ALLOWED_EMAILS=YOUR_EMAIL
+# Lose It! session — server-side only (used by food-log Netlify function)
+LOSEIT_COOKIE=
+LOSEIT_GWT_PERMUTATION=
 ```
 
-## Run Modes (Debug, Headless, Profiles)
-- 🐛 **Debug Mode**: Manual execution (`python app.py`) shows Chrome visible for debugging
-- 👻 **Headless Mode**: Service execution (NSSM) runs Chrome hidden for normal operation
-- 🌐 **Chrome Profiles**: Uses persistent Chrome profile (`chrome_profile/loseit_profile`) for fast login with automatic fallback to credential login
+### Getting your LOSEIT_COOKIE
 
-## Scripts and Ops
-- 🔧 **Development**: `npm run dev` — Start local development server
-- 🏗️ **Build**: `npm run build` — Build for production with TypeScript compilation
-- 🔍 **Lint**: `npm run lint` — ESLint code checking
-- 👀 **Preview**: `npm run preview` — Preview production build
-- 🚀 **Deploy Watch**: `npm run deploy:watch` — Push to GitHub and monitor Netlify build completion
-- 🔒 **Security**: Pre-commit hooks prevent API key leaks (see `scripts/` folder)
-- 🧪 **Testing**: Production test suite with 4 essential tests (login, food, water, comprehensive)
+The cookie authenticates every GWT call. It expires after weeks to months.
 
-### Windows Backend API Endpoints
-- **POST /food_log** — Log food items to Lose It! with verification (returns verification status for each item)
-- **GET /health** — API health check
-- **POST /food_log/analyze** — AI food analysis with image upload using OpenAI Structured Outputs (JSON schema). Accepts `systemPrompt` parameter for custom AI instructions. Returns items with `entry_id` field for multi-entry tracking
+1. Log in to `https://www.loseit.com/` in Chrome
+2. Open DevTools → **Network** tab
+3. Click any request to `/web/service`
+4. In **Request Headers**, find `Cookie:` — copy the entire value
+5. Paste as `LOSEIT_COOKIE=` in your `.env`
 
-## Deploy
-- 🚀 **Frontend**: Automatic via GitHub integration to Netlify
-- 📦 **Build Command**: `npm run build`
-- 📁 **Publish Directory**: `dist`
-- 🌐 **Domains**: foodlog.theespeys.com (primary), foodlog-theespeys.netlify.app
+For production, add the same variables to your Netlify site's Environment Variables dashboard.
 
-## App Pages / Routes
-- 🤖 **AI Analysis**: Main food logging interface with photo upload, AI analysis, and multi-card food entry system (public demo, auth required for logging)
-  - **Multi-Entry System**: Starts with 2 food entry cards by default, supports adding more
-  - **Photo Upload**: Drag from Finder or paste (⌘V) from clipboard. HEIC/HEIF converted to JPEG in-browser (heic2any). From Mac Photos, newest photos sometimes fail when dragged—use Copy (⌘C) in Photos then Paste (⌘V) here.
-  - **Responsive Layout**: 3 cards per row on desktop, 2 on tablet, 1 on mobile
-  - **Edit Mode**: Reorganized layout with full-width food name, compact serving/calories, and two-column nutrition grid
-  - **Individual Reset**: Each food item card has its own Reset button in edit mode
-- ✏️ **Manual Entry**: Direct food entry without AI for pre-formatted food items (public demo, auth required for logging). Accepts both line-by-line format (one field per line) and paragraph format (e.g. single-line paste from AI sidebar). Normalizes Serving Size variants like `12 (fluid ounces)` to `12 fluid ounces`. Separate multiple items with blank lines or by "Food Name:" in paragraph paste.
-- 🔐 **Login**: Firebase Google authentication with email whitelist
-- 🔄 **Auth Callback**: OAuth flow completion handler
+---
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev:all` | Start Netlify dev server at `localhost:8888` (functions + Vite) |
+| `npm run dev` | Vite only (no Netlify functions) at `localhost:5177` |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npm run deploy:watch` | Push to GitHub and stream Netlify build logs until deploy completes |
+
+### Deploy
+
+Netlify auto-deploys from `main` on every push. To push and verify in one step:
+
+```bash
+npm run deploy:watch
+```
+
+This pushes to GitHub, streams the full Netlify build log, and exits non-zero if the build fails or the expected site URL is absent from the output. Add the four server-side env vars (`LOSEIT_COOKIE`, `LOSEIT_GWT_PERMUTATION`, `OPENAI_API_KEY`, `OPENAI_MODEL`) to your Netlify site's Environment Variables dashboard before the first deploy.
+
+---
+
+## Netlify Functions
+
+### `food-analyze` — AI nutritional analysis
+
+Calls OpenAI with the meal photo(s) and description. Returns structured JSON with one object per food item.
+
+**Request:**
+```json
+{
+  "systemPrompt": "...",
+  "prompt": "Chicken tacos, 3 each",
+  "images": ["base64..."]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [{
+      "food_name": "Chicken Tacos",
+      "date": "04/23",
+      "meal": "Dinner",
+      "brand": "Home",
+      "icon": "Taco",
+      "serving_amount": 3,
+      "serving_unit": "Each",
+      "calories": 450,
+      "fat_g": 18,
+      "saturated_fat_g": 6,
+      "cholesterol_mg": 90,
+      "sodium_mg": 820,
+      "carbs_g": 38,
+      "fiber_g": 4,
+      "sugar_g": 3,
+      "protein_g": 32
+    }]
+  }
+}
+```
+
+### `food-log` — Log food + water to Lose It!
+
+Sends each food item to Lose It! via `saveCustomFoodLogEntry` GWT RPC. Optionally logs water intake via `saveCustomGoalValue`.
+
+**Request:**
+```json
+{
+  "food_items": [
+    "Food Name: Chicken Tacos\nDate: 04/23\nMeal: Dinner\nBrand: Home\nIcon: Taco\nServing Size: 3 Each\nCalories: 450\nFat (g): 18\n..."
+  ],
+  "log_water": false
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Successfully logged 1 of 1 items in 0.3s",
+  "output": "Logging item 1 of 1: Chicken Tacos\n  ✓ Accepted by Lose It! (Chicken Tacos)",
+  "verification": {
+    "0": {
+      "foodName": { "verified": true, "expected": "Chicken Tacos", "actual": "Chicken Tacos", "matches": true },
+      "calories": { "verified": true, "expected": 450, "actual": 450, "matches": true },
+      "verificationLevel": "accepted"
+    }
+  }
+}
+```
+
+---
+
+## GWT RPC Protocol Reference
+
+Lose It! uses [GWT RPC v7](https://www.gwtproject.org/doc/latest/DevGuideServerCommunication.html) for all API calls. The wire format is:
+
+```
+7|0|N|s1|s2|...|sN|p1|p2|...|pM|
+```
+
+All values below were confirmed from browser HAR captures.
+
+### Confirmed GWT Methods
+
+| Method | Description |
+|---|---|
+| `saveCustomFoodLogEntry` | Log a food item to the diary |
+| `saveCustomGoalValue` | Set water intake total for a date |
+| `getCustomGoalValues` | Read current water intake for a date |
+| `getFood` | Read a logged food entry by UUID |
+| `getDailyDetailsIncludingPendingForDate` | Read full diary for a date |
+| `deleteFoodLogEntry` | Delete a logged food entry |
+| `updateFoodLogEntry` | Update a logged food entry |
+
+### Nutrient Key Map
+
+| Key | Nutrient |
+|---|---|
+| 0 | Calories |
+| 3 | Fat (g) |
+| 4 | Saturated Fat (g) |
+| 8 | Cholesterol (mg) |
+| 9 | Sodium (mg) |
+| 10 | Carbs (g) |
+| 11 | Fiber (g) |
+| 12 | Sugar (g) |
+| 13 | Protein (g) |
+
+### Serving Unit FoodMeasure IDs (all 41 confirmed)
+
+| ID | Unit | ID | Unit |
+|---|---|---|---|
+| 1 | Teaspoon(s) | 24 | Stick |
+| 2 | Tablespoon(s) | 25 | Tablet |
+| 3 | Cup(s) | 26 | Slice |
+| 4 | Piece(s) | 27 | Serving(s) |
+| 5 | Each | 32 | Ind Package |
+| 6 | Ounce(s) | 33 | Scoop |
+| 7 | Pound(s) | 34 | Metric Cup(s) |
+| 8 | Gram(s) | 35 | Dry Cup(s) |
+| 9 | Kilogram(s) | 36 | Imperial Fluid Ounce(s) |
+| 10 | Fluid Ounce(s) | 37 | Imperial Gallon(s) |
+| 11 | Milliliter(s) | 38 | Imperial Quart(s) |
+| 12 | Liter(s) | 39 | Imperial Pint(s) |
+| 13 | Gallon(s) | 41 | Dessertspoon(s) |
+| 14 | Pint(s) | 42 | Pot |
+| 15 | Quart(s) | 43 | Punnet |
+| 16 | Milligram(s) | 45 | Container |
+| 17 | Microgram(s) | 46 | Package |
+| 19 | Bottle | 47 | Pouch |
+| 20 | Box | | |
+| 21 | Can | | |
+| 22 | Cube | | |
+| 23 | Jar | | |
+
+### Other Constants
+
+| Fact | Value |
+|---|---|
+| Service endpoint | `https://www.loseit.com/web/service` |
+| GWT format version | `7` |
+| Body permutation | `2755A092A086CADF822A722370D298F9` |
+| Date epoch | Dec 31, 2000 (day 1 = Jan 1, 2001) |
+| Meal types | Breakfast=0, Lunch=1, Dinner=2, Snacks=3 |
+| Fractions | Sent as decimals — 1¼=1.25, 1⅓=1.333, etc. |
+
+---
+
+## App Pages
+
+| Page | Description |
+|---|---|
+| **AI Food Log** | Upload photos or type a description → AI analysis → review → log to Lose It! |
+| **Manual Entry** | Paste pre-formatted food item text directly (no AI, instant log) |
+| **Login** | Firebase Google OAuth with email whitelist |
+
+---
 
 ## Directory Map
+
 ```
 FoodLog/
+├── netlify/
+│   └── functions/
+│       ├── food-log.ts       — GWT RPC food + water logging
+│       └── food-analyze.ts   — OpenAI structured output analysis
 ├── src/
-│   ├── components/
-│   │   ├── ui/              # Reusable UI components (Button, Card, Input, ImageUpload with HEIC conversion, SearchableSelect)
-│   │   └── Layout/          # Layout components (Navbar, RequireAuth)
-│   ├── pages/               # App pages (FoodLogPage, ManualPage, LoginPage)
 │   ├── lib/
-│   │   ├── openai.ts        # AI analysis via Flask backend proxy with Structured Outputs, proper casing, 60-char name limits, and post-processing normalization
-│   │   ├── api.ts            # Backend API client for food logging
-│   │   ├── foodValidator.ts  # TypeScript validation for AI output
-│   │   └── firebaseConfig.ts # Firebase configuration
-│   ├── context/             # AuthContext for Firebase authentication
-│   └── types/               # TypeScript type definitions
-├── flask/                   # Legacy Flask implementation (archived)
-├── scripts/                 # Pre-commit hooks and deploy:watch script
-└── netlify.toml            # Netlify deployment configuration
+│   │   ├── openai.ts         — AI analysis client, normalization, icons, serving types
+│   │   └── api.ts            — Frontend → Netlify function bridge
+│   ├── pages/
+│   │   ├── FoodLogPage.tsx   — AI analysis page
+│   │   └── ManualPage.tsx    — Manual entry page
+│   └── types/                — TypeScript types
+├── docs/
+│   ├── har_files/            — HAR captures used to reverse-engineer the GWT protocol
+│   ├── archive/              — Old Selenium architecture docs
+│   └── FoodLog - Lose It! API Migration Plan.md
+├── netlify.toml
+└── .env.example
 ```
 
-## Key Features
+---
 
-### UI/UX Improvements
-- **Responsive Layout**: Analysis cards display 3 per row on desktop (lg), 2 on tablet (md), 1 on mobile
-- **Multi-Entry Default**: Starts with 2 food entry cards for faster workflow
-- **Navbar Integration**: Add Food Item button moved to navbar, logo click clears page
-- **Toast Styling**: Improved toast notifications that blend with theme colors
-- **Edit Card Layout**: Reorganized into clear rows with better spacing and mobile responsiveness
-- **Individual Reset**: Each food item in analysis results can be reset independently
+## Migration from Selenium
 
-### Food Item Editing
-- **Searchable Dropdowns**: Icon and serving unit fields use searchable dropdowns (SearchableSelect component) to prevent invalid values that break automation
-- **Icon Selection**: 350+ food icons available via searchable dropdown (e.g., type "Choc" to find all chocolate-related icons)
-- **Serving Unit Validation**: All serving units must match valid LoseIt types (prevents manual typing errors)
-- **Edit Mode Layout**: Organized into 4 rows: food name + buttons, restaurant + type, serving + calories, nutrition grid
-- **Mobile Optimized**: Edit card stacks vertically on mobile with larger touch targets
+Prior to April 2026, food logging used Selenium browser automation running on a Windows machine. The Netlify function approach is ~50× faster and requires no always-on machine.
 
-### AI Analysis & Normalization
-- **Food Name Standardization**: Automatically simplifies verbose descriptions (e.g., "3 corn tortilla tacos with lots of shredded cheese, chicken, and butter" → "Chicken and Cheese Tacos")
-- **Serving Size Detection**: Detects quantity words and converts to proper units (e.g., "3 tacos" → "3 Each", drinks → "Fluid Ounce")
-- **Missing Nutrition Fill**: Auto-fills realistic estimates when AI returns all zeros (prevents broken food entries)
-- **EntryID Tracking**: Each food entry includes EntryID to prevent meal/date leakage between entries with same date/brand
+The old architecture is documented in [`docs/archive/selenium-architecture.md`](docs/archive/selenium-architecture.md). The Windows machine at `api.theespeys.com` still runs the original Selenium stack unchanged and can be used as a fallback.
 
-### Post-Processing Pipeline
-All AI responses go through normalization:
-1. **Name Standardization**: Removes quantity words, simplifies verbose descriptions
-2. **Serving Normalization**: Forces countable items to "Each", drinks to "Fluid Ounce", converts metric units
-3. **Nutrition Fill**: Provides realistic defaults for missing values
-4. **Deduplication**: Removes duplicate items before display
+---
 
 ## Troubleshooting
-- 🔗 **CORS Issues**: Flask API server configured to allow requests from localhost:5177 (development) and production domains. Production uses Nginx for CORS (no duplicate headers)
-- ⏱️ **Firebase Timeout**: Improved offline detection and timeout handling
-- 🔧 **TypeScript Build**: All unused variables and imports cleaned up
-- 🖼️ **Photo Upload**: WebP compression with 1280px max dimension. HEIC/HEIF from iPhone or Photos converted to JPEG in-browser. Mac Photos: drag works for many photos; if the newest photos fail, use Copy (⌘C) in Photos then Paste (⌘V) in the app. Global ⌘V adds clipboard image to first entry with room.
-- 🤖 **AI Analysis**: Uses OpenAI Structured Outputs (JSON schema) for reliable parsing. Post-processing normalization ensures LoseIt-compatible output. Fallback text parsing handles malformed serving sizes and markdown formatting
-- 🔐 **API Keys**: Pre-commit hooks prevent accidental commits of sensitive data
-- 🌐 **Chrome Profile**: Run setup scripts to create initial profile for Lose It! login
-- 🎨 **Theme**: Defaults to system theme preference, supports light/dark/system modes
-- 📝 **AI Output Format**: Structured JSON response with proper title case formatting, 60-character food name limits, validation against defined serving types/icons lists, and automatic normalization
-- ✏️ **Edit Mode**: Searchable dropdowns for icon and serving unit prevent invalid manual entries
 
-## Core Functions
+**Food logging fails silently** — The `LOSEIT_COOKIE` has expired. Refresh it from DevTools (see Getting your LOSEIT_COOKIE above). Cookies typically last weeks to months.
 
-### `src/lib/openai.ts`
-- **`analyzeFood()`**: Main entry point for AI food analysis. Handles image compression, API communication, and response normalization
-- **`normalizeFoodItem()`**: Post-processes AI responses to ensure LoseIt compatibility (name standardization, serving fixes, nutrition fill)
-- **`standardizeFoodName()`**: Simplifies verbose food names and removes quantity words
-- **`normalizeServingForLoseIt()`**: Forces countable items to "Each", drinks to "Fluid Ounce", converts metric units
-- **`fillMissingNutrition()`**: Provides realistic estimates when AI returns zeros
-- **`deduplicateItems()`**: Removes duplicate food items based on name/date/meal/brand
-- **`validateIcon()`**: Validates icon names against ICON_LIST with fallback mappings
-- **`ICON_OPTIONS`**: Exported array of all valid food icons (350+)
-- **`SERVING_UNIT_OPTIONS`**: Exported array of all valid serving units
+**Analysis is slow** — Normal for GPT-4o-mini with images: 3–8 seconds. The function calls OpenAI directly so there's no additional network hop.
 
-### `src/pages/ManualPage.tsx`
-- **`parsePastedFoodText(raw)`**: Parses pasted text into food item strings. Supports (1) line-based format (fields on separate lines, items separated by blank lines) and (2) paragraph format (all fields on one line per item, e.g. from AI sidebar). Splits by double newline or by "Food Name:" for paragraph paste.
-- **`parseParagraphItem(paragraph)`**: Extracts key-value pairs from a single paragraph and returns line-based format for the backend.
-- **`normalizeServingSizeValue(val)`**: Converts "12 (fluid ounces)" to "12 fluid ounces" and "(ounces)" to "ounces" for backend compatibility.
-- **`isLineBasedFormat(block)`**: Detects whether a block is already line-based (multiple lines with "Date:" etc.) so it can be passed through unchanged.
+**Port 5177 already in use** — Run `kill $(lsof -ti :5177)` then `npm run dev:all`. Vite is set to `strictPort: false` so this shouldn't happen, but stale processes can linger.
 
-### `src/components/ui/ImageUpload.tsx`
-- **`ImageUpload`**: Drag-and-drop and click-to-select image upload. Converts HEIC/HEIF to JPEG via heic2any for preview and analysis. Materializes size-0/no-type files (e.g. Mac Photos references). Retries read/conversion once for lazy Photos. Preview shows "Preview unavailable" on decode failure. Hint and error direct Mac Photos users to Copy (⌘C) then Paste (⌘V) when drag fails for newest photos.
-- **`convertHeicToJpeg(file)`**: Reads file into ArrayBuffer, passes blob to heic2any, returns JPEG File. Retries once on failure.
-- **`materializeFile(file)`**: For files with size 0 or no type, reads arrayBuffer and returns a new File with correct type so preview/analyze work.
-- **`isHeic(file)`**: True if type is image/heic or image/heif or filename ends in .heic/.heif.
-
-### `src/components/ui/SearchableSelect.tsx`
-- **`SearchableSelect`**: Reusable searchable dropdown component with keyboard navigation. Used for icon and serving unit selection in edit mode
-
-### `src/components/Layout/Navbar.tsx`
-- **Navbar Actions**: 
-  - Logo click clears/resets the page (equivalent to Clear button)
-  - "Add Food Item" button in navbar (dashboard page only)
-  - "Sample Data" button (renamed from "Load Sample Data")
-  - Toast notifications styled to blend with theme
-
-### `src/pages/FoodLogPage.tsx`
-- **EntryID System**: Each food entry card has unique ID. Analysis prompt includes `EntryID: <id>` per entry. Frontend maps items back to correct entry using EntryID to prevent meal/date leakage
-- **Global ⌘V / Ctrl+V**: Pastes image from clipboard into the first food entry that has fewer than 5 images. Skips when focus is in an input/textarea. Uses foodEntriesRef for current state. For Mac Photos workflow: Copy photo in Photos then Paste in app.
-- **Multi-Entry State**: Initializes with 2 food entry cards. Empty cards are automatically skipped during analysis
-- **Edit Mode Layout**: 
-  - Row 1: Food name (full width) + Reset/Save/Cancel buttons (top right)
-  - Row 2: Restaurant input + Food Type selector
-  - Row 3: Serving (amount + unit) + Calories input
-  - Row 4: Nutrition grid (left: fat, sat fat, chol, sodium | right: carbs, fiber, sugar, protein)
-- **Individual Reset**: Each food item in analysis results has a Reset button to revert to original values
-- **Responsive Design**: Edit card stacks vertically on mobile with larger touch targets
-
-### `src/App.tsx`
-- **SampleDataContext**: Provides global access to loadSampleData, clearData, and addFoodEntry functions for navbar integration
-- **Multi-Entry State**: Initializes with 2 food entry cards. Empty cards are automatically skipped during analysis
-- **Edit Mode Layout**: 
-  - Row 1: Food name (full width) + Reset/Save/Cancel buttons (top right)
-  - Row 2: Restaurant input + Food Type selector
-  - Row 3: Serving (amount + unit) + Calories input
-  - Row 4: Nutrition grid (left: fat, sat fat, chol, sodium | right: carbs, fiber, sugar, protein)
-- **Individual Reset**: Each food item in analysis results has a Reset button to revert to original values
-- **Responsive Design**: Edit card stacks vertically on mobile with larger touch targets
-
-## AI Handoff
-Read this README, scan the repo, prioritize core functions and env-safe areas, keep env and rules aligned with this file. The OpenAI prompt is implemented in `src/lib/openai.ts` with comprehensive nutritional analysis capabilities, serving size validation, and post-processing normalization for LoseIt compatibility.
+**Firebase CORS errors in browser console** — Usually an ad blocker (uBlock Origin, etc.) blocking Firestore WebSocket traffic. Whitelist `localhost:8888` in your extension settings.

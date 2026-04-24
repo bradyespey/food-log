@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "netlify dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -20,6 +21,7 @@
     "framer-motion": "^12.23.12",
     "heic2any": "^0.0.4",
     "lucide-react": "^0.539.0",
+    "openai": "^6.34.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.62.0",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@netlify/functions": "^2.8.2",
     "@tailwindcss/forms": "^0.5.10",
     "@types/node": "^24.2.1",
     "@types/react": "^19.1.10",

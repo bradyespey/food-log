@@ -83,4 +83,8 @@ venv/
 *.temp
 *.tmp
 
-docs/
+docs/har_files/
+
+# Dev scripts and temporary files
+temp/
+deno.lock

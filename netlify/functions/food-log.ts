@@ -347,14 +347,23 @@ function buildGetFoodBody(entryBytes: number[]): string {
   return `7|0|${st.length}|${st.join('|')}|${p.join('|')}|`
 }
 
-function parseGetFoodNutrients(responseText: string): Record<number, number> | null {
+interface GetFoodResult {
+  nutrients: Record<number, number>
+  strings: Set<string>  // all quoted strings in response — includes food name, brand, icon
+}
+
+function parseGetFoodResponse(responseText: string): GetFoodResult | null {
   if (!responseText.startsWith('//OK')) return null
+  // Nutrients: confirmed pattern {value},18,{key} (HAR 17-read-food-data.har)
   const nutrients: Record<number, number> = {}
-  // Pattern confirmed from HAR: {value},18,{nutrient_key} for each stored nutrient
   for (const m of responseText.matchAll(/([0-9]+(?:\.[0-9]+)?),18,(\d+)/g)) {
     nutrients[Number(m[2])] = parseFloat(m[1])
   }
-  return Object.keys(nutrients).length > 0 ? nutrients : null
+  // String table: food name + brand are quoted strings in the GWT response (confirmed HAR 17)
+  const strings = new Set<string>()
+  for (const m of responseText.matchAll(/"([^"]+)"/g)) strings.add(m[1])
+  if (Object.keys(nutrients).length === 0 && strings.size === 0) return null
+  return { nutrients, strings }
 }
 
 // ── Water logging (GWT RPC) ───────────────────────────────────────────────────
@@ -605,7 +614,7 @@ export const handler: Handler = async (event) => {
         outputLines.push(`  ✓ Accepted by Lose It! (${name})`)
 
         // Read back from diary and verify actual stored values
-        let actualNutrients: Record<number, number> | null = null
+        let readback: GetFoodResult | null = null
         try {
           const getResp = await fetch(LOSEIT_SERVICE_URL, {
             method:  'POST',
@@ -613,10 +622,10 @@ export const handler: Handler = async (event) => {
             body:    buildGetFoodBody(entryBytes),
             signal:  AbortSignal.timeout(15000),
           })
-          actualNutrients = parseGetFoodNutrients(await getResp.text())
+          readback = parseGetFoodResponse(await getResp.text())
         } catch { /* non-fatal — fall back to accepted-only verification */ }
 
-        verification[String(i)] = buildVerification(foodItem, 'accepted', undefined, actualNutrients)
+        verification[String(i)] = buildVerification(foodItem, 'accepted', undefined, readback)
 
         // Track fluid oz for water logging (only from successfully logged items)
         if (logWater) {
@@ -669,42 +678,47 @@ function buildVerification(
   item: Record<string, string | number | boolean>,
   status: 'accepted' | 'failed',
   error?: string,
-  actualNutrients?: Record<number, number> | null,
+  readback?: GetFoodResult | null,
 ): object {
   const ok = status === 'accepted'
+  const hasReadback = ok && readback != null
+  const { nutrients: actualNutrients, strings: responseStrings } = readback ?? { nutrients: {}, strings: new Set<string>() }
 
-  // Map expected values to nutrient key IDs
-  const expected = {
-    calories:    Number(item['Calories'] || 0),
-    fatG:        Number(item['Fat (g)'] || 0),
-    satFatG:     Number(item['Saturated Fat (g)'] || 0),
-    cholesterolMg: Number(item['Cholesterol (mg)'] || 0),
-    sodiumMg:    Number(item['Sodium (mg)'] || 0),
-    carbsG:      Number(item['Carbs (g)'] || 0),
-    fiberG:      Number(item['Fiber (g)'] || 0),
-    sugarG:      Number(item['Sugar (g)'] || 0),
-    proteinG:    Number(item['Protein (g)'] || 0),
+  const nutrientKeyMap: Record<string, { key: number; label: string }> = {
+    calories:     { key: NUTRIENT_KEYS.calories,      label: 'Calories' },
+    fatG:         { key: NUTRIENT_KEYS.fat,           label: 'Fat (g)' },
+    satFatG:      { key: NUTRIENT_KEYS.saturated_fat, label: 'Saturated Fat (g)' },
+    cholesterolMg:{ key: NUTRIENT_KEYS.cholesterol,   label: 'Cholesterol (mg)' },
+    sodiumMg:     { key: NUTRIENT_KEYS.sodium,        label: 'Sodium (mg)' },
+    carbsG:       { key: NUTRIENT_KEYS.carbs,         label: 'Carbs (g)' },
+    fiberG:       { key: NUTRIENT_KEYS.fiber,         label: 'Fiber (g)' },
+    sugarG:       { key: NUTRIENT_KEYS.sugar,         label: 'Sugar (g)' },
+    proteinG:     { key: NUTRIENT_KEYS.protein,       label: 'Protein (g)' },
   }
 
-  const nutrientKeyMap: Record<string, number> = {
-    calories: NUTRIENT_KEYS.calories, fatG: NUTRIENT_KEYS.fat,
-    satFatG: NUTRIENT_KEYS.saturated_fat, cholesterolMg: NUTRIENT_KEYS.cholesterol,
-    sodiumMg: NUTRIENT_KEYS.sodium, carbsG: NUTRIENT_KEYS.carbs,
-    fiberG: NUTRIENT_KEYS.fiber, sugarG: NUTRIENT_KEYS.sugar,
-    proteinG: NUTRIENT_KEYS.protein,
-  }
-
-  const hasReadback = ok && actualNutrients != null
   const fields: Record<string, unknown> = {}
   let allMatch = ok
   const mismatches: string[] = []
 
-  for (const [field, exp] of Object.entries(expected)) {
-    const key = nutrientKeyMap[field]
-    const actual = hasReadback ? (actualNutrients![key] ?? null) : null
+  // Food name — confirmed present in getFood response string table (HAR 17)
+  const expectedName  = String(item['Food Name'] || '')
+  const expectedBrand = String(item['Brand'] || '')
+  const nameActual    = hasReadback ? (responseStrings.has(expectedName)  ? expectedName  : null) : null
+  const brandActual   = hasReadback ? (responseStrings.has(expectedBrand) ? expectedBrand : null) : null
+  const nameMatches   = hasReadback ? nameActual  !== null : ok
+  const brandMatches  = hasReadback ? brandActual !== null : ok
+  if (hasReadback && !nameMatches)  { allMatch = false; mismatches.push(`foodName: '${expectedName}' not found in diary`) }
+  if (hasReadback && !brandMatches) { allMatch = false; mismatches.push(`brand: '${expectedBrand}' not found in diary`) }
+  fields['foodName'] = { expected: expectedName,  actual: nameActual,  matches: nameMatches }
+  fields['brand']    = { expected: expectedBrand, actual: brandActual, matches: brandMatches }
+
+  // Nutrients — compared by value with 0.1 tolerance for float rounding
+  for (const [field, { key, label }] of Object.entries(nutrientKeyMap)) {
+    const exp    = Number(item[label] || 0)
+    const actual = hasReadback ? (actualNutrients[key] ?? null) : null
     const matches = hasReadback
-      ? actual !== null && Math.abs(actual - exp) < 0.1  // 0.1 tolerance for float rounding
-      : ok  // no readback → optimistic
+      ? actual !== null && Math.abs(actual - exp) < 0.1
+      : ok
     if (hasReadback && !matches) {
       allMatch = false
       mismatches.push(`${field}: expected ${exp}, got ${actual}`)
@@ -712,17 +726,13 @@ function buildVerification(
     fields[field] = { expected: exp, actual, matches }
   }
 
-  // Food name: not returned by getFood, so always note as unverified
-  fields['foodName'] = { expected: item['Food Name'], actual: null, matches: null, note: 'not returned by getFood' }
-  fields['brand']    = { expected: item['Brand'],     actual: null, matches: null, note: 'not returned by getFood' }
-
   const level = !ok ? 'failed' : hasReadback ? (allMatch ? 'verified' : 'mismatch') : 'accepted'
 
   return {
     ...fields,
-    allFieldsMatch:      allMatch,
+    allFieldsMatch:       allMatch,
     verificationComplete: ok,
-    verificationLevel:   level,
+    verificationLevel:    level,
     ...(mismatches.length ? { mismatches } : {}),
     ...(error ? { error } : {}),
   }

@@ -1352,17 +1352,48 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
       {verificationStatus && verificationStatus.verificationComplete && (
         <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
           <div className="text-xs">
-            {verificationStatus.allFieldsMatch ? (
-              <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                <CheckCircle className="w-3 h-3" />
-                Logged to Lose It! ✓
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
-                <AlertCircle className="w-3 h-3" />
-                Log failed ✗
-              </div>
-            )}
+            {(() => {
+              const level = verificationStatus.verificationLevel as string | undefined
+              if (level === 'verified') return (
+                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle className="w-3 h-3" />
+                  All fields verified ✓
+                </div>
+              )
+              if (level === 'mismatch') return (
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 text-yellow-600 dark:text-yellow-400">
+                    <AlertCircle className="w-3 h-3" />
+                    Nutrient mismatch detected
+                  </div>
+                  {Array.isArray(verificationStatus.mismatches) && (
+                    <div className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+                      {(verificationStatus.mismatches as string[]).map((m, i) => (
+                        <div key={i}>{m}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+              if (level === 'accepted') return (
+                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle className="w-3 h-3" />
+                  Logged to Lose It! ✓
+                </div>
+              )
+              if (!verificationStatus.allFieldsMatch) return (
+                <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
+                  <AlertCircle className="w-3 h-3" />
+                  Log failed ✗
+                </div>
+              )
+              return (
+                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle className="w-3 h-3" />
+                  Logged to Lose It! ✓
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}

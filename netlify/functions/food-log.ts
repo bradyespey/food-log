@@ -196,7 +196,7 @@ function buildSearchFoodsBody(query: string, headerPerm: string): string {
   return `7|0|${st.length}|${st.join('|')}|${params}|`
 }
 
-function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: string): string {
+function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: string): { body: string; entryBytes: number[] } {
   const foodName    = String(item['Food Name'] || '')
   const brand       = String(item['Brand'] || '')
   const mealName    = String(item['Meal'] || 'Dinner')
@@ -315,7 +315,46 @@ function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: st
     '30', '0', '1',
   ]
 
+  return { body: `7|0|${st.length}|${st.join('|')}|${p.join('|')}|`, entryBytes }
+}
+
+// ── Diary readback (getFood) ───────────────────────────────────────────────────
+// Confirmed from HAR 17-read-food-data.har.
+// Calls getFood with the entry UUID bytes generated during saveCustomFoodLogEntry.
+// Response contains actual nutrient values in pattern: {value},18,{key}
+
+function buildGetFoodBody(entryBytes: number[]): string {
+  const st = [
+    GWT_MODULE_BASE,
+    GWT_BODY_PERMUTATION,
+    'com.loseit.core.client.service.LoseItRemoteService',
+    'getFood',
+    'com.loseit.core.client.service.ServiceRequestToken/1076571655',
+    'com.loseit.core.client.model.interfaces.IPrimaryKey',
+    'java.lang.String/2004016611',
+    'com.loseit.core.client.model.UserId/4281239478',
+    USERNAME,
+    'com.loseit.core.client.model.SimplePrimaryKey/3621315060',
+    '[B/3308590456',
+  ]
+  const p = [
+    '1', '2', '3', '4',
+    '3',                                               // 3 params
+    '5', '6', '7', '5', '0',                          // ServiceRequestToken
+    '8', String(USER_ID), '9', String(TIMEZONE),      // UserId
+    '10', '11', '16', ...entryBytes.map(String), '0', // SimplePrimaryKey with entry UUID bytes
+  ]
   return `7|0|${st.length}|${st.join('|')}|${p.join('|')}|`
+}
+
+function parseGetFoodNutrients(responseText: string): Record<number, number> | null {
+  if (!responseText.startsWith('//OK')) return null
+  const nutrients: Record<number, number> = {}
+  // Pattern confirmed from HAR: {value},18,{nutrient_key} for each stored nutrient
+  for (const m of responseText.matchAll(/([0-9]+(?:\.[0-9]+)?),18,(\d+)/g)) {
+    nutrients[Number(m[2])] = parseFloat(m[1])
+  }
+  return Object.keys(nutrients).length > 0 ? nutrients : null
 }
 
 // ── Water logging (GWT RPC) ───────────────────────────────────────────────────
@@ -550,7 +589,7 @@ export const handler: Handler = async (event) => {
     outputLines.push(`Logging item ${i + 1} of ${foodItemTexts.length}: ${name}`)
 
     try {
-      const gwtBody = buildSaveFoodBody(foodItem, headerPerm)
+      const { body: gwtBody, entryBytes } = buildSaveFoodBody(foodItem, headerPerm)
       const resp = await fetch(LOSEIT_SERVICE_URL, {
         method:  'POST',
         headers: gwtHeaders,
@@ -564,7 +603,20 @@ export const handler: Handler = async (event) => {
       if (gwtResult.status === 'ok') {
         logged.push(foodItem)
         outputLines.push(`  ✓ Accepted by Lose It! (${name})`)
-        verification[String(i)] = buildVerification(foodItem, 'accepted')
+
+        // Read back from diary and verify actual stored values
+        let actualNutrients: Record<number, number> | null = null
+        try {
+          const getResp = await fetch(LOSEIT_SERVICE_URL, {
+            method:  'POST',
+            headers: gwtHeaders,
+            body:    buildGetFoodBody(entryBytes),
+            signal:  AbortSignal.timeout(15000),
+          })
+          actualNutrients = parseGetFoodNutrients(await getResp.text())
+        } catch { /* non-fatal — fall back to accepted-only verification */ }
+
+        verification[String(i)] = buildVerification(foodItem, 'accepted', undefined, actualNutrients)
 
         // Track fluid oz for water logging (only from successfully logged items)
         if (logWater) {
@@ -617,32 +669,61 @@ function buildVerification(
   item: Record<string, string | number | boolean>,
   status: 'accepted' | 'failed',
   error?: string,
+  actualNutrients?: Record<number, number> | null,
 ): object {
   const ok = status === 'accepted'
-  // 'actual' is null because we don't read back from the Lose It! diary after saving.
-  // verificationLevel 'accepted' means Lose It! returned //OK — not that values were confirmed.
-  // True field-level verification requires a getFood/getDailyDetails HAR capture (Phase 4).
-  const makeField = (expected: unknown) => ({
-    expected,
-    actual:  null,  // not read back from diary
-    matches: ok,    // true = request accepted, not confirmed
-  })
+
+  // Map expected values to nutrient key IDs
+  const expected = {
+    calories:    Number(item['Calories'] || 0),
+    fatG:        Number(item['Fat (g)'] || 0),
+    satFatG:     Number(item['Saturated Fat (g)'] || 0),
+    cholesterolMg: Number(item['Cholesterol (mg)'] || 0),
+    sodiumMg:    Number(item['Sodium (mg)'] || 0),
+    carbsG:      Number(item['Carbs (g)'] || 0),
+    fiberG:      Number(item['Fiber (g)'] || 0),
+    sugarG:      Number(item['Sugar (g)'] || 0),
+    proteinG:    Number(item['Protein (g)'] || 0),
+  }
+
+  const nutrientKeyMap: Record<string, number> = {
+    calories: NUTRIENT_KEYS.calories, fatG: NUTRIENT_KEYS.fat,
+    satFatG: NUTRIENT_KEYS.saturated_fat, cholesterolMg: NUTRIENT_KEYS.cholesterol,
+    sodiumMg: NUTRIENT_KEYS.sodium, carbsG: NUTRIENT_KEYS.carbs,
+    fiberG: NUTRIENT_KEYS.fiber, sugarG: NUTRIENT_KEYS.sugar,
+    proteinG: NUTRIENT_KEYS.protein,
+  }
+
+  const hasReadback = ok && actualNutrients != null
+  const fields: Record<string, unknown> = {}
+  let allMatch = ok
+  const mismatches: string[] = []
+
+  for (const [field, exp] of Object.entries(expected)) {
+    const key = nutrientKeyMap[field]
+    const actual = hasReadback ? (actualNutrients![key] ?? null) : null
+    const matches = hasReadback
+      ? actual !== null && Math.abs(actual - exp) < 0.1  // 0.1 tolerance for float rounding
+      : ok  // no readback → optimistic
+    if (hasReadback && !matches) {
+      allMatch = false
+      mismatches.push(`${field}: expected ${exp}, got ${actual}`)
+    }
+    fields[field] = { expected: exp, actual, matches }
+  }
+
+  // Food name: not returned by getFood, so always note as unverified
+  fields['foodName'] = { expected: item['Food Name'], actual: null, matches: null, note: 'not returned by getFood' }
+  fields['brand']    = { expected: item['Brand'],     actual: null, matches: null, note: 'not returned by getFood' }
+
+  const level = !ok ? 'failed' : hasReadback ? (allMatch ? 'verified' : 'mismatch') : 'accepted'
 
   return {
-    foodName:            makeField(item['Food Name']),
-    brand:               makeField(item['Brand']),
-    calories:            makeField(Number(item['Calories'] || 0)),
-    fatG:                makeField(Number(item['Fat (g)'] || 0)),
-    satFatG:             makeField(Number(item['Saturated Fat (g)'] || 0)),
-    cholesterolMg:       makeField(Number(item['Cholesterol (mg)'] || 0)),
-    sodiumMg:            makeField(Number(item['Sodium (mg)'] || 0)),
-    carbsG:              makeField(Number(item['Carbs (g)'] || 0)),
-    fiberG:              makeField(Number(item['Fiber (g)'] || 0)),
-    sugarG:              makeField(Number(item['Sugar (g)'] || 0)),
-    proteinG:            makeField(Number(item['Protein (g)'] || 0)),
-    allFieldsMatch:      ok,
+    ...fields,
+    allFieldsMatch:      allMatch,
     verificationComplete: ok,
-    verificationLevel:   ok ? 'accepted' : 'failed',
+    verificationLevel:   level,
+    ...(mismatches.length ? { mismatches } : {}),
     ...(error ? { error } : {}),
   }
 }

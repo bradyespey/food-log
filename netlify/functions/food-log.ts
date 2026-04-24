@@ -619,28 +619,30 @@ function buildVerification(
   error?: string,
 ): object {
   const ok = status === 'accepted'
+  // 'actual' is null because we don't read back from the Lose It! diary after saving.
+  // verificationLevel 'accepted' means Lose It! returned //OK — not that values were confirmed.
+  // True field-level verification requires a getFood/getDailyDetails HAR capture (Phase 4).
   const makeField = (expected: unknown) => ({
-    verified:  ok,
     expected,
-    actual:    ok ? expected : null,
-    matches:   ok,
+    actual:  null,  // not read back from diary
+    matches: ok,    // true = request accepted, not confirmed
   })
 
   return {
-    foodName:         makeField(item['Food Name']),
-    brand:            makeField(item['Brand']),
-    calories:         makeField(Number(item['Calories'] || 0)),
-    fatG:             makeField(Number(item['Fat (g)'] || 0)),
-    satFatG:          makeField(Number(item['Saturated Fat (g)'] || 0)),
-    cholesterolMg:    makeField(Number(item['Cholesterol (mg)'] || 0)),
-    sodiumMg:         makeField(Number(item['Sodium (mg)'] || 0)),
-    carbsG:           makeField(Number(item['Carbs (g)'] || 0)),
-    fiberG:           makeField(Number(item['Fiber (g)'] || 0)),
-    sugarG:           makeField(Number(item['Sugar (g)'] || 0)),
-    proteinG:         makeField(Number(item['Protein (g)'] || 0)),
-    allFieldsMatch:   ok,
+    foodName:            makeField(item['Food Name']),
+    brand:               makeField(item['Brand']),
+    calories:            makeField(Number(item['Calories'] || 0)),
+    fatG:                makeField(Number(item['Fat (g)'] || 0)),
+    satFatG:             makeField(Number(item['Saturated Fat (g)'] || 0)),
+    cholesterolMg:       makeField(Number(item['Cholesterol (mg)'] || 0)),
+    sodiumMg:            makeField(Number(item['Sodium (mg)'] || 0)),
+    carbsG:              makeField(Number(item['Carbs (g)'] || 0)),
+    fiberG:              makeField(Number(item['Fiber (g)'] || 0)),
+    sugarG:              makeField(Number(item['Sugar (g)'] || 0)),
+    proteinG:            makeField(Number(item['Protein (g)'] || 0)),
+    allFieldsMatch:      ok,
     verificationComplete: ok,
-    verificationLevel: ok ? 'accepted' : 'failed',
+    verificationLevel:   ok ? 'accepted' : 'failed',
     ...(error ? { error } : {}),
   }
 }

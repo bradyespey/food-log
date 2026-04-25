@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { X, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react'
 import { useLoseIt } from '../contexts/LoseItContext'
 

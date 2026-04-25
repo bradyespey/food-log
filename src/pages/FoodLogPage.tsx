@@ -1,7 +1,7 @@
 //src/pages/FoodLogPage.tsx
 
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
-import { ChefHat, Sparkles, DollarSign, Copy, CheckCircle, AlertCircle, Droplets, X, Clipboard, Calendar, Clock, Edit2, Save, XCircle, Trash2 } from 'lucide-react';
+import { ChefHat, Sparkles, Copy, CheckCircle, AlertCircle, Droplets, X, Clipboard, Calendar, Clock, Edit2, Save, XCircle, Trash2, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -16,6 +16,48 @@ import { useSampleData } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useLoseIt } from '../contexts/LoseItContext';
+import { toastOptions } from '../components/ui/toastOptions';
+
+const parseVerificationFromHTML = (htmlOutput: string) => {
+  const verification: {[itemIndex: number]: any} = {};
+  const lines = htmlOutput.split('<br>');
+
+  lines.forEach(line => {
+    if (!line.includes('Logging item')) return;
+
+    const match = line.match(/Logging item (\d+) of (\d+):/);
+    if (!match) return;
+
+    const currentItemIndex = parseInt(match[1]) - 1;
+    const hasError = lines.some(errorLine =>
+      errorLine.includes('Error') ||
+      errorLine.includes('Failed') ||
+      errorLine.includes('element click intercepted') ||
+      errorLine.includes('Traceback') ||
+      errorLine.includes('Exception')
+    );
+
+    verification[currentItemIndex] = {
+      foodName: { verified: !hasError, matches: !hasError },
+      brand: { verified: !hasError, matches: !hasError },
+      icon: { verified: !hasError, matches: !hasError },
+      serving: { verified: !hasError, matches: !hasError },
+      calories: { verified: !hasError, matches: !hasError },
+      fatG: { verified: !hasError, matches: !hasError },
+      satFatG: { verified: !hasError, matches: !hasError },
+      cholesterolMg: { verified: !hasError, matches: !hasError },
+      sodiumMg: { verified: !hasError, matches: !hasError },
+      carbsG: { verified: !hasError, matches: !hasError },
+      fiberG: { verified: !hasError, matches: !hasError },
+      sugarG: { verified: !hasError, matches: !hasError },
+      proteinG: { verified: !hasError, matches: !hasError },
+      allFieldsMatch: !hasError,
+      verificationComplete: true,
+    };
+  });
+
+  return verification;
+};
 
 const FoodLogPage: React.FC = () => {
   const { setLoadSampleData, setClearData } = useSampleData();
@@ -91,8 +133,11 @@ const FoodLogPage: React.FC = () => {
   const totalPromptLength = foodEntries.reduce((sum, entry) => sum + entry.prompt.length, 0);
   const estimatedCost = estimateCost('', totalImages) + (totalPromptLength / 1000) * 0.001;
   const isFormValid = validEntries.length > 0;
-
-
+  const currentAnalysisResult = editedAnalysisResult || analysisResult;
+  const analyzedItemCount = currentAnalysisResult?.items?.length || 0;
+  const verifiedItemCount = Object.values(verificationStatus).filter((item: any) =>
+    item?.verificationComplete && item?.verificationLevel !== 'failed' && item?.allFieldsMatch !== false
+  ).length;
 
   // ── Sample Data Loading ──────────────────────────────────────────
   const loadSampleDataFunction = useCallback(async () => {
@@ -187,6 +232,12 @@ const FoodLogPage: React.FC = () => {
       images: [],
     };
     setFoodEntries(prev => [...prev, newEntry]);
+    window.setTimeout(() => {
+      document.getElementById(`food-entry-${newEntry.id}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 80);
   }, [foodEntries]);
 
   const removeFoodEntry = useCallback((id: string) => {
@@ -574,15 +625,62 @@ ${entry.prompt}`;
     } finally {
       setIsLogging(false);
     }
-  }, [editedAnalysisResult, analysisResult, logWater]);
+  }, [
+    editedAnalysisResult,
+    analysisResult,
+    logWater,
+    navigate,
+    openSettings,
+    session?.isAuthenticated,
+    setLoseItStatus,
+  ]);
 
-  // Register loadSampleDataFunction, clear function, and addFoodEntry with context for navbar access
-  const { setAddFoodEntry } = useSampleData();
+  // Register shell actions and run controls with context for navbar access
+  const { setAddFoodEntry, setRunControls } = useSampleData();
   useEffect(() => {
     setLoadSampleData(loadSampleDataFunction);
     setClearData(handleClear);
     setAddFoodEntry(addFoodEntry);
   }, [setLoadSampleData, setClearData, setAddFoodEntry, loadSampleDataFunction, handleClear, addFoodEntry]);
+
+  useEffect(() => {
+    setRunControls({
+      readyCount: validEntries.length,
+      photoCount: totalImages,
+      resultCount: analyzedItemCount,
+      verifiedCount: verifiedItemCount,
+      estimatedCost,
+      logWater,
+      setLogWater,
+      analyzeLabel: isAnalyzing ? 'Analyzing...' : `Analyze ${validEntries.length}`,
+      logLabel: !session?.isAuthenticated ? 'Sign in to Log' : isLogging ? 'Logging...' : 'Log to Lose It!',
+      canAnalyze: isFormValid && !isAnalyzing && !isLogging,
+      canLog: Boolean(session?.isAuthenticated) && !isLogging,
+      isAnalyzing,
+      isLogging,
+      showLogButton: Boolean(showResults && currentAnalysisResult),
+      onAnalyze: handleAnalyze,
+      onLog: handleLogFood,
+    });
+
+    return () => setRunControls(null);
+  }, [
+    analyzedItemCount,
+    currentAnalysisResult,
+    estimatedCost,
+    handleAnalyze,
+    handleLogFood,
+    isAnalyzing,
+    isFormValid,
+    isLogging,
+    logWater,
+    session?.isAuthenticated,
+    setRunControls,
+    showResults,
+    totalImages,
+    validEntries.length,
+    verifiedItemCount,
+  ]);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -645,136 +743,78 @@ ${entry.prompt}`;
     return formattedItems.join('\n\n');
   }, [editedAnalysisResult, analysisResult]);
 
-  // Parse verification data from HTML output
-  const parseVerificationFromHTML = useCallback((htmlOutput: string) => {
-    const verification: {[itemIndex: number]: any} = {};
-    
-    // Parse the HTML output to extract verification data
-    // This is a fallback when the backend doesn't return structured verification
-    const lines = htmlOutput.split('<br>');
-    let currentItemIndex = -1;
-    
-    lines.forEach(line => {
-      if (line.includes('Logging item')) {
-        const match = line.match(/Logging item (\d+) of (\d+):/);
-        if (match) {
-          currentItemIndex = parseInt(match[1]) - 1; // Convert to 0-based index
-          
-          // Check if there are error indicators for this item in subsequent lines
-          const hasError = lines.some(errorLine => 
-            errorLine.includes('Error') || 
-            errorLine.includes('Failed') ||
-            errorLine.includes('element click intercepted') ||
-            errorLine.includes('Traceback') ||
-            errorLine.includes('Exception')
-          );
-          
-          verification[currentItemIndex] = {
-            foodName: { verified: !hasError, matches: !hasError },
-            brand: { verified: !hasError, matches: !hasError },
-            icon: { verified: !hasError, matches: !hasError },
-            serving: { verified: !hasError, matches: !hasError },
-            calories: { verified: !hasError, matches: !hasError },
-            fatG: { verified: !hasError, matches: !hasError },
-            satFatG: { verified: !hasError, matches: !hasError },
-            cholesterolMg: { verified: !hasError, matches: !hasError },
-            sodiumMg: { verified: !hasError, matches: !hasError },
-            carbsG: { verified: !hasError, matches: !hasError },
-            fiberG: { verified: !hasError, matches: !hasError },
-            sugarG: { verified: !hasError, matches: !hasError },
-            proteinG: { verified: !hasError, matches: !hasError },
-            allFieldsMatch: !hasError,
-            verificationComplete: true
-          };
-        }
-      }
-    });
-    
-    return verification;
-  }, []);
+  const runStats = [
+    ['Cards', foodEntries.length],
+    ['Ready', validEntries.length],
+    ['Photos', totalImages],
+    ['Results', analyzedItemCount],
+    ['Verified', verifiedItemCount],
+  ];
 
   return (
-    <div className="space-y-4 px-4 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-[1500px] space-y-5 pb-24 lg:pb-6">
       <Toaster 
         position="top-center" 
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--card-foreground))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '0.5rem',
-            padding: '0.75rem 1rem',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-          },
-          success: {
-            iconTheme: {
-              primary: 'hsl(var(--primary))',
-              secondary: 'hsl(var(--primary-foreground))',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: 'hsl(var(--destructive))',
-              secondary: 'hsl(var(--destructive-foreground))',
-            },
-          },
-        }}
+        toastOptions={toastOptions}
       />
       
       {/* Page Header */}
-      <div className="text-center space-y-1 py-1">
-        <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-3">
-          <ChefHat className="w-6 h-6 text-primary" />
-          AI Food Analysis
-        </h1>
-        <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-          Upload food photos for AI-powered nutritional analysis and automatic logging
-        </p>
+      <div className="surface rounded-lg p-4 sm:p-5">
+        <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_auto] xl:items-start">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Restaurant-to-diary workflow</p>
+            <h1 className="font-display mt-1 flex items-center gap-3 text-3xl leading-tight text-foreground sm:text-4xl">
+              <ChefHat className="w-7 h-7 text-primary" />
+              AI Food Analysis
+            </h1>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                Current Run
+              </span>
+              {runStats.map(([label, value]) => (
+                <span key={label} className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">{value}</span>
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="hidden items-center gap-3 rounded-full border border-border bg-card/50 px-3 py-2 text-xs text-muted-foreground md:inline-flex lg:hidden">
+            <label htmlFor="headerLogWater" className="inline-flex cursor-pointer items-center gap-2 font-semibold text-foreground">
+              <input
+                id="headerLogWater"
+                type="checkbox"
+                checked={logWater}
+                onChange={(event) => setLogWater(event.target.checked)}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <Droplets className="h-4 w-4 text-accent" />
+              Water
+            </label>
+          </div>
+        </div>
       </div>
+
+      <div className="grid gap-5">
+        <div className="space-y-5">
 
       {/* Food Entry Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {foodEntries.map((entry, index) => (
-          <FoodEntryCardComponent
-            key={entry.id}
-            entry={entry}
-            index={index}
-            canRemove={foodEntries.length > 1}
-            onUpdate={updateFoodEntry}
-            onRemove={removeFoodEntry}
-            onImagesChange={handleImagesChange}
-            isAnalyzing={isAnalyzing}
-            isLogging={isLogging}
-            isLastCard={index === foodEntries.length - 1}
-            validEntries={validEntries}
-            isFormValid={isFormValid}
-            onAnalyze={handleAnalyze}
-          />
+          <div key={entry.id} id={`food-entry-${entry.id}`} className="scroll-mt-24">
+            <FoodEntryCardComponent
+              entry={entry}
+              index={index}
+              canRemove={foodEntries.length > 1}
+              onUpdate={updateFoodEntry}
+              onRemove={removeFoodEntry}
+              onImagesChange={handleImagesChange}
+              isAnalyzing={isAnalyzing}
+              isLogging={isLogging}
+            />
+          </div>
         ))}
-      </div>
-
-      {/* Log Water Row */}
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center space-x-3">
-          <input
-            type="checkbox"
-            id="logWater"
-            checked={logWater}
-            onChange={(e) => setLogWater(e.target.checked)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <Droplets className="w-4 h-4 text-blue-500" />
-            Log Water
-          </label>
-        </div>
-        
-        {/* Cost Estimate - moved to bottom right */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-          <DollarSign className="w-4 h-4" />
-          Estimated cost: ${estimatedCost.toFixed(4)}
-        </div>
       </div>
 
       {/* Questions from AI */}
@@ -782,22 +822,22 @@ ${entry.prompt}`;
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              <AlertCircle className="w-5 h-5 text-accent" />
               AI Needs More Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+            <div className="rounded-lg border border-accent/25 bg-accent/10 p-4">
               <div className="space-y-2">
                 {questions.map((question, index) => (
-                  <p key={index} className="text-orange-800 dark:text-orange-200">
+                  <p key={index} className="text-sm text-foreground">
                     • {question}
                   </p>
                 ))}
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
                 Please update your description above with more details, then try again.
               </p>
               <Button
@@ -816,13 +856,16 @@ ${entry.prompt}`;
       {/* Analysis Results */}
       {showResults && analysisResult && (
         <div ref={analysisResultsRef}>
-          <Card>
+          <Card className="overflow-hidden">
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                Analysis Results
-              </CardTitle>
+              <div>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Review before logging</p>
+                <CardTitle className="mt-1 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                  Analysis Results
+                </CardTitle>
+              </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 {editedAnalysisResult && (
                   <Button
@@ -833,7 +876,7 @@ ${entry.prompt}`;
                       toast.success('Reverted to original analysis');
                     }}
                     size="sm"
-                    className="text-sm text-orange-600 hover:text-orange-700"
+                    className="text-sm text-accent hover:text-accent"
                   >
                     Reset All Edits
                   </Button>
@@ -848,7 +891,7 @@ ${entry.prompt}`;
                   Copy Results
                 </Button>
                 {!session?.isAuthenticated && (
-                  <div className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <div className="flex items-center gap-1 rounded-lg border border-accent/25 bg-accent/10 px-2 py-1 text-xs font-semibold text-accent">
                     <AlertCircle className="w-3 h-3" />
                     Sign in required to log food
                   </div>
@@ -862,15 +905,15 @@ ${entry.prompt}`;
                   title={!session?.isAuthenticated ? 'Please sign in to log food to Lose It!' : ''}
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
-                  {isLogging ? 'Logging... (up to 15 min)' : !session?.isAuthenticated ? 'Sign in to Log' : 'Log to Lose It!'}
+                  {isLogging ? 'Logging...' : !session?.isAuthenticated ? 'Sign in to Log' : 'Log to Lose It!'}
                 </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Food Items */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(editedAnalysisResult || analysisResult).items?.map((item: FoodItem, index: number) => {
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+              {currentAnalysisResult.items?.map((item: FoodItem, index: number) => {
                 const originalItem = analysisResult.items[index];
                 return (
                   <FoodItemCard 
@@ -892,19 +935,19 @@ ${entry.prompt}`;
 
                     {/* Date Information */}
         {analysisResult.entryDates && analysisResult.entryDates.length > 1 && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200 mb-2">
+          <div className="rounded-lg border border-accent/25 bg-accent/10 p-4">
+            <div className="flex items-center gap-2 text-accent mb-2">
               <AlertCircle className="w-4 h-4" />
               <span className="font-medium">Multiple Dates Detected</span>
             </div>
-            <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+            <div className="text-sm text-foreground space-y-1">
               {analysisResult.entryDates.map((entry: any, index: number) => (
                 <div key={index}>
                   • {entry.meal}: {entry.date} ({entry.brand})
                 </div>
               ))}
             </div>
-            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Note: Items will be mapped to their corresponding entry dates based on order. Verify the dates are correct before logging.
             </p>
           </div>
@@ -916,6 +959,35 @@ ${entry.prompt}`;
         </div>
       )}
 
+
+        </div>
+      </div>
+
+      <div className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-lg gap-2">
+          <Button
+            onClick={handleAnalyze}
+            disabled={!isFormValid || isAnalyzing || isLogging}
+            isLoading={isAnalyzing}
+            leftIcon={<Sparkles className="w-4 h-4" />}
+            className="flex-1"
+          >
+            {isAnalyzing ? 'Analyzing...' : `Analyze ${validEntries.length}`}
+          </Button>
+          {showResults && currentAnalysisResult && (
+            <Button
+              onClick={handleLogFood}
+              disabled={isLogging || !session?.isAuthenticated}
+              isLoading={isLogging}
+              variant="secondary"
+              className="flex-1"
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {session?.isAuthenticated ? 'Log' : 'Sign In'}
+            </Button>
+          )}
+        </div>
+      </div>
 
     </div>
   );
@@ -981,7 +1053,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
     }
   };
   return (
-    <div className={`bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${isEditing ? 'p-4' : 'p-3'}`}>
+    <div className={`rounded-lg border border-border bg-card/75 shadow-sm ${isEditing ? 'p-4' : 'p-3'}`}>
       {/* Row 1: Food Name and Action Buttons */}
       <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 ${isEditing ? 'mb-3' : 'mb-2'}`}>
         {isEditing ? (
@@ -1000,7 +1072,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                   size="sm"
                   variant="outline"
                   onClick={handleReset}
-                  className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300"
+                  className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-accent hover:text-accent"
                   tabIndex={17}
                   title="Reset to original"
                 >
@@ -1011,7 +1083,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                 size="sm"
                 variant="outline"
                 onClick={handleSave}
-                className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-primary hover:text-primary"
                 tabIndex={18}
                 title="Save changes"
               >
@@ -1021,7 +1093,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                 size="sm"
                 variant="outline"
                 onClick={handleCancel}
-                className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                className="text-xs px-2 py-1 sm:px-1.5 sm:py-0.5 h-7 sm:h-6 text-destructive hover:text-destructive"
                 tabIndex={19}
                 title="Cancel editing"
               >
@@ -1031,8 +1103,8 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
           </>
         ) : (
           <>
-            <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{item.foodName}</h4>
-            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full whitespace-nowrap">
+            <h4 className="min-w-0 text-sm font-semibold text-foreground">{item.foodName}</h4>
+            <span className="rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary whitespace-nowrap">
               {item.icon}
             </span>
           </>
@@ -1061,7 +1133,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
             />
         </div>
       ) : (
-        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             {item.date || 'N/A'}
@@ -1070,7 +1142,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
             <Clock className="w-3 h-3" />
             {item.meal}
           </span>
-          <span>{item.brand}</span>
+          <span className="truncate">{item.brand}</span>
         </div>
       )}
 
@@ -1090,7 +1162,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
             size="sm"
             variant="outline"
             onClick={() => onDelete?.(index)}
-            className="text-xs px-2 py-1 h-7 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+            className="text-xs px-2 py-1 h-7 text-destructive hover:text-destructive"
           >
             <Trash2 className="w-3 h-3 mr-1" />
             Delete
@@ -1102,7 +1174,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
       {isEditing ? (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">Serving:</span>
+            <span className="text-muted-foreground text-sm whitespace-nowrap">Serving:</span>
             <Input
               type="number"
               step="0.1"
@@ -1130,7 +1202,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">Calories:</span>
+            <span className="text-muted-foreground text-sm whitespace-nowrap">Calories:</span>
             <Input
               type="number"
               value={editedItem.calories}
@@ -1142,26 +1214,26 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
           </div>
         </div>
       ) : (
-        <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+        <div className="text-xs text-muted-foreground mb-2">
           {`${item.serving.amount} ${item.serving.unit === 'Fluid Ounce' ? 'fl oz' : item.serving.unit}`}
-          <div className="text-center mt-2">
-            <div className="text-3xl font-bold text-gray-900 dark:text-white">{item.calories}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Calories</div>
+          <div className="mt-2 rounded-lg border border-border bg-secondary/50 p-3 text-center">
+            <div className="font-display text-4xl leading-none text-foreground">{item.calories}</div>
+            <div className="text-xs font-semibold uppercase text-muted-foreground">Calories</div>
           </div>
         </div>
       )}
 
       {/* Custom multiplier - only show when not editing */}
       {!isEditing && (
-        <div className="flex justify-center items-center gap-2 mb-3">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Multiply by:</span>
+        <div className="flex flex-wrap justify-center items-center gap-2 mb-3 rounded-lg border border-border bg-secondary/40 p-2">
+          <span className="text-xs text-muted-foreground">Multiply by</span>
           <Input
             type="number"
             step="0.1"
             min="-10"
             max="10"
             placeholder="1.5"
-            className="w-20 h-6 text-xs text-center p-1"
+            className="w-20 h-7 text-xs text-center p-1"
             onBlur={(e) => {
               const value = parseFloat(e.target.value);
               if (value && value !== 0) {
@@ -1179,7 +1251,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
               }
             }}
           />
-          <span className="text-xs text-gray-500 dark:text-gray-400">or</span>
+          <span className="text-xs text-muted-foreground">or</span>
           <div className="flex gap-1">
             <Button
               size="sm"
@@ -1207,7 +1279,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
         {/* Left Column: Fat, Sat Fat, Chol, Sodium */}
         <div className={`flex flex-col ${isEditing ? 'gap-y-1.5' : 'gap-y-0.5'} flex-1`}>
         <div className="flex items-center gap-1.5">
-          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Fat:</span>
+          <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Fat:</span>
           {isEditing ? (
             <Input
               type="number"
@@ -1219,11 +1291,11 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
               tabIndex={9}
             />
           ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.fatG}g</span>
+            <span className="font-medium text-foreground">{item.fatG}g</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sat Fat:</span>
+          <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sat Fat:</span>
           {isEditing ? (
             <Input
               type="number"
@@ -1235,11 +1307,11 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
               tabIndex={10}
             />
           ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.satFatG}g</span>
+            <span className="font-medium text-foreground">{item.satFatG}g</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Chol:</span>
+          <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Chol:</span>
           {isEditing ? (
             <Input
               type="number"
@@ -1250,11 +1322,11 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
               tabIndex={11}
             />
           ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.cholesterolMg}mg</span>
+            <span className="font-medium text-foreground">{item.cholesterolMg}mg</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sodium:</span>
+          <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sodium:</span>
           {isEditing ? (
             <Input
               type="number"
@@ -1265,14 +1337,14 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
               tabIndex={12}
             />
           ) : (
-            <span className="font-medium text-gray-900 dark:text-white">{item.sodiumMg.toLocaleString()}mg</span>
+            <span className="font-medium text-foreground">{item.sodiumMg.toLocaleString()}mg</span>
           )}
         </div>
         </div>
         {/* Right Column: Carbs, Fiber, Sugar, Protein */}
         <div className={`flex flex-col ${isEditing ? 'gap-y-1.5' : 'gap-y-0.5'} flex-1`}>
           <div className="flex items-center gap-1.5">
-            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Carbs:</span>
+            <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Carbs:</span>
             {isEditing ? (
               <Input
                 type="number"
@@ -1284,11 +1356,11 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                 tabIndex={13}
               />
             ) : (
-              <span className="font-medium text-gray-900 dark:text-white">{item.carbsG}g</span>
+              <span className="font-medium text-foreground">{item.carbsG}g</span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Fiber:</span>
+            <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Fiber:</span>
             {isEditing ? (
               <Input
                 type="number"
@@ -1300,11 +1372,11 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                 tabIndex={14}
               />
             ) : (
-              <span className="font-medium text-gray-900 dark:text-white">{item.fiberG}g</span>
+              <span className="font-medium text-foreground">{item.fiberG}g</span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sugar:</span>
+            <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Sugar:</span>
             {isEditing ? (
               <Input
                 type="number"
@@ -1316,11 +1388,11 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                 tabIndex={15}
               />
             ) : (
-              <span className="font-medium text-gray-900 dark:text-white">{item.sugarG}g</span>
+              <span className="font-medium text-foreground">{item.sugarG}g</span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <span className={`text-gray-500 dark:text-gray-400 ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Protein:</span>
+            <span className={`text-muted-foreground ${isEditing ? 'w-16 text-sm' : 'w-14 text-xs'}`}>Protein:</span>
             {isEditing ? (
               <Input
                 type="number"
@@ -1332,7 +1404,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                 tabIndex={16}
               />
             ) : (
-              <span className="font-medium text-gray-900 dark:text-white">{item.proteinG}g</span>
+              <span className="font-medium text-foreground">{item.proteinG}g</span>
             )}
           </div>
         </div>
@@ -1340,43 +1412,43 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
       
       {/* Hydration - Only show for liquids */}
       {item.hydration?.isLiquid && (item.hydration.fluidOz || 0) > 0 && (
-        <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-600">
+        <div className="pt-2 mt-2 border-t border-border">
           <div className="flex justify-between text-xs">
-            <span className="text-gray-500 dark:text-gray-400">Hydration:</span>
-            <span className="font-medium text-gray-900 dark:text-white">{item.hydration.fluidOz || 0} fl oz</span>
+            <span className="text-muted-foreground">Hydration:</span>
+            <span className="font-medium text-foreground">{item.hydration.fluidOz || 0} fl oz</span>
           </div>
         </div>
       )}
       
       {/* Verification Status */}
       {isLogging && (
-        <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
-          <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
-            Verifying... (up to 15 min)
+        <div className="pt-3 mt-3 border-t border-border">
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+            Verifying...
           </div>
         </div>
       )}
       
       {verificationStatus && verificationStatus.verificationComplete && (
-        <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-600">
+        <div className="pt-3 mt-3 border-t border-border">
           <div className="text-xs">
             {(() => {
               const level = verificationStatus.verificationLevel as string | undefined
               if (level === 'verified') return (
-                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                <div className="flex items-center justify-center gap-2 text-primary">
                   <CheckCircle className="w-3 h-3" />
                   All fields verified ✓
                 </div>
               )
               if (level === 'mismatch') return (
                 <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 text-yellow-600 dark:text-yellow-400">
+                  <div className="flex items-center justify-center gap-2 text-accent">
                     <AlertCircle className="w-3 h-3" />
                     Nutrient mismatch detected
                   </div>
                   {Array.isArray(verificationStatus.mismatches) && (
-                    <div className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+                    <div className="mt-1 text-xs text-accent">
                       {(verificationStatus.mismatches as string[]).map((m, i) => (
                         <div key={i}>{m}</div>
                       ))}
@@ -1385,19 +1457,19 @@ const FoodItemCard: React.FC<FoodItemCardProps> = memo(({
                 </div>
               )
               if (level === 'accepted') return (
-                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                <div className="flex items-center justify-center gap-2 text-primary">
                   <CheckCircle className="w-3 h-3" />
                   Logged to Lose It! ✓
                 </div>
               )
               if (!verificationStatus.allFieldsMatch) return (
-                <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
+                <div className="flex items-center justify-center gap-2 text-destructive">
                   <AlertCircle className="w-3 h-3" />
                   Log failed ✗
                 </div>
               )
               return (
-                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                <div className="flex items-center justify-center gap-2 text-primary">
                   <CheckCircle className="w-3 h-3" />
                   Logged to Lose It! ✓
                 </div>
@@ -1423,10 +1495,6 @@ interface FoodEntryCardProps {
   onImagesChange: (id: string, images: File[]) => void;
   isAnalyzing: boolean;
   isLogging: boolean;
-  isLastCard: boolean;
-  validEntries: FoodEntryCard[];
-  isFormValid: boolean;
-  onAnalyze: () => void;
 }
 
 const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({ 
@@ -1437,30 +1505,40 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
   onRemove, 
   onImagesChange, 
   isAnalyzing, 
-  isLogging, 
-  isLastCard, 
-  validEntries, 
-  isFormValid, 
-  onAnalyze
+  isLogging
 }) => {
+  const isComplete = Boolean(entry.date && entry.meal && entry.brand && entry.prompt);
+  const mealOptions: FoodEntryCard['meal'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
+
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <ChefHat className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            Food Entry #{index + 1}
-          </CardTitle>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Entry {index + 1}</p>
+            <CardTitle className="mt-1 flex items-center gap-2">
+              <ChefHat className="w-5 h-5 text-primary" />
+              Food Card
+            </CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+              isComplete
+                ? 'border-primary/25 bg-primary/10 text-primary'
+                : 'border-border bg-secondary text-muted-foreground'
+            }`}>
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {isComplete ? 'Ready' : 'Draft'}
+            </span>
             {canRemove && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onRemove(entry.id)}
-                className="text-sm"
+                className="px-2"
+                title="Remove entry"
               >
-                <X className="w-4 h-4 mr-1" />
-                Remove
+                <X className="w-4 h-4" />
               </Button>
             )}
           </div>
@@ -1468,7 +1546,7 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Required Fields Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[150px_minmax(0,1fr)]">
           <Input
             label="Date *"
             type="date"
@@ -1477,45 +1555,52 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
             required
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-xs font-semibold uppercase text-muted-foreground">
               Meal *
             </label>
-            <select
-              value={entry.meal}
-              onChange={(e) => onUpdate(entry.id, 'meal', e.target.value as 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks')}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-              required
-            >
-              <option value="Breakfast">Breakfast</option>
-              <option value="Lunch">Lunch</option>
-              <option value="Dinner">Dinner</option>
-              <option value="Snacks">Snacks</option>
-            </select>
+            <div className="flex min-h-10 flex-wrap items-center gap-2">
+              {mealOptions.map((meal) => (
+                <button
+                  key={meal}
+                  type="button"
+                  onClick={() => onUpdate(entry.id, 'meal', meal)}
+                  className={`min-h-9 rounded-full border px-4 text-xs font-semibold transition-colors ${
+                    entry.meal === meal
+                      ? 'border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                      : 'border-border bg-card/60 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  }`}
+                >
+                  {meal}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
           <Input
             label="Brand/Restaurant *"
-            placeholder="e.g., McDonald's, Starbucks"
+            placeholder="Restaurant or brand"
             value={entry.brand}
             onChange={(e) => onUpdate(entry.id, 'brand', e.target.value)}
             required
           />
-        </div>
+          </div>
 
         {/* What did you eat */}
         <Textarea
           label="What did you eat? *"
-          placeholder="Describe your food in detail, including portions, preparation, and any sides or drinks..."
+          placeholder="Example: chicken sandwich, fries, ranch, half of the appetizer, 12 oz mocktail..."
           value={entry.prompt}
           onChange={(e) => onUpdate(entry.id, 'prompt', e.target.value)}
-          rows={4}
-          helperText="Be as specific as possible for accurate nutritional analysis"
+          rows={3}
           required
         />
 
         {/* Photo Upload */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-xs font-semibold uppercase text-muted-foreground">
               Photos (optional)
             </label>
             <Button
@@ -1544,7 +1629,7 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
                   }
                   
                   toast.error('No images found in clipboard');
-                } catch (error) {
+                } catch {
                   toast.error('Failed to paste from clipboard. Please try copying the image again.');
                 }
               }}
@@ -1565,39 +1650,17 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
           />
         </div>
 
-        {/* Entry Status and Analysis Controls for the last card */}
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            {/* Status on the left */}
-            <div className="flex items-center gap-4 text-sm">
-              <div className={`flex items-center gap-2 ${
-                entry.date && entry.meal && entry.brand && entry.prompt 
-                  ? 'text-green-600 dark:text-green-400' 
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                <CheckCircle className="w-4 h-4" />
-                {entry.date && entry.meal && entry.brand && entry.prompt ? 'Ready to analyze' : 'Incomplete'}
-              </div>
-              {entry.images.length > 0 && (
-                <div className="text-blue-600 dark:text-blue-400">
-                  📷 {entry.images.length} photo{entry.images.length !== 1 ? 's' : ''}
-                </div>
-              )}
-            </div>
-
-            {/* Analysis Controls on the right for the last card */}
-            {isLastCard && (
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={onAnalyze}
-                  disabled={!isFormValid || isAnalyzing || isLogging}
-                  isLoading={isAnalyzing}
-                  leftIcon={<Sparkles className="w-4 h-4" />}
-                >
-                  {isAnalyzing ? 'Analyzing...' : `Analyze ${validEntries.length} Item${validEntries.length !== 1 ? 's' : ''}`}
-                </Button>
-              </div>
-            )}
+        {/* Entry Status */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+          <div className={`flex items-center gap-2 ${
+            isComplete ? 'text-primary' : 'text-muted-foreground'
+          }`}>
+            <CheckCircle className="w-4 h-4" />
+            {isComplete ? 'Ready to analyze' : 'Needs restaurant and food details'}
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ImageIcon className="w-4 h-4" />
+            {entry.images.length} photo{entry.images.length !== 1 ? 's' : ''}
           </div>
         </div>
       </CardContent>

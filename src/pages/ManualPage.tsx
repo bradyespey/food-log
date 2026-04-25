@@ -2,13 +2,14 @@ import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Textarea } from '../components/ui/Textarea';
-import { CheckCircle, Droplets, Copy, PenTool } from 'lucide-react';
+import { CheckCircle, Droplets, Copy, PenTool, FileText, Timer } from 'lucide-react';
 import { logFoodToBackend } from '../lib/api';
 import { toast, Toaster } from 'react-hot-toast';
 import { useSampleData } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useLoseIt } from '../contexts/LoseItContext';
+import { toastOptions } from '../components/ui/toastOptions';
 
 const FOOD_KEYS = [
   'Food Name',
@@ -394,7 +395,7 @@ Protein (g): 20`;
     } finally {
       setIsLogging(false);
     }
-  }, [foodText, logWater]);
+  }, [foodText, logWater, navigate, openSettings, session?.isAuthenticated, setLoseItStatus]);
 
   const handleClear = useCallback(() => {
     setFoodText('');
@@ -422,74 +423,56 @@ Protein (g): 20`;
     }
   }, []);
 
-
+  const parsedItems = foodText ? parsePastedFoodText(foodText) : [];
 
   return (
-    <div className="space-y-4 px-4 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-[1200px] space-y-5 pb-10">
       <Toaster 
         position="top-center" 
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--card-foreground))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '0.5rem',
-            padding: '0.75rem 1rem',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-          },
-          success: {
-            iconTheme: {
-              primary: 'hsl(var(--primary))',
-              secondary: 'hsl(var(--primary-foreground))',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: 'hsl(var(--destructive))',
-              secondary: 'hsl(var(--destructive-foreground))',
-            },
-          },
-        }}
+        toastOptions={toastOptions}
       />
 
       {/* Page Header */}
-      <div className="text-center space-y-1 py-1">
-        <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-3">
-          <PenTool className="w-6 h-6 text-primary" />
-          Manual Food Log
-        </h1>
-        <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-          Paste pre-formatted food items for direct logging to Lose It!
-        </p>
-      </div>
-
-      {/* Main Input Card - Simple like your old LoseIt app */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="flex items-center gap-2">
-              <PenTool className="w-5 h-5 text-green-600 dark:text-green-400" />
-              Food Log Text
-            </CardTitle>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <Button
-                onClick={handleLogFood}
-                disabled={!foodText.trim() || isLogging || !session?.isAuthenticated}
-                isLoading={isLogging}
-                leftIcon={<CheckCircle className="w-4 h-4" />}
-                size="sm"
-                className="text-sm"
-              >
-                {isLogging ? 'Logging... (up to 15 min)' : 'Log Food'}
-              </Button>
+      <div className="surface rounded-lg p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Structured text logging</p>
+            <h1 className="font-display mt-1 flex items-center gap-3 text-3xl leading-tight text-foreground sm:text-4xl">
+              <PenTool className="w-7 h-7 text-primary" />
+              Manual Food Log
+            </h1>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:min-w-[240px]">
+            <div className="rounded-lg border border-border bg-card/70 p-3">
+              <div className="text-lg font-semibold text-foreground">{parsedItems.length}</div>
+              <div className="text-xs text-muted-foreground">Items</div>
+            </div>
+            <div className="rounded-lg border border-border bg-card/70 p-3">
+              <div className="text-lg font-semibold text-foreground">{logWater ? 'On' : 'Off'}</div>
+              <div className="text-xs text-muted-foreground">Water</div>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Main textarea - like your old LoseIt app */}
-          <Textarea
-            placeholder="Paste your food log text here...
+        </div>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Main Input Card - Simple like your old LoseIt app */}
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Paste and review</p>
+                <CardTitle className="mt-1 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Food Log Text
+                </CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Main textarea - like your old LoseIt app */}
+            <Textarea
+              placeholder="Paste your food log text here...
 
 Line format (one field per line):
 Food Name: Cafe Vanilla Coffee
@@ -505,48 +488,94 @@ Paragraph format (e.g. from Gemini) also works:
 Food Name: Peppermint Mocha Date: 01/28 Meal: Snack Brand: Starbucks Icon: Hot Coffee Serving Size: 12 (fluid ounces) Calories: 260 ...
 
 Separate multiple items with blank lines."
-            value={foodText}
-            onChange={(e) => setFoodText(e.target.value)}
-            rows={20}
-            className="font-mono text-sm resize-y min-h-[500px]"
-          />
+              value={foodText}
+              onChange={(e) => setFoodText(e.target.value)}
+              rows={18}
+              className="min-h-[420px] resize-y font-mono text-sm"
+            />
 
-          {/* Item count indicator */}
-          {foodText && (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {parsePastedFoodText(foodText).length} food item(s) ready to log
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {foodText && (
+              <div className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
+                {parsedItems.length} food item{parsedItems.length !== 1 ? 's' : ''} ready to log
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Log Water Row - moved outside the box like AI page */}
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center space-x-3">
-          <input
-            type="checkbox"
-            id="logWater"
-            checked={logWater}
-            onChange={(e) => setLogWater(e.target.checked)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <label htmlFor="logWater" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <Droplets className="w-4 h-4 text-blue-500" />
-            Log Water
-          </label>
-        </div>
-        
-        {foodText && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => copyToClipboard(foodText)}
-            leftIcon={<Copy className="w-4 h-4" />}
-          >
-            Copy Text
-          </Button>
-        )}
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <Card>
+            <CardHeader className="pb-3">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Current Run</p>
+              <CardTitle className="mt-1 flex items-center gap-2">
+                <Timer className="h-5 w-5 text-primary" />
+                Log Food
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-lg border border-border bg-secondary/50 p-3">
+                  <div className="text-xl font-semibold text-foreground">{parsedItems.length}</div>
+                  <div className="text-xs text-muted-foreground">Parsed</div>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/50 p-3">
+                  <div className="text-xl font-semibold text-foreground">{logResult ? 'Done' : 'Open'}</div>
+                  <div className="text-xs text-muted-foreground">Status</div>
+                </div>
+              </div>
+
+              <label htmlFor="manualLogWater" className="flex items-center justify-between rounded-lg border border-border bg-card/70 p-3">
+                <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Droplets className="w-4 h-4 text-sky-500" />
+                  Log Water
+                </span>
+                <input
+                  type="checkbox"
+                  id="manualLogWater"
+                  checked={logWater}
+                  onChange={(e) => setLogWater(e.target.checked)}
+                  className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
+                />
+              </label>
+
+              <Button
+                onClick={handleLogFood}
+                disabled={!foodText.trim() || isLogging || !session?.isAuthenticated}
+                isLoading={isLogging}
+                leftIcon={<CheckCircle className="w-4 h-4" />}
+                className="w-full"
+              >
+                {isLogging ? 'Logging...' : !session?.isAuthenticated ? 'Sign in to Log' : 'Log Food'}
+              </Button>
+
+              {foodText && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(foodText)}
+                  leftIcon={<Copy className="w-4 h-4" />}
+                  className="w-full"
+                >
+                  Copy Text
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
       </div>
+
+      {foodText && (
+        <div className="lg:hidden">
+          <Button
+            onClick={handleLogFood}
+            disabled={!foodText.trim() || isLogging || !session?.isAuthenticated}
+            isLoading={isLogging}
+            leftIcon={<CheckCircle className="w-4 h-4" />}
+            className="w-full"
+          >
+            {isLogging ? 'Logging...' : !session?.isAuthenticated ? 'Sign in to Log' : 'Log Food'}
+          </Button>
+        </div>
+      )}
 
       {/* Logging Results */}
       {logResult && (
@@ -559,7 +588,7 @@ Separate multiple items with blank lines."
           </CardHeader>
           <CardContent>
             <div 
-              className="text-sm text-gray-700 dark:text-gray-300 space-y-2 whitespace-pre-wrap"
+              className="space-y-2 whitespace-pre-wrap text-sm text-foreground"
               dangerouslySetInnerHTML={{ 
                 __html: logResult
                   .replace(/\n/g, '<br>')

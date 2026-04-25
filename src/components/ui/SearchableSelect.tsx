@@ -84,7 +84,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDownInternal}
         tabIndex={tabIndex}
-        className="w-full flex items-center justify-between px-2 py-1 h-6 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 h-8 text-xs border border-border rounded-lg bg-card text-foreground hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <span className="truncate">{value || placeholder}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
@@ -92,16 +92,16 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg max-h-60 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg max-h-60 overflow-hidden">
           {/* Search input */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-2 border-b border-border">
             <input
               ref={inputRef}
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search..."
-              className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-xs border border-border rounded bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
                   setIsOpen(false);
@@ -120,7 +120,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           {/* Options list */}
           <div className="overflow-y-auto max-h-48">
             {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className="px-3 py-2 text-xs text-muted-foreground">
                 No options found
               </div>
             ) : (
@@ -143,12 +143,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                       prev?.focus();
                     }
                   }}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 flex items-center justify-between ${
-                    value === option ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-secondary focus:outline-none focus:bg-secondary flex items-center justify-between ${
+                    value === option ? 'bg-secondary text-foreground' : ''
                   }`}
                 >
                   <span>{option}</span>
-                  {value === option && <Check className="w-3 h-3 text-blue-600 dark:text-blue-400" />}
+                  {value === option && <Check className="w-3 h-3 text-primary" />}
                 </button>
               ))
             )}

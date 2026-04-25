@@ -2,7 +2,6 @@
 
 import React, { useCallback, useState, useEffect } from 'react';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
-import heic2any from 'heic2any';
 
 function ImagePreviewItem({
   file,
@@ -28,7 +27,7 @@ function ImagePreviewItem({
 
   return (
     <div className="relative group">
-      <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+      <div className="aspect-square rounded-lg overflow-hidden border border-border bg-secondary">
         {showImg ? (
           <img
             src={url}
@@ -37,9 +36,9 @@ function ImagePreviewItem({
             onError={() => setPreviewFailed(true)}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 gap-1 p-2">
-            <ImageIcon className="w-8 h-8 text-gray-400 dark:text-gray-500 shrink-0" />
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight">
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
+            <ImageIcon className="w-8 h-8 text-muted-foreground shrink-0" />
+            <span className="text-[10px] text-muted-foreground text-center leading-tight">
               Preview unavailable
             </span>
           </div>
@@ -48,11 +47,11 @@ function ImagePreviewItem({
       <button
         type="button"
         onClick={onRemove}
-        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+        className="absolute -top-2 -right-2 w-7 h-7 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors shadow-sm"
       >
         <X className="w-3 h-3" />
       </button>
-      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+      <p className="mt-1 text-xs text-muted-foreground truncate">
         {file.name} ({formatFileSize(file.size)})
       </p>
     </div>
@@ -97,6 +96,7 @@ async function convertHeicToJpeg(file: File, retried = false): Promise<File | nu
     const blob = new Blob([buf], { type: file.type || 'image/heic' });
     let result: Blob | Blob[];
     try {
+      const { default: heic2any } = await import('heic2any');
       result = await heic2any({ blob, toType: 'image/jpeg', quality: 0.9 });
     } catch {
       if (!retried) {
@@ -242,34 +242,34 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           disabled={disabled || images.length >= maxImages || isConverting}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         />
-        <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+        <div className={`border border-dashed rounded-lg p-4 sm:p-5 text-center transition-colors ${
           disabled || images.length >= maxImages || isConverting
-            ? 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed'
-            : 'border-gray-300 dark:border-gray-500 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer'
+            ? 'border-border bg-secondary/50 cursor-not-allowed'
+            : 'border-border bg-card/70 hover:border-primary hover:bg-secondary cursor-pointer'
         }`}>
           {isConverting ? (
             <>
-              <Loader2 className="mx-auto h-8 w-8 text-blue-500 animate-spin" />
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              <Loader2 className="mx-auto h-8 w-8 text-primary animate-spin" />
+              <p className="mt-2 text-sm text-foreground">
                 Converting HEIC to JPEG…
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 This may take a few seconds
               </p>
             </>
           ) : (
             <>
-              <Upload className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              <Upload className="mx-auto h-8 w-8 text-primary" />
+              <p className="mt-2 text-sm font-medium text-foreground">
                 {images.length >= maxImages 
                   ? `Maximum ${maxImages} images reached`
                   : 'Drop images here or click to select'
                 }
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Max {maxImages} images, up to {Math.round(maxSizeBytes / 1024 / 1024)}MB each
               </p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+              <p className="text-[10px] text-muted-foreground/80 mt-0.5">
                 If the newest photos don’t work when dragged, Copy (⌘C) in Photos then Paste (⌘V) here
               </p>
             </>
@@ -279,14 +279,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
       {/* Error Message */}
       {error && (
-        <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3">
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-3">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
       {/* Image Preview Grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
           {images.map((file, index) => (
             <ImagePreviewItem
               key={index}

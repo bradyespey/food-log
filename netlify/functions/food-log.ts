@@ -732,7 +732,7 @@ function buildVerification(
   return {
     ...fields,
     allFieldsMatch:       allMatch,
-    verificationComplete: ok,
+    verificationComplete: true,
     verificationLevel:    level,
     ...(mismatches.length ? { mismatches } : {}),
     ...(error ? { error } : {}),

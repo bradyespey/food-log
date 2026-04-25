@@ -94,9 +94,6 @@ Once logged in with Google, click the ⚙ gear icon in the navbar → **Lose It!
 
 **When it expires:** The app detects auth failures and shows a red pulsing ⚙ icon in the navbar with a toast: *"Your Lose It! session has expired. Open Settings and paste a fresh cookie."* The settings modal opens automatically.
 
-**`FIREBASE_SERVICE_ACCOUNT` (required for Firestore cookie storage):**
-Generate from Firebase Console → foodlog-318c3 → Project Settings → Service Accounts → **Generate new private key**. Download the JSON, minify it to a single line, and set as `FIREBASE_SERVICE_ACCOUNT` in `.env` and Netlify env vars.
-
 For initial setup, `LOSEIT_COOKIE` in the env var is still supported as a fallback if no Firestore cookie is set.
 
 ---

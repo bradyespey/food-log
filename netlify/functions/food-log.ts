@@ -1,5 +1,5 @@
 import type { Handler } from '@netlify/functions'
-import { getLoseItCookie } from './lib/firebase-admin'
+import { getLoseItCookie } from './lib/firebase-rest'
 
 // ── GWT constants ──────────────────────────────────────────────────────────────
 const GWT_MODULE_BASE      = 'https://d3hsih69yn4d89.cloudfront.net/web/'

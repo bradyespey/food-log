@@ -15,11 +15,13 @@ import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { useSampleData } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useLoseIt } from '../contexts/LoseItContext';
 
 const FoodLogPage: React.FC = () => {
   const { setLoadSampleData, setClearData } = useSampleData();
   const { session } = useAuth();
   const navigate = useNavigate();
+  const { setStatus: setLoseItStatus, openSettings } = useLoseIt();
   
   // Helper function to get local date string (not UTC)
   const getLocalDateString = (date: Date): string => {
@@ -522,19 +524,26 @@ ${entry.prompt}`;
     
     try {
       const result = await logFoodToBackend(currentResult, logWater);
-      
+
+      // Auth failures: mark expired and prompt to update cookie
+      if (result.errorCode === 'loseit_session_expired' || result.errorCode === 'loseit_not_configured') {
+        setLoseItStatus('expired');
+        toast.error(result.message, { duration: 8000 });
+        openSettings();
+        return;
+      }
+
       if (result.success) {
+        setLoseItStatus('ok');
         toast.success('Food logged successfully!');
-        
-        // Set verification status
+
         if (result.verification && Object.keys(result.verification).length > 0) {
           setVerificationStatus(result.verification);
         } else if (result.output && result.output.includes('Logging item')) {
-          // Parse verification from HTML output if structured data not available
           const parsedVerification = parseVerificationFromHTML(result.output);
           setVerificationStatus(parsedVerification);
         }
-        
+
         if (logWater) {
           toast.success('💧 Water intake also logged');
         }

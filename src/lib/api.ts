@@ -1,10 +1,12 @@
 // API client for backend food logging
 import type { FoodItem } from '../types';
+import { auth } from './firebaseConfig';
 
-interface LogFoodResponse {
+export interface LogFoodResponse {
   success: boolean;
   message: string;
   output?: string;
+  errorCode?: string;  // 'loseit_session_expired' | 'loseit_not_configured'
   verification?: {
     [itemIndex: number]: any;
   };
@@ -53,17 +55,21 @@ export const logFoodToBackend = async (
       throw new Error('No valid food items found in the analysis result');
     }
 
-    const payload = {
-      food_items: formattedItems,
-      log_water: logWater,
-    };
+    const payload = { food_items: formattedItems, log_water: logWater };
+
+    // Attach Firebase auth token so the function can look up the user's Lose It! cookie
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+    } catch { /* non-fatal — function falls back to env var cookie */ }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60 * 1000);
 
     const response = await fetch('/.netlify/functions/food-log', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
@@ -71,6 +77,17 @@ export const logFoodToBackend = async (
     clearTimeout(timeoutId);
 
     const result = await response.json();
+
+    // Auth errors (401) — surface the errorCode so the UI can show the settings banner
+    if (response.status === 401) {
+      return {
+        success: false,
+        message: result.message || 'Lose It! session error.',
+        errorCode: result.errorCode,
+        output: result.output || '',
+        verification: result.verification || {},
+      };
+    }
 
     if (!response.ok) {
       if (result.verification && Object.keys(result.verification).length > 0) {
@@ -81,7 +98,12 @@ export const logFoodToBackend = async (
           verification: result.verification || {},
         };
       }
-      throw new Error(`API error (${response.status}): ${result.error || result.message || 'Unknown error'}`);
+      throw new Error(
+        result.error || result.message ||
+        (response.status >= 500
+          ? 'Analysis timed out or failed. Try fewer food cards, or split into two separate analyses.'
+          : `API error (${response.status})`)
+      );
     }
 
     return {
@@ -93,7 +115,6 @@ export const logFoodToBackend = async (
 
   } catch (error) {
     console.error('Food logging error:', error);
-
     let errorMessage = 'Failed to log food';
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
@@ -104,10 +125,6 @@ export const logFoodToBackend = async (
         errorMessage = error.message;
       }
     }
-
-    return {
-      success: false,
-      message: errorMessage,
-    };
+    return { success: false, message: errorMessage };
   }
 };

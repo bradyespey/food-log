@@ -1,4 +1,5 @@
 import type { Handler } from '@netlify/functions'
+import { getLoseItCookie } from './lib/firebase-admin'
 
 // ── GWT constants ──────────────────────────────────────────────────────────────
 const GWT_MODULE_BASE      = 'https://d3hsih69yn4d89.cloudfront.net/web/'
@@ -485,9 +486,13 @@ async function logWaterForDate(
   }
 }
 
-function parseGwtResponse(text: string): { status: 'ok' | 'exception' | 'unknown'; raw: string } {
-  if (text.startsWith('//OK'))  return { status: 'ok',        raw: text }
-  if (text.startsWith('//EX')) return { status: 'exception', raw: text }
+function parseGwtResponse(text: string): { status: 'ok' | 'exception' | 'unknown' | 'auth_failed'; raw: string } {
+  if (text.startsWith('//OK'))  return { status: 'ok',          raw: text }
+  if (text.startsWith('//EX')) return { status: 'exception',   raw: text }
+  // Auth failure: Lose It! redirected to login page — response is HTML, not GWT
+  if (text.trimStart().startsWith('<!') || text.trimStart().startsWith('<html')) {
+    return { status: 'auth_failed', raw: text.slice(0, 100) }
+  }
   return { status: 'unknown', raw: text.slice(0, 300) }
 }
 
@@ -532,12 +537,18 @@ export const handler: Handler = async (event) => {
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const cookie = process.env.LOSEIT_COOKIE?.trim()
+  // Prefer per-user cookie from Firestore; fall back to env var
+  const authHeader = event.headers['authorization'] || event.headers['Authorization']
+  const cookie = (await getLoseItCookie(authHeader)) || process.env.LOSEIT_COOKIE?.trim()
   if (!cookie) {
     return {
-      statusCode: 500,
+      statusCode: 401,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ success: false, message: 'LOSEIT_COOKIE not configured on server' }),
+      body: JSON.stringify({
+        success: false,
+        message: 'Lose It! session not configured. Open Settings and paste your Lose It! cookie.',
+        errorCode: 'loseit_not_configured',
+      }),
     }
   }
   const headerPerm = process.env.LOSEIT_GWT_PERMUTATION?.trim() || '79FCB90B69F5FF2C7877662E5529652C'
@@ -635,6 +646,22 @@ export const handler: Handler = async (event) => {
             const dateStr = String(foodItem['Date'] || '')
             waterByDate.set(dateStr, (waterByDate.get(dateStr) ?? 0) + fluidOz)
           }
+        }
+      } else if (gwtResult.status === 'auth_failed') {
+        // Cookie expired — bail early, no point retrying remaining items
+        failed.push(foodItem)
+        outputLines.push(`  ✗ Lose It! session expired — update your cookie in Settings`)
+        verification[String(i)] = buildVerification(foodItem, 'failed', 'auth_failed')
+        return {
+          statusCode: 401,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({
+            success: false,
+            message: 'Your Lose It! session has expired. Open Settings and paste a fresh cookie.',
+            errorCode: 'loseit_session_expired',
+            output: outputLines.join('\n'),
+            verification,
+          }),
         }
       } else {
         failed.push(foodItem)

@@ -77,17 +77,27 @@ LOSEIT_COOKIE=
 LOSEIT_GWT_PERMUTATION=
 ```
 
-### Getting your LOSEIT_COOKIE
+### Managing your Lose It! session cookie
 
-The cookie authenticates every GWT call. It expires after weeks to months.
+The cookie authenticates GWT calls to Lose It!. It contains short-lived session tokens that expire every few days regardless of activity.
 
+**Recommended: update via the in-app Settings UI**
+
+Once logged in with Google, click the ⚙ gear icon in the navbar → **Lose It! Session** → paste your fresh cookie. It saves to Firestore and applies immediately everywhere (localhost and production) without touching env vars or redeploying.
+
+**How to get a fresh cookie:**
 1. Log in to `https://www.loseit.com/` in Chrome
 2. Open DevTools → **Network** tab
 3. Click any request to `/web/service`
 4. In **Request Headers**, find `Cookie:` — copy the entire value
-5. Paste as `LOSEIT_COOKIE=` in your `.env`
+5. Paste it in the Settings modal (or in `LOSEIT_COOKIE=` in `.env` as a fallback)
 
-For production, add the same variables to your Netlify site's Environment Variables dashboard.
+**When it expires:** The app detects auth failures and shows a red pulsing ⚙ icon in the navbar with a toast: *"Your Lose It! session has expired. Open Settings and paste a fresh cookie."* The settings modal opens automatically.
+
+**`FIREBASE_SERVICE_ACCOUNT` (required for Firestore cookie storage):**
+Generate from Firebase Console → foodlog-318c3 → Project Settings → Service Accounts → **Generate new private key**. Download the JSON, minify it to a single line, and set as `FIREBASE_SERVICE_ACCOUNT` in `.env` and Netlify env vars.
+
+For initial setup, `LOSEIT_COOKIE` in the env var is still supported as a fallback if no Firestore cookie is set.
 
 ---
 
@@ -309,7 +319,7 @@ The old architecture is documented in [`docs/archive/selenium-architecture.md`](
 
 ## Troubleshooting
 
-**Food logging fails silently** — The `LOSEIT_COOKIE` has expired. Refresh it from DevTools (see Getting your LOSEIT_COOKIE above). Cookies typically last weeks to months.
+**Food logging fails / session expired banner** — The Lose It! cookie has expired (short-lived session tokens). Click the ⚙ gear in the navbar, paste a fresh cookie from DevTools. The app detects this automatically and opens the Settings modal.
 
 **Analysis is slow** — Normal for GPT-4o-mini with images: 3–8 seconds. The function calls OpenAI directly so there's no additional network hop.
 

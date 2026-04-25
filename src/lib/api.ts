@@ -85,7 +85,7 @@ export const logFoodToBackend = async (
     }
 
     return {
-      success: result.success || true,
+      success: result.success === true,
       message: result.message || 'Food logged successfully!',
       output: result.output || result.message || 'Food logged to Lose It!',
       verification: result.verification || {},

@@ -14,6 +14,7 @@ interface DropdownMenuTriggerProps {
 interface DropdownMenuContentProps {
   children: React.ReactNode;
   align?: 'start' | 'end';
+  side?: 'top' | 'bottom';
   className?: string;
 }
 
@@ -37,6 +38,7 @@ const DropdownMenuTrigger: React.FC<DropdownMenuTriggerProps> = ({ children, asC
 const DropdownMenuContent: React.FC<DropdownMenuContentProps> = ({ 
   children, 
   align = 'start',
+  side = 'bottom',
   className = '' 
 }) => {
   return (
@@ -51,8 +53,10 @@ const DropdownMenuContent: React.FC<DropdownMenuContentProps> = ({
     >
       <Menu.Items 
         className={clsx(
-          "absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+          "absolute z-50 min-w-[8rem] overflow-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md",
+          "outline-none focus:outline-none focus-visible:outline-none",
           align === 'end' ? 'right-0' : 'left-0',
+          side === 'top' ? 'bottom-full mb-2 origin-bottom' : 'top-full mt-2 origin-top',
           className
         )}
       >
@@ -73,9 +77,9 @@ const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
         <button
           onClick={onClick}
           className={clsx(
-            "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+            "relative flex w-full cursor-default select-none items-center rounded-md px-2 py-1.5 text-sm outline-none transition-colors",
             active 
-              ? "bg-accent text-accent-foreground" 
+              ? "bg-secondary text-foreground"
               : "text-popover-foreground",
             className
           )}

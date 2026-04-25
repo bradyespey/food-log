@@ -23,21 +23,21 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles = [
-    'inline-flex items-center justify-center rounded-md font-medium',
-    'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+    'inline-flex items-center justify-center rounded-full font-semibold',
+    'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
     'disabled:opacity-50 disabled:pointer-events-none',
   ].join(' ')
 
   const variantStyles: Record<ButtonVariant,string> = {
-    primary:   'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600',
-    outline:   'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800',
-    danger:    'bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700',
-    ghost:     'bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
+    primary:   'bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary/90',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    outline:   'border border-border bg-card/70 text-foreground hover:bg-secondary',
+    danger:    'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+    ghost:     'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
   }
 
   const sizeStyles: Record<ButtonSize,string> = {
-    sm: 'h-8 px-3 text-xs',
+    sm: 'h-9 px-3 text-xs',
     md: 'h-10 px-4 text-sm',
     lg: 'h-12 px-6 text-base',
   }

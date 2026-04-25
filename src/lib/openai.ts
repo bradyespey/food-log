@@ -491,7 +491,7 @@ function toProperCase(str: string): string {
   ]);
   
   // Remove trailing asterisks and clean up
-  let cleaned = str.replace(/\*+$/, '').trim();
+  const cleaned = str.replace(/\*+$/, '').trim();
   
   // Track if we're inside parentheses
   let inParens = false;

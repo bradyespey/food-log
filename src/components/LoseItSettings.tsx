@@ -38,53 +38,54 @@ export function LoseItSettings() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
+      <div className="surface relative w-full max-w-lg rounded-lg p-5 sm:p-6">
         <button
           onClick={closeSettings}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          className="absolute top-4 right-4 inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Lose It! Session</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-xs font-semibold uppercase text-muted-foreground">Profile settings</p>
+        <h2 className="font-display mt-1 text-3xl leading-tight text-foreground">Lose It! Session</h2>
+        <p className="mt-2 mb-4 text-sm text-muted-foreground">
           Your session cookie authenticates food logging. It lasts 7–14 days depending on activity.
         </p>
 
         {/* Status indicator */}
-        <div className="flex items-center gap-2 mb-5">
+        <div className="mb-5 rounded-lg border border-border bg-secondary/50 p-3">
           {status === 'ok' || hasExisting ? (
-            <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-primary">
               <CheckCircle className="w-4 h-4" /> Cookie saved
             </span>
           ) : status === 'expired' ? (
-            <span className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-destructive">
               <AlertCircle className="w-4 h-4" /> Session expired — paste a fresh cookie below
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 text-sm text-yellow-600 dark:text-yellow-400">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-accent">
               <AlertCircle className="w-4 h-4" /> No cookie saved yet
             </span>
           )}
         </div>
 
         {/* How-to */}
-        <details className="mb-4 text-sm text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-          <summary className="cursor-pointer font-medium text-gray-700 dark:text-gray-300 select-none">
+        <details className="mb-4 rounded-lg border border-border bg-card/70 p-3 text-sm text-muted-foreground">
+          <summary className="cursor-pointer font-semibold text-foreground select-none">
             How to get your cookie
           </summary>
           <ol className="mt-2 space-y-1 list-decimal list-inside">
             <li>
               Log in to{' '}
               <a href="https://www.loseit.com" target="_blank" rel="noreferrer"
-                className="text-blue-500 underline inline-flex items-center gap-0.5">
+                className="text-primary underline inline-flex items-center gap-0.5">
                 loseit.com <ExternalLink className="w-3 h-3" />
               </a>
             </li>
             <li>Open DevTools (F12) → Network tab</li>
-            <li>Click any request to <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">/web/service</code></li>
-            <li>In Request Headers, find <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">Cookie:</code></li>
+            <li>Click any request to <code className="bg-secondary px-1 rounded">/web/service</code></li>
+            <li>In Request Headers, find <code className="bg-secondary px-1 rounded">Cookie:</code></li>
             <li>Copy the entire value and paste it below</li>
           </ol>
         </details>
@@ -95,26 +96,23 @@ export function LoseItSettings() {
           onChange={e => setCookie(e.target.value)}
           placeholder="Paste your Cookie: header value here…"
           rows={4}
-          className="w-full text-xs font-mono border border-gray-300 dark:border-gray-600 rounded-lg p-3
-                     bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 resize-none
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+          className="mb-3 w-full resize-none rounded-lg border border-border bg-card/80 p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary"
         />
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
-        {saved  && <p className="text-sm text-green-600 dark:text-green-400 mb-3">Cookie saved! Food logging will use it immediately.</p>}
+        {error && <p className="text-sm text-destructive mb-3">{error}</p>}
+        {saved  && <p className="text-sm text-primary mb-3">Cookie saved! Food logging will use it immediately.</p>}
 
         <div className="flex justify-end gap-3">
           <button
             onClick={closeSettings}
-            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !cookie.trim()}
-            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg
-                       hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save Cookie'}
           </button>

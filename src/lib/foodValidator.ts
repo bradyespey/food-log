@@ -181,7 +181,7 @@ function normalizeServingSize(fields: Fields, idx: number) {
   const raw = fields["Serving Size"]!;
   
   // Fix common malformed patterns first
-  let cleaned = raw.replace(/\s+/g, ' ').trim();
+  const cleaned = raw.replace(/\s+/g, ' ').trim();
   
   // Check for invalid units like "plate", "bowl", "platter", "dish", "portion"
   const invalidUnits = ['plate', 'bowl', 'platter', 'dish', 'portion', 'plates', 'bowls', 'platters', 'dishes', 'portions'];
@@ -266,7 +266,7 @@ function normalizeServingSize(fields: Fields, idx: number) {
   }
   
   // Accept patterns like "3 Each", "3.5 Each", "8 fluid ounces", "507 grams"
-  const m = cleaned.match(/^\s*([\d\s\/.-]+)\s+(.+?)\s*$/i);
+  const m = cleaned.match(/^\s*([\d\s/.-]+)\s+(.+?)\s*$/i);
   if (!m) throw new Error(`Invalid Serving Size format in item ${idx + 1}. Use "<amount> <unit>".`);
   
   // Additional check: if we have multiple numbers, take the first one
@@ -309,7 +309,7 @@ function normalizeServingSize(fields: Fields, idx: number) {
 
 function normalizeHydration(fields: Fields) {
   if (!fields["Hydration"]) return;
-  const m = fields["Hydration"]!.match(/^\s*([\d\s\/.-]+)\s+(.*)$/i);
+  const m = fields["Hydration"]!.match(/^\s*([\d\s/.-]+)\s+(.*)$/i);
   if (!m) throw new Error(`Invalid Hydration format. Use "<number> fluid ounces".`);
   const amount = parseNumberOrFraction(m[1].trim());
   const unitRaw = m[2].trim().toLowerCase();

@@ -3,6 +3,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
+import { ShieldCheck, Zap } from 'lucide-react'
 
 export function LoginPage() {
   const { session, signIn, loading } = useAuth()
@@ -15,22 +16,35 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 border border-gray-200 dark:border-gray-700 mx-auto">
+    <div className="app-bg min-h-screen flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md surface rounded-lg p-6 sm:p-8 mx-auto">
         
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="mb-8 text-center">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <div className="w-16 h-16 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center">
               <img src="/food_log_image.png" alt="FoodLog AI" className="w-10 h-10" />
             </div>
           </div>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="font-display mt-4 text-4xl leading-tight text-foreground">
             FoodLog AI
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            AI-powered food logging with nutritional analysis
+          <p className="mt-2 text-sm text-muted-foreground">
+            Private food logging with per-profile Lose It! session settings.
           </p>
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-2 text-sm">
+          <div className="rounded-lg border border-border bg-secondary/50 p-3">
+            <Zap className="mb-2 h-4 w-4 text-primary" />
+            <div className="font-semibold text-foreground">Fast logging</div>
+            <div className="text-xs text-muted-foreground">Photo to diary</div>
+          </div>
+          <div className="rounded-lg border border-border bg-secondary/50 p-3">
+            <ShieldCheck className="mb-2 h-4 w-4 text-primary" />
+            <div className="font-semibold text-foreground">Profile scoped</div>
+            <div className="text-xs text-muted-foreground">Firebase auth</div>
+          </div>
         </div>
 
         {/* Sign-in Button */}
@@ -80,7 +94,7 @@ export function LoginPage() {
         </Button>
 
         {/* Footer Note */}
-        <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>This application is private and only accessible to authorized users.</p>
         </div>
       </div>

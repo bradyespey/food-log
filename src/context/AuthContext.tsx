@@ -34,13 +34,13 @@ const AuthContext = createContext<AuthContextType>({
   isOnline: true,
 });
 
+const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS?.split(',') || [];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session>(defaultSession);
   const [userRole, setUserRole] = useState<'admin' | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-
-  const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS?.split(',') || [];
 
   useEffect(() => {
     // Add online/offline event listeners

@@ -178,26 +178,7 @@ function iconCode(displayName: string): string {
 
 // ── GWT body builders ──────────────────────────────────────────────────────────
 
-function buildSearchFoodsBody(query: string, headerPerm: string): string {
-  const st = [
-    GWT_MODULE_BASE,
-    GWT_BODY_PERMUTATION,                                                    // 2 — body perm (NOT header perm)
-    'com.loseit.core.client.service.LoseItRemoteService',                    // 3
-    'searchFoods',                                                           // 4
-    'com.loseit.core.client.service.ServiceRequestToken/1076571655',        // 5
-    'java.lang.String/2004016611',                                           // 6
-    'I',                                                                     // 7
-    'Z',                                                                     // 8
-    'com.loseit.core.client.model.UserId/4281239478',                        // 9
-    USERNAME,                                                                // 10
-    query,                                                                   // 11
-    'en-US',                                                                 // 12
-  ]
-  const params = `1|2|3|4|6|5|6|6|7|8|8|5|0|9|${USER_ID}|10|${TIMEZONE}|11|12|16|1|1`
-  return `7|0|${st.length}|${st.join('|')}|${params}|`
-}
-
-function buildSaveFoodBody(item: Record<string, string | number>, headerPerm: string): { body: string; foodBytes: number[] } {
+function buildSaveFoodBody(item: Record<string, string | number>): { body: string; foodBytes: number[] } {
   const foodName    = String(item['Food Name'] || '')
   const brand       = String(item['Brand'] || '')
   const mealName    = String(item['Meal'] || 'Dinner')
@@ -610,7 +591,7 @@ export const handler: Handler = async (event) => {
     outputLines.push(`Logging item ${i + 1} of ${foodItemTexts.length}: ${name}`)
 
     try {
-      const { body: gwtBody, foodBytes } = buildSaveFoodBody(foodItem, headerPerm)
+      const { body: gwtBody, foodBytes } = buildSaveFoodBody(foodItem)
       const resp = await fetch(LOSEIT_SERVICE_URL, {
         method:  'POST',
         headers: gwtHeaders,

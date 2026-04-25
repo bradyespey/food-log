@@ -10,11 +10,9 @@ interface LayoutProps {
 
 export function Layout({ children, onLoadSample }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-150">
-      {/* Navbar with theme toggle */}
+    <div className="app-bg min-h-screen text-foreground transition-colors duration-150 lg:flex">
       <Navbar onLoadSample={onLoadSample} />
-      {/* Main content area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full min-w-0 overflow-x-hidden px-3 py-4 sm:px-5 sm:py-6 lg:ml-80 lg:px-7 xl:px-9">
         {children}
       </main>
     </div>

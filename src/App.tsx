@@ -9,6 +9,8 @@ import FoodLogPage from './pages/FoodLogPage'
 import ManualPage from './pages/ManualPage'
 import { ThemeProvider } from './components/ThemeProvider'
 import React, { createContext, useContext, useState } from 'react'
+import { LoseItProvider, useLoseIt } from './contexts/LoseItContext'
+import { LoseItSettings } from './components/LoseItSettings'
 
 // Create a context for sample data loading and clearing
 const SampleDataContext = createContext<{
@@ -100,7 +102,9 @@ function App() {
     <ThemeProvider defaultTheme="system" storageKey="foodlog-theme">
       <BrowserRouter>
         <AuthProvider>
+          <LoseItProvider>
           <SampleDataProvider>
+          <LoseItModalHost />
           <Routes>
             {/* Public */}
             <Route path="/login" element={<LoginPage />} />
@@ -125,10 +129,16 @@ function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
           </SampleDataProvider>
+          </LoseItProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   )
+}
+
+function LoseItModalHost() {
+  const { showSettings } = useLoseIt()
+  return showSettings ? <LoseItSettings /> : null
 }
 
 export default App

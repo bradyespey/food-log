@@ -1,13 +1,14 @@
 //src/components/Layout/Navbar.tsx
 
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Menu, X, Monitor } from 'lucide-react';
+import { Moon, Sun, Menu, X, Monitor, Settings } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../ThemeProvider';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/DropdownMenu';
 import { useState } from 'react';
 import { useSampleData } from '../../App';
+import { useLoseIt } from '../../contexts/LoseItContext';
 
 interface NavbarProps {
   onLoadSample?: () => void;
@@ -19,6 +20,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
   const { theme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { clearData, addFoodEntry } = useSampleData();
+  const { status: loseItStatus, openSettings } = useLoseIt();
 
   const isActive = (path: string) => pathname === path;
 
@@ -114,6 +116,19 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {session?.isAuthenticated && (
+              <button
+                onClick={openSettings}
+                title="Lose It! Settings"
+                className={`p-1.5 rounded-md transition-colors
+                  ${loseItStatus === 'expired'
+                    ? 'text-red-500 hover:text-red-600 animate-pulse'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                  }`}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
             {session?.isAuthenticated ? (
               <Button variant="outline" size="sm" onClick={signOut}>
                 Sign Out

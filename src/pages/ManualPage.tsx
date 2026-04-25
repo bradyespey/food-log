@@ -8,6 +8,7 @@ import { toast, Toaster } from 'react-hot-toast';
 import { useSampleData } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useLoseIt } from '../contexts/LoseItContext';
 
 const FOOD_KEYS = [
   'Food Name',
@@ -106,6 +107,7 @@ export default function ManualPage() {
   const [foodText, setFoodText] = useState('');
   const { session } = useAuth();
   const navigate = useNavigate();
+  const { setStatus: setLoseItStatus, openSettings } = useLoseIt();
   const [logWater, setLogWater] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('foodlog-logwater');
@@ -240,8 +242,15 @@ Protein (g): 20`;
         log_water: logWater 
       }, logWater);
       
+      if (result.errorCode === 'loseit_session_expired' || result.errorCode === 'loseit_not_configured') {
+        setLoseItStatus('expired');
+        toast.error(result.message, { duration: 8000 });
+        openSettings();
+        return;
+      }
+
       if (result.success) {
-        // Create custom success message with food items and dates
+        setLoseItStatus('ok');
         let successMessage = `✅ ${result.message}\n\n`;
         
         // Add each food item with its date

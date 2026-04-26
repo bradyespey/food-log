@@ -102,11 +102,13 @@ For initial setup, `LOSEIT_COOKIE` in the env var is still supported as a fallba
 
 | Command | Description |
 |---|---|
-| `npm run dev:all` | Start Netlify dev server at `localhost:8888` (functions + Vite) |
-| `npm run dev` | Vite only (no Netlify functions) at `localhost:5177` |
+| `npm run dev:all` | Start Vite at `localhost:8888` + functions server at `localhost:9999` (recommended) |
+| `npm run dev` | Vite only at `localhost:8888` (no Netlify functions) |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
 | `npm run deploy:watch` | Push to GitHub and stream Netlify build logs until deploy completes |
+
+`dev:all` runs both servers via `concurrently`. Vite proxies `/.netlify/functions/*` to the functions server at port 9999, so functions behave identically to production.
 
 ### Deploy
 
@@ -322,6 +324,6 @@ The old architecture is documented in [`docs/archive/selenium-architecture.md`](
 
 **Switching AI models** — If you notice consistent accuracy problems on complex plated dishes or unusual restaurant items, try `gpt-4.1-mini`. It's newer, slightly sharper, and still fast. Change `OPENAI_MODEL=gpt-4.1-mini` in `.env` and in Netlify env vars — no code change needed.
 
-**Port 5177 already in use** — Run `kill $(lsof -ti :5177)` then `npm run dev:all`. Vite is set to `strictPort: false` so this shouldn't happen, but stale processes can linger.
+**Port 8888 or 9999 already in use** — Run `kill $(lsof -ti :8888 :9999)` then `npm run dev:all`. Vite uses `strictPort: true` on 8888; the functions server uses 9999.
 
 **Firebase CORS errors in browser console** — Usually an ad blocker (uBlock Origin, etc.) blocking Firestore WebSocket traffic. Whitelist `localhost:8888` in your extension settings.

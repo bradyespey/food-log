@@ -23,7 +23,7 @@ export function LoginPage() {
         <div className="mb-8 text-center">
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-lg border border-primary/20 bg-primary/10 flex items-center justify-center">
-              <img src="/food_log_image.png" alt="FoodLog AI" className="w-10 h-10" />
+              <img src="/foodlog-logo.png" alt="FoodLog AI" className="w-10 h-10" />
             </div>
           </div>
           <h1 className="font-display mt-4 text-4xl leading-tight text-foreground">

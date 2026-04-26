@@ -118,7 +118,7 @@ export default function ManualPage() {
   });
 
   // Sample data context
-  const { setLoadSampleData, setClearData } = useSampleData();
+  const { setLoadSampleData, setClearData, setManualControls } = useSampleData();
 
   // Sample data loading function for Manual page
   const loadSampleDataFunction = useCallback(() => {
@@ -411,6 +411,12 @@ Protein (g): 20`;
     setClearData(handleClear);
   }, [setClearData, handleClear]);
 
+  // Register water controls with context so navbar sidebar can show the water toggle
+  useEffect(() => {
+    setManualControls({ logWater, setLogWater });
+    return () => setManualControls(null);
+  }, [logWater, setManualControls]);
+
 
 
   const copyToClipboard = useCallback(async (text: string) => {
@@ -436,8 +442,7 @@ Protein (g): 20`;
       <div className="surface rounded-lg p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Structured text logging</p>
-            <h1 className="font-display mt-1 flex items-center gap-3 text-3xl leading-tight text-foreground sm:text-4xl">
+            <h1 className="font-display flex items-center gap-3 text-3xl leading-tight text-foreground sm:text-4xl">
               <PenTool className="w-7 h-7 text-primary" />
               Manual Food Log
             </h1>

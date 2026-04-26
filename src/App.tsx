@@ -1,17 +1,21 @@
 //src/App.tsx
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { Layout } from './components/Layout/Layout'
 import { ThemeProvider } from './components/ThemeProvider'
-import React, { createContext, lazy, Suspense, useCallback, useContext, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { LoseItProvider, useLoseIt } from './contexts/LoseItContext'
 import { LoseItSettings } from './components/LoseItSettings'
+import FoodLogPage from './pages/FoodLogPage'
+import ManualPage from './pages/ManualPage'
+import { LoginPage } from './pages/LoginPage'
+import { AuthCallback } from './pages/AuthCallback'
 
-const FoodLogPage = lazy(() => import('./pages/FoodLogPage'))
-const ManualPage = lazy(() => import('./pages/ManualPage'))
-const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
-const AuthCallback = lazy(() => import('./pages/AuthCallback').then((module) => ({ default: module.AuthCallback })))
+export interface ManualControls {
+  logWater: boolean;
+  setLogWater: (value: boolean) => void;
+}
 
 // Create a context for sample data loading and clearing
 const SampleDataContext = createContext<{
@@ -23,6 +27,8 @@ const SampleDataContext = createContext<{
   setAddFoodEntry: (fn: () => void) => void;
   runControls: RunControls | null;
   setRunControls: (controls: RunControls | null) => void;
+  manualControls: ManualControls | null;
+  setManualControls: (controls: ManualControls | null) => void;
 }>({
   loadSampleData: () => {},
   setLoadSampleData: () => {},
@@ -32,6 +38,8 @@ const SampleDataContext = createContext<{
   setAddFoodEntry: () => {},
   runControls: null,
   setRunControls: () => {},
+  manualControls: null,
+  setManualControls: () => {},
 });
 
 export const useSampleData = () => useContext(SampleDataContext);
@@ -61,11 +69,10 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
   const [clearDataFn, setClearDataFn] = useState<(() => void) | null>(null);
   const [addFoodEntryFn, setAddFoodEntryFn] = useState<(() => void) | null>(null);
   const [runControls, setRunControls] = useState<RunControls | null>(null);
+  const [manualControls, setManualControls] = useState<ManualControls | null>(null);
 
   const loadSampleData = useCallback(() => {
-    if (loadSampleDataFn) {
-      loadSampleDataFn();
-    }
+    if (loadSampleDataFn) loadSampleDataFn();
   }, [loadSampleDataFn]);
 
   const setLoadSampleData = useCallback((fn: () => void) => {
@@ -73,9 +80,7 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearData = useCallback(() => {
-    if (clearDataFn) {
-      clearDataFn();
-    }
+    if (clearDataFn) clearDataFn();
   }, [clearDataFn]);
 
   const setClearData = useCallback((fn: () => void) => {
@@ -83,9 +88,7 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addFoodEntry = useCallback(() => {
-    if (addFoodEntryFn) {
-      addFoodEntryFn();
-    }
+    if (addFoodEntryFn) addFoodEntryFn();
   }, [addFoodEntryFn]);
 
   const setAddFoodEntry = useCallback((fn: () => void) => {
@@ -101,6 +104,8 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
     setAddFoodEntry,
     runControls,
     setRunControls,
+    manualControls,
+    setManualControls,
   }), [
     loadSampleData,
     setLoadSampleData,
@@ -109,6 +114,7 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
     addFoodEntry,
     setAddFoodEntry,
     runControls,
+    manualControls,
   ]);
 
   return (
@@ -118,10 +124,13 @@ function SampleDataProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Wrapper component for dashboard to handle sample data loading
+function LoseItModalHost() {
+  const { showSettings } = useLoseIt();
+  return showSettings ? <LoseItSettings /> : null;
+}
+
 function DashboardWrapper() {
   const { loadSampleData } = useSampleData();
-  
   return (
     <Layout onLoadSample={loadSampleData}>
       <FoodLogPage />
@@ -129,10 +138,8 @@ function DashboardWrapper() {
   );
 }
 
-// Wrapper component for manual page to handle sample data loading
 function ManualWrapper() {
   const { loadSampleData } = useSampleData();
-  
   return (
     <Layout onLoadSample={loadSampleData}>
       <ManualPage />
@@ -140,50 +147,29 @@ function ManualWrapper() {
   );
 }
 
+const router = createBrowserRouter([
+  { path: '/login',         element: <LoginPage /> },
+  { path: '/auth/callback', element: <AuthCallback /> },
+  { path: '/dashboard',     element: <DashboardWrapper /> },
+  { path: '/manual',        element: <ManualWrapper /> },
+  { path: '/',              element: <Navigate to="/dashboard" replace /> },
+  { path: '*',              element: <Navigate to="/dashboard" replace /> },
+]);
+
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="foodlog-theme">
-      <BrowserRouter>
-        <AuthProvider>
-          <LoseItProvider>
+      <AuthProvider>
+        <LoseItProvider>
           <SampleDataProvider>
-          <LoseItModalHost />
-          <Suspense fallback={<div className="app-bg min-h-screen p-6 text-sm text-muted-foreground">Loading FoodLog...</div>}>
-          <Routes>
-            {/* Public */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-
-            {/* Protected / Demo Accessible */}
-            <Route
-              path="/dashboard"
-              element={
-                <DashboardWrapper />
-              }
-            />
-            <Route
-              path="/manual"
-              element={
-                <ManualWrapper />
-              }
-            />
-
-            {/* Redirects */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-          </Suspense>
+            <LoseItModalHost />
+            {/* unstable_useTransitions=false bypasses startTransition so navigation commits synchronously in React 19 */}
+            <RouterProvider router={router} unstable_useTransitions={false} />
           </SampleDataProvider>
-          </LoseItProvider>
-        </AuthProvider>
-      </BrowserRouter>
+        </LoseItProvider>
+      </AuthProvider>
     </ThemeProvider>
-  )
-}
-
-function LoseItModalHost() {
-  const { showSettings } = useLoseIt()
-  return showSettings ? <LoseItSettings /> : null
+  );
 }
 
 export default App

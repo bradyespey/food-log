@@ -762,8 +762,7 @@ ${entry.prompt}`;
       <div className="surface rounded-lg p-4 sm:p-5">
         <div className="grid gap-4 xl:grid-cols-[minmax(260px,1fr)_auto] xl:items-start">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Restaurant-to-diary workflow</p>
-            <h1 className="font-display mt-1 flex items-center gap-3 text-3xl leading-tight text-foreground sm:text-4xl">
+            <h1 className="font-display flex items-center gap-3 text-3xl leading-tight text-foreground sm:text-4xl">
               <ChefHat className="w-7 h-7 text-primary" />
               AI Food Analysis
             </h1>

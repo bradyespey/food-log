@@ -1,6 +1,6 @@
 //src/components/Layout/Navbar.tsx
 
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Camera,
   CheckCircle,
@@ -31,8 +31,9 @@ interface NavbarProps {
 export function Navbar({ onLoadSample }: NavbarProps) {
   const { signOut, session } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { clearData, addFoodEntry, runControls } = useSampleData();
+  const { clearData, addFoodEntry, runControls, manualControls } = useSampleData();
   const { status: loseItStatus, openSettings } = useLoseIt();
 
   const isActive = (path: string) => pathname === path;
@@ -141,6 +142,24 @@ export function Navbar({ onLoadSample }: NavbarProps) {
     </div>
   ) : null;
 
+  const manualPanel = pathname === '/manual' && manualControls ? (
+    <div className="mt-5 space-y-3 rounded-lg border border-border bg-secondary/35 p-3">
+      <label htmlFor="sidebarManualLogWater" className="inline-flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card/50 px-3 py-2 text-sm font-semibold text-foreground">
+        <span className="inline-flex items-center gap-2">
+          <Droplets className="h-4 w-4 text-accent" />
+          Water
+        </span>
+        <input
+          id="sidebarManualLogWater"
+          type="checkbox"
+          checked={manualControls.logWater}
+          onChange={(event) => manualControls.setLogWater(event.target.checked)}
+          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+        />
+      </label>
+    </div>
+  ) : null;
+
   const settingsButton = session?.isAuthenticated ? (
     <button
       onClick={openSettings}
@@ -161,20 +180,19 @@ export function Navbar({ onLoadSample }: NavbarProps) {
           className="flex items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-secondary"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
-            <img src="/food_log_image.png" alt="FoodLog AI" className="h-8 w-8" />
+            <img src="/foodlog-logo.png" alt="FoodLog AI" className="h-8 w-8" />
           </span>
           <span>
             <span className="font-display block text-2xl leading-none text-foreground">FoodLog AI</span>
-            <span className="text-xs font-semibold uppercase text-muted-foreground">Photo to diary workflow</span>
           </span>
         </button>
 
         <nav className="mt-5 space-y-2">
           {navLinks.map(({ path, label, icon: Icon }) => (
-            <Link
+            <button
               key={path}
-              to={path}
-              className={`flex items-center gap-3 rounded-full border px-3 py-2.5 text-sm font-semibold transition-colors ${
+              onClick={() => navigate(path)}
+              className={`flex w-full items-center gap-3 rounded-full border px-3 py-2.5 text-sm font-semibold transition-colors ${
                 isActive(path)
                   ? 'border-primary/30 bg-primary text-primary-foreground shadow-sm'
                   : 'border-transparent text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground'
@@ -182,7 +200,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
             >
               <Icon className="h-4 w-4" />
               {label}
-            </Link>
+            </button>
           ))}
         </nav>
 
@@ -191,6 +209,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
         </div>
 
         {runPanel}
+        {manualPanel}
 
         <div className="mt-auto space-y-3 rounded-lg border border-border bg-secondary/50 p-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -206,12 +225,10 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                 Sign Out
               </Button>
             ) : (
-              <Link to="/login" className="flex-1">
-                <Button variant="outline" size="sm" className="w-full whitespace-nowrap">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign In
-                </Button>
-              </Link>
+              <Button variant="outline" size="sm" onClick={() => navigate('/login')} className="flex-1 whitespace-nowrap px-2">
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
             )}
           </div>
         </div>
@@ -227,7 +244,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
             className="flex min-w-0 items-center gap-2 rounded-lg text-left"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <img src="/food_log_image.png" alt="FoodLog AI" className="h-7 w-7" />
+              <img src="/foodlog-logo.png" alt="FoodLog AI" className="h-7 w-7" />
             </span>
             <span className="min-w-0">
               <span className="font-display block truncate text-xl leading-none text-foreground">FoodLog AI</span>
@@ -253,19 +270,18 @@ export function Navbar({ onLoadSample }: NavbarProps) {
           <div className="mt-3 rounded-lg border border-border bg-card/95 p-3 shadow-sm">
             <nav className="grid grid-cols-2 gap-2">
               {navLinks.map(({ path, label, icon: Icon }) => (
-                <Link
+                <button
                   key={path}
-                  to={path}
+                  onClick={() => { navigate(path); closeMobileMenu(); }}
                   className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition-colors ${
                     isActive(path)
                       ? 'border-primary/30 bg-primary text-primary-foreground'
                       : 'border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground'
                   }`}
-                  onClick={closeMobileMenu}
                 >
                   <Icon className="h-4 w-4" />
                   {label}
-                </Link>
+                </button>
               ))}
             </nav>
             <div className="mt-3 grid gap-2">
@@ -278,12 +294,10 @@ export function Navbar({ onLoadSample }: NavbarProps) {
                   Sign Out
                 </Button>
               ) : (
-                <Link to="/login" onClick={closeMobileMenu}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign In
-                  </Button>
-                </Link>
+                <Button variant="outline" size="sm" onClick={() => { navigate('/login'); closeMobileMenu(); }} className="w-full">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
               )}
             </div>
           </div>

@@ -5,12 +5,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5177,
-    strictPort: false,
+    port: 8888,
+    strictPort: true,
     host: true,
     open: false,
     watch: {
       ignored: ['**/.env', '**/.env.*', '**/.env.local'],
+    },
+    proxy: {
+      '/.netlify/functions': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
     },
   },
   build: {

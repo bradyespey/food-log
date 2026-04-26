@@ -3,9 +3,9 @@
   publish = "dist"
 
 [dev]
-  command = "vite --port 5177"
-  targetPort = 5177
-  port = 8888
+  command = "vite"
+  targetPort = 8888
+  port = 8889
 
 [functions]
   directory = "netlify/functions"

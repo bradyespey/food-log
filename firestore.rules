@@ -13,12 +13,12 @@ service cloud.firestore {
 
       allow create: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.data.status in ['pending', 'analyzed', 'logged', 'discarded']
+        && request.resource.data.status in ['capturing', 'pending', 'analyzed', 'logged', 'discarded']
         && request.resource.data.source in ['mobile', 'web'];
 
       allow update: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.data.status in ['pending', 'analyzed', 'logged', 'discarded'];
+        && request.resource.data.status in ['capturing', 'pending', 'analyzed', 'logged', 'discarded'];
 
       allow delete: if request.auth != null && request.auth.uid == userId;
     }

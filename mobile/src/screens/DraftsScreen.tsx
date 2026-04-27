@@ -41,7 +41,8 @@ export default function DraftsScreen({ todayOnly = false, title }: Props) {
   const { drafts, draftsLoaded, localPhotos, newDraft, deleteDraft } = useDrafts();
   const [editMode, setEditMode] = useState(false);
 
-  const filtered = todayOnly ? drafts.filter((d) => d.date === todayMMDD()) : drafts;
+  const visibleDrafts = drafts.filter((d) => d.status !== 'capturing');
+  const filtered = todayOnly ? visibleDrafts.filter((d) => d.date === todayMMDD()) : visibleDrafts;
 
   const handleNew = useCallback(async () => {
     const id = await newDraft();
@@ -141,7 +142,7 @@ function DraftRow({ draft, thumbUri, photoCount, editMode, onOpen, onDelete }: {
   editMode: boolean; onOpen: () => void; onDelete: () => void;
 }) {
   const tone = draft.status === 'logged' ? 'success' : draft.status === 'analyzed' ? 'primary' : 'neutral';
-  const statusLabel = ({ pending: 'Pending', analyzed: 'Analyzed', logged: 'Logged', discarded: 'Discarded' })[draft.status] ?? 'Pending';
+  const statusLabel = ({ capturing: 'Capturing', pending: 'Pending', analyzed: 'Analyzed', logged: 'Logged', discarded: 'Discarded' })[draft.status] ?? 'Pending';
 
   return (
     <TouchableOpacity style={s.row} onPress={onOpen} onLongPress={onDelete} activeOpacity={editMode ? 1 : 0.7}>

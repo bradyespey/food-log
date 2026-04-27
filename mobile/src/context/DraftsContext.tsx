@@ -24,6 +24,9 @@ import {
 import { analyzeFood, logFood } from '../lib/api';
 import { useAuth } from './AuthContext';
 import type { FoodItem, AnalysisState, Meal } from '../types';
+import { SAMPLE_FOOD_ENTRIES } from '../../../shared/sampleFoodEntries';
+
+const SAMPLE_ASSET_BASE = 'https://foodlog.theespeys.com';
 
 export type { MealDraft, LocalPhoto, DraftStatus };
 
@@ -34,17 +37,19 @@ interface DraftsContextValue {
   analyses: Record<string, AnalysisState>;
 
   newDraft: () => Promise<string>;
+  loadSampleDrafts: () => Promise<string>;
   updateDraft: (id: string, patch: Partial<MealDraft>) => Promise<void>;
   addPhoto: (draftId: string, uri: string) => Promise<LocalPhoto>;
   removePhoto: (draftId: string, photoId: string) => void;
   deleteDraft: (id: string) => Promise<void>;
 
-  runAnalyze: (draftId: string) => Promise<void>;
+  runAnalyze: (draftId: string, overrides?: Partial<MealDraft>) => Promise<void>;
   editItem: (draftId: string, idx: number, updated: FoodItem) => void;
   deleteItem: (draftId: string, idx: number) => void;
   multiplyItem: (draftId: string, idx: number, factor: number) => void;
   setLogWater: (draftId: string, v: boolean) => void;
   logToLoseIt: (draftId: string) => Promise<void>;
+  finishLoggedDraft: (draftId: string) => Promise<void>;
 }
 
 const Ctx = createContext<DraftsContextValue | null>(null);
@@ -79,7 +84,7 @@ export function DraftsProvider({ children }: { children: React.ReactNode }) {
     const unsub = subscribeDrafts((d) => {
       setDrafts(d);
       setDraftsLoaded(true);
-    }, ['pending', 'analyzed']);
+    }, ['capturing', 'pending', 'analyzed']);
     return unsub;
   }, [user]);
 
@@ -88,12 +93,12 @@ export function DraftsProvider({ children }: { children: React.ReactNode }) {
   const newDraft = useCallback(async (): Promise<string> => {
     const meal = guessMeal();
     const date = todayMMDD();
-    const id = await createDraft({ meal, date, status: 'pending' });
+    const id = await createDraft({ meal, date, status: 'capturing' });
     // Optimistically add to local drafts state so DraftDetail can find it
     // immediately without waiting for the Firestore snapshot to fire.
     setDrafts((prev) => {
       if (prev.find((d) => d.id === id)) return prev;
-      return [{ id, status: 'pending', source: 'mobile', meal, date, brand: '', note: '',
+      return [{ id, status: 'capturing', source: 'mobile', meal, date, brand: '', note: '',
         createdAt: new Date() as unknown as import('firebase/firestore').Timestamp,
         updatedAt: new Date() as unknown as import('firebase/firestore').Timestamp,
       }, ...prev];
@@ -103,6 +108,7 @@ export function DraftsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateDraft = useCallback(async (id: string, patch: Partial<MealDraft>) => {
+    setDrafts((prev) => prev.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft)));
     await fsUpdateDraft(id, patch);
   }, []);
 
@@ -123,6 +129,28 @@ export function DraftsProvider({ children }: { children: React.ReactNode }) {
     return photo;
   }, []);
 
+  const loadSampleDrafts = useCallback(async (): Promise<string> => {
+    const sample = SAMPLE_FOOD_ENTRIES[0];
+    const id = await createDraft({
+      meal: sample.meal,
+      date: dateWithOffset(sample.dateOffsetDays),
+      brand: sample.brand,
+      note: sample.prompt,
+      status: 'pending',
+    });
+    setDrafts((prev) => {
+      if (prev.find((d) => d.id === id)) return prev;
+      return [{ id, status: 'pending', source: 'mobile', meal: sample.meal, date: dateWithOffset(sample.dateOffsetDays), brand: sample.brand, note: sample.prompt,
+        createdAt: new Date() as unknown as import('firebase/firestore').Timestamp,
+        updatedAt: new Date() as unknown as import('firebase/firestore').Timestamp,
+      }, ...prev];
+    });
+    for (const imageName of sample.imageNames) {
+      await addPhoto(id, `${SAMPLE_ASSET_BASE}/${imageName}`);
+    }
+    return id;
+  }, [addPhoto]);
+
   const removePhoto = useCallback((draftId: string, photoId: string) => {
     setLocalPhotos((prev) => ({
       ...prev,
@@ -139,16 +167,17 @@ export function DraftsProvider({ children }: { children: React.ReactNode }) {
 
   // ── Analysis ────────────────────────────────────────────────────────────
 
-  const runAnalyze = useCallback(async (draftId: string) => {
+  const runAnalyze = useCallback(async (draftId: string, overrides: Partial<MealDraft> = {}) => {
     const draft = drafts.find((d) => d.id === draftId);
     if (!draft) return;
+    const analysisDraft = { ...draft, ...overrides };
     const photos = localPhotos[draftId] ?? [];
     const result = await analyzeFood({
       draftId,
-      date: draft.date ?? todayMMDD(),
-      meal: (draft.meal as Meal) ?? guessMeal(),
-      brand: draft.brand ?? '',
-      note: draft.note ?? '',
+      date: analysisDraft.date ?? todayMMDD(),
+      meal: (analysisDraft.meal as Meal) ?? guessMeal(),
+      brand: analysisDraft.brand ?? '',
+      note: analysisDraft.note ?? '',
       photoUris: photos.map((p) => p.uri),
     });
     const items = result.items.map((i) => ({ ...i }));
@@ -211,18 +240,21 @@ export function DraftsProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         [draftId]: { ...prev[draftId], isLogging: false, logged: result.success, verification: result.verification },
       }));
-      if (result.success) await fsUpdateDraft(draftId, { status: 'logged' as DraftStatus });
     } catch (e) {
       setAnalyses((prev) => ({ ...prev, [draftId]: { ...prev[draftId], isLogging: false } }));
       throw e;
     }
   }, [analyses]);
 
+  const finishLoggedDraft = useCallback(async (draftId: string) => {
+    await fsUpdateDraft(draftId, { status: 'logged' as DraftStatus });
+  }, []);
+
   return (
     <Ctx.Provider value={{
       drafts, draftsLoaded, localPhotos, analyses,
-      newDraft, updateDraft, addPhoto, removePhoto, deleteDraft,
-      runAnalyze, editItem, deleteItem, multiplyItem, setLogWater, logToLoseIt,
+      newDraft, loadSampleDrafts, updateDraft, addPhoto, removePhoto, deleteDraft,
+      runAnalyze, editItem, deleteItem, multiplyItem, setLogWater, logToLoseIt, finishLoggedDraft,
     }}>
       {children}
     </Ctx.Provider>
@@ -236,7 +268,11 @@ export function useDrafts(): DraftsContextValue {
 }
 
 function todayMMDD() {
+  return dateWithOffset(0);
+}
+function dateWithOffset(offsetDays: number) {
   const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
   return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 function guessMeal(): Meal {

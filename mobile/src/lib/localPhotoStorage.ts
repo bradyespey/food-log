@@ -54,6 +54,10 @@ export async function copyPhotoToDocDir(
   const draftDir = `${DRAFTS_DIR}${draftId}/`;
   await FileSystem.makeDirectoryAsync(draftDir, { intermediates: true });
   const destUri = `${draftDir}${photoId}.jpg`;
+  if (sourceUri.startsWith('http://') || sourceUri.startsWith('https://')) {
+    await FileSystem.downloadAsync(sourceUri, destUri);
+    return destUri;
+  }
   await FileSystem.copyAsync({ from: sourceUri, to: destUri });
   return destUri;
 }

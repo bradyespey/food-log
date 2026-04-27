@@ -59,6 +59,7 @@ export interface RunControls {
   isAnalyzing: boolean;
   isLogging: boolean;
   showLogButton: boolean;
+  nextAction: 'analyze' | 'log';
   onAnalyze: () => void;
   onLog: () => void;
 }

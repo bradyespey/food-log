@@ -10,7 +10,6 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Today: undefined;
   CaptureTab: undefined;
   Drafts: undefined;
   Settings: undefined;

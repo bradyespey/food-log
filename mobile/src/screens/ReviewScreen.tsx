@@ -17,7 +17,7 @@ export default function ReviewScreen({ route, navigation }: Props) {
   const { draftId } = route.params;
   const {
     drafts, analyses,
-    editItem, deleteItem, multiplyItem, setLogWater, logToLoseIt,
+    editItem, deleteItem, multiplyItem, setLogWater, logToLoseIt, finishLoggedDraft,
   } = useDrafts();
 
   const draft = drafts.find((d) => d.id === draftId);
@@ -41,6 +41,11 @@ export default function ReviewScreen({ route, navigation }: Props) {
     } catch (e) {
       Alert.alert('Logging failed', (e as Error).message);
     }
+  };
+
+  const handleDone = async () => {
+    await finishLoggedDraft(draftId);
+    navigation.navigate('Tabs');
   };
 
   return (
@@ -105,7 +110,7 @@ export default function ReviewScreen({ route, navigation }: Props) {
         {logged && allDone ? (
           <TouchableOpacity
             style={[s.logBtn, { backgroundColor: '#1d7a4a' }]}
-            onPress={() => navigation.goBack()}
+            onPress={handleDone}
           >
             <Icon name="check" size={16} color="#fff" strokeWidth={2.4} />
             <Text style={s.logBtnText}>Done</Text>

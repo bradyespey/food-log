@@ -86,7 +86,11 @@ Settings → General → VPN & Device Management → your Apple ID → Trust.
 
 ## Updating the App
 
-When you change code, rebuild with the same two commands:
+This app is installed on the iPhone as a standalone Release build through Xcode. It is **not** running in Expo Go, does **not** use Metro at runtime, and does **not** currently use OTA updates. Every mobile code change needs a new local build/install.
+
+### JavaScript, TypeScript, screen, style, or logic changes
+
+Run both commands:
 
 ```bash
 cd mobile
@@ -94,7 +98,38 @@ npx expo export:embed --platform ios --dev false --bundle-output ios/FoodLog/mai
 npx expo run:ios --device --configuration Release
 ```
 
-Subsequent builds are much faster (~2–3 min) because Xcode caches the native layer.
+The first command bundles the updated JavaScript into the native app. The second command recompiles and reinstalls the Release app on the connected iPhone. Subsequent builds are much faster (~3–5 min) because Xcode caches the native layer.
+
+### Native config, package, or Expo library changes
+
+If you change `app.json`, `package.json`, or add a package with native code, run prebuild first:
+
+```bash
+cd mobile
+npx expo prebuild --platform ios
+npx expo export:embed --platform ios --dev false --bundle-output ios/FoodLog/main.jsbundle --assets-dest ios/FoodLog
+npx expo run:ios --device --configuration Release
+```
+
+Use this path when adding native libraries such as `expo-camera` or `@react-native-community/datetimepicker`.
+
+### Netlify function changes only
+
+No iPhone rebuild is needed. The mobile app calls the production FoodLog URL directly, so function changes go live after deploy:
+
+```bash
+cd ..
+npm run deploy:watch
+```
+
+### Firestore rules or index changes only
+
+No iPhone rebuild is needed:
+
+```bash
+cd ..
+firebase deploy --only firestore:rules,firestore:indexes
+```
 
 **Note on free Apple ID provisioning:** The installed app expires every 7 days. Re-run the build command to renew it. A paid Apple Developer account ($99/year) eliminates this limit.
 
@@ -131,6 +166,8 @@ status: 'pending' | 'analyzed' | 'logged'
 source: 'mobile'
 meal, date, brand, note
 ```
+
+`capturing` is also used briefly while the camera is open. It is hidden from Today/Drafts until the user saves or analyzes the draft.
 
 **Local device** (`{documentDirectory}/drafts/{draftId}/{photoId}.jpg`):
 Photos are stored privately on the device. The index is saved to AsyncStorage (`fl_local_photos`). If you delete and reinstall the app, photos are lost but draft metadata survives.

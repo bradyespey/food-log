@@ -5,6 +5,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { auth } from './firebase';
 import type { FoodItem, ItemVerificationStatus, Meal } from '../types';
+import { deduplicateItems, ICON_LIST, normalizeFoodItem, SERVING_TYPES } from './foodNormalize';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://foodlog.theespeys.com';
 
@@ -53,6 +54,15 @@ CRITICAL ANALYSIS REQUIREMENTS:
 - Remove quantity words from names when they are in the serving size.
 - Do NOT infer items not mentioned or clearly shown.
 - Valid serving types — Weight: Grams, Kilograms, Ounces, Pounds, Milligrams, Micrograms; Volume: Cups, Fluid Ounce, Gallons, Liters, Milliliters, Pints, Quarts, Tablespoons, Teaspoons, Metric Cups, Imperial Fluid Ounces, Imperial Pints, Imperial Quarts, Dessertspoons; Amount: Bottle, Box, Can, Container, Cube, Dry Cup, Each, Ind Package, Jar, Package, Piece, Pot, Pouch, Punnet, Scoop, Serving, Slice, Stick, Tablet.
+- FOOD NAME STANDARDIZATION: use proper title case, remove quantity words already represented in serving size, and keep food_name under 60 characters.
+- Icon selection: choose an appropriate icon from ICON_LIST for EVERY item. NEVER use Default unless nothing else fits.
+- Icon examples: Hummus/Dips → "Dip, Green" or "Dip, Red"; Smoothies → "Smoothie"; Steak/Beef → "Beef"; Mocktails/Cocktails → "Mixed Drink"; Bread → "Breadsticks" or "Baguette"; Fries → "French Fries".
+
+SERVING_TYPES:
+${SERVING_TYPES}
+
+ICON_LIST:
+${ICON_LIST}
 `.trim();
 }
 
@@ -131,7 +141,7 @@ export async function analyzeFood(req: AnalyzeFoodRequest): Promise<AnalyzeFoodR
     protein_g: number;
   }> = json.data?.items ?? [];
 
-  const items: FoodItem[] = rawItems.map((r) => ({
+  const items: FoodItem[] = rawItems.map((r) => normalizeFoodItem({
     entryId: r.entry_id,
     foodName: r.food_name,
     date: r.date,
@@ -151,9 +161,10 @@ export async function analyzeFood(req: AnalyzeFoodRequest): Promise<AnalyzeFoodR
     fiberG: r.fiber_g,
     sugarG: r.sugar_g,
     proteinG: r.protein_g,
+    hydration: { isLiquid: false, fluidOz: 0 },
   }));
 
-  return { items };
+  return { items: deduplicateItems(items) };
 }
 
 // ── logFood ────────────────────────────────────────────────────────────────

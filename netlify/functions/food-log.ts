@@ -1,4 +1,5 @@
 import type { Handler } from '@netlify/functions'
+import { randomUUID } from 'node:crypto'
 import { getLoseItCookie } from './lib/firebase-rest'
 
 // ── GWT constants ──────────────────────────────────────────────────────────────
@@ -207,8 +208,8 @@ function buildSaveFoodBody(item: Record<string, string | number>): { body: strin
   // Send all 9 nutrients including zeros — Lose It! shows "-" for missing keys, not 0
   const nutrients = allNutrients
 
-  const foodUuid  = crypto.randomUUID()
-  const entryUuid = crypto.randomUUID()
+  const foodUuid  = randomUUID()
+  const entryUuid = randomUUID()
   const foodBytes  = uuidToSignedBytes(foodUuid)
   const entryBytes = uuidToSignedBytes(entryUuid)
   const zDate  = makeZToken()
@@ -754,6 +755,6 @@ function buildVerification(
     verificationComplete: true,
     verificationLevel:    level,
     ...(mismatches.length ? { mismatches } : {}),
-    ...(error ? { error } : {}),
+    ...(error ? { error, failureReason: error } : {}),
   }
 }

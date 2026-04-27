@@ -599,7 +599,10 @@ ${entry.prompt}`;
           toast.success('💧 Water intake also logged');
         }
       } else {
-        throw new Error(result.message);
+        if (result.verification && Object.keys(result.verification).length > 0) {
+          setVerificationStatus(result.verification);
+        }
+        throw new Error(result.output ? `${result.message}\n\n${result.output}` : result.message);
       }
     } catch (error) {
       console.error('Logging failed:', error);

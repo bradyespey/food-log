@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useLoseIt } from '../contexts/LoseItContext';
 import { toastOptions } from '../components/ui/toastOptions';
+import { SAMPLE_FOOD_ENTRIES } from '../../shared/sampleFoodEntries';
 
 const parseVerificationFromHTML = (htmlOutput: string) => {
   const verification: {[itemIndex: number]: any} = {};
@@ -145,37 +146,19 @@ const FoodLogPage: React.FC = () => {
     const twoDaysAgo = new Date(today);
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
     
-    // Sample data for different scenarios
-    const sampleData: Array<{
-      date: string;
-      meal: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
-      brand: string;
-      prompt: string;
-      images: Promise<File>[];
-    }> = [
-      {
-        date: getLocalDateString(today), // Today (local time)
-        meal: 'Dinner' as const,
-        brand: 'Sample Restaurant',
-        prompt: '- Hummus, served with house bread (had maybe half the hummus and all of the side bread)\n- Big League (mocktail), ritual tequila substitute, lime, orgeat, strawberry\n- SHAWARMA-SPICED PRIME SKIRT STEAK FRITES* za\'atar, feta, berbere red wine jus',
-        images: [
-          // Load sample images from public folder
-          fetch('/big-league-mocktail.jpeg').then(r => r.blob()).then(blob => new File([blob], 'big-league-mocktail.jpeg', { type: 'image/jpeg' })),
-          fetch('/hummus-and-bread.jpeg').then(r => r.blob()).then(blob => new File([blob], 'hummus-and-bread.jpeg', { type: 'image/jpeg' })),
-          fetch('/house-bread.jpeg').then(r => r.blob()).then(blob => new File([blob], 'house-bread.jpeg', { type: 'image/jpeg' })),
-          fetch('/shawarma-steak-frites.jpeg').then(r => r.blob()).then(blob => new File([blob], 'shawarma-steak-frites.jpeg', { type: 'image/jpeg' }))
-        ]
-      },
-      {
-        date: getLocalDateString(twoDaysAgo), // Two days ago (local time)
-        meal: 'Lunch' as const,
-        brand: 'Sample Smoothie Shop',
-        prompt: '"Bro" smoothie with a blend of banana, peanut butter, protein powder, almond milk, 12 1/3 fl oz',
-        images: [
-          fetch('/bro-smoothie.jpeg').then(r => r.blob()).then(blob => new File([blob], 'bro-smoothie.jpeg', { type: 'image/jpeg' }))
-        ]
-      }
-    ];
+    const sampleDates = { 0: today, [-2]: twoDaysAgo };
+    const sampleData = SAMPLE_FOOD_ENTRIES.map((sample) => {
+      const date = sampleDates[sample.dateOffsetDays as keyof typeof sampleDates] ?? today;
+      return {
+        date: getLocalDateString(date),
+        meal: sample.meal,
+        brand: sample.brand,
+        prompt: sample.prompt,
+        images: sample.imageNames.map((imageName) =>
+          fetch(`/${imageName}`).then(r => r.blob()).then(blob => new File([blob], imageName, { type: 'image/jpeg' }))
+        ),
+      };
+    });
 
     try {
       // Resolve all images (no compression here - let OpenAI handle it)
@@ -662,6 +645,7 @@ ${entry.prompt}`;
       isAnalyzing,
       isLogging,
       showLogButton: Boolean(showResults && currentAnalysisResult),
+      nextAction: showResults && currentAnalysisResult ? 'log' : 'analyze',
       onAnalyze: handleAnalyze,
       onLog: handleLogFood,
     });
@@ -1511,6 +1495,8 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
 }) => {
   const isComplete = Boolean(entry.date && entry.meal && entry.brand && entry.prompt);
   const mealOptions: FoodEntryCard['meal'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
+  const brandOptions = ['Homemade'];
+  const promptRef = useRef<HTMLTextAreaElement>(null);
 
   return (
     <Card className="overflow-hidden">
@@ -1580,18 +1566,42 @@ const FoodEntryCardComponent: React.FC<FoodEntryCardProps> = ({
         </div>
 
         <div className="grid grid-cols-1 gap-3">
-          <Input
-            label="Brand/Restaurant *"
-            placeholder="Restaurant or brand"
-            value={entry.brand}
-            onChange={(e) => onUpdate(entry.id, 'brand', e.target.value)}
-            required
-          />
+          <div className="space-y-2">
+            <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
+              <label className="text-xs font-semibold uppercase text-muted-foreground">
+                Brand/Restaurant *
+              </label>
+              {brandOptions.map((brand) => (
+                <button
+                  key={brand}
+                  type="button"
+                  onClick={() => {
+                    onUpdate(entry.id, 'brand', brand);
+                    requestAnimationFrame(() => promptRef.current?.focus());
+                  }}
+                  className={`min-h-7 rounded-full border px-3 text-xs font-semibold transition-colors ${
+                    entry.brand === brand
+                      ? 'border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                      : 'border-border bg-card/60 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  }`}
+                >
+                  {brand}
+                </button>
+              ))}
+            </div>
+            <Input
+              placeholder="Restaurant or brand"
+              value={entry.brand}
+              onChange={(e) => onUpdate(entry.id, 'brand', e.target.value)}
+              required
+            />
           </div>
+        </div>
 
         {/* What did you eat */}
         <Textarea
           label="What did you eat? *"
+          ref={promptRef}
           placeholder="Example: chicken sandwich, fries, ranch, half of the appetizer, 12 oz mocktail..."
           value={entry.prompt}
           onChange={(e) => onUpdate(entry.id, 'prompt', e.target.value)}

@@ -20,7 +20,7 @@ import { db, auth } from './firebase';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type DraftStatus = 'pending' | 'analyzed' | 'logged' | 'discarded';
+export type DraftStatus = 'capturing' | 'pending' | 'analyzed' | 'logged' | 'discarded';
 export type Meal = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
 
 // Local photo — lives in DraftsContext state only, never uploaded to cloud.

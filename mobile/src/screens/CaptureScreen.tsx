@@ -10,6 +10,7 @@ import { CameraView, useCameraPermissions, type CameraCapturedPicture } from 'ex
 import * as ImagePicker from 'expo-image-picker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDrafts } from '../context/DraftsContext';
+import Icon from '../components/Icon';
 import type { RootStackParamList } from '../navigation';
 import type { Meal } from '../types';
 
@@ -20,9 +21,10 @@ const MEALS: Meal[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 export default function CaptureScreen({ route, navigation }: Props) {
   const { draftId } = route.params;
   const insets = useSafeAreaInsets();
-  const { drafts, localPhotos, updateDraft, addPhoto } = useDrafts();
+  const { drafts, localPhotos, updateDraft, addPhoto, deleteDraft, loadSampleDrafts } = useDrafts();
   const draft = drafts.find((d) => d.id === draftId);
   const photos = localPhotos[draftId] ?? [];
+  const isNewCapture = draft?.status === 'capturing';
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -81,19 +83,45 @@ export default function CaptureScreen({ route, navigation }: Props) {
 
   const handleDone = () => {
     if (photos.length === 0) {
-      navigation.navigate('Tabs');
+      if (isNewCapture) {
+        void deleteDraft(draftId);
+        navigation.navigate('Tabs');
+      } else {
+        navigation.goBack();
+      }
       return;
     }
     navigation.replace('DraftDetail', { draftId });
   };
 
+  const handleSample = async () => {
+    try {
+      setBusy(true);
+      const sampleDraftId = await loadSampleDrafts();
+      if (isNewCapture) void deleteDraft(draftId);
+      navigation.replace('DraftDetail', { draftId: sampleDraftId });
+    } catch (e) {
+      Alert.alert('Sample failed', (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // Save photos to the draft and go straight to Drafts — no form required
-  const handleSaveAndClose = () => {
+  const handleSaveAndClose = async () => {
+    if (photos.length > 0 && isNewCapture) {
+      await updateDraft(draftId, { status: 'pending' });
+    }
     navigation.navigate('Tabs');
   };
 
   const handleCancel = () => {
-    navigation.navigate('Tabs');
+    if (isNewCapture) {
+      void deleteDraft(draftId);
+      navigation.navigate('Tabs');
+    } else {
+      navigation.goBack();
+    }
   };
 
   if (!permission) return <View style={s.center}><ActivityIndicator /></View>;
@@ -119,14 +147,14 @@ export default function CaptureScreen({ route, navigation }: Props) {
         <TouchableOpacity style={s.topBtn} onPress={handleCancel}>
           <Text style={s.topBtnText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.topBtn} onPress={photos.length > 0 ? handleSaveAndClose : handleCancel}>
+        <TouchableOpacity style={s.topBtn} onPress={photos.length > 0 ? handleSaveAndClose : handleDone}>
           <Text style={[s.topBtnText, { color: photos.length > 0 ? '#4ade80' : '#666' }]}>
             {photos.length > 0 ? 'Save' : 'Skip'}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.topBtn} onPress={handleDone}>
-          <Text style={[s.topBtnText, photos.length === 0 && { color: '#666' }]}>
-            {photos.length > 0 ? 'Next →' : ''}
+        <TouchableOpacity style={s.topBtn} onPress={photos.length > 0 ? handleDone : handleSample} disabled={busy}>
+          <Text style={s.topBtnText}>
+            {photos.length > 0 ? 'Next →' : 'Sample'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -135,10 +163,6 @@ export default function CaptureScreen({ route, navigation }: Props) {
       <View style={s.viewfinder}>
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
         {flash && <View style={s.flash} />}
-        <View style={s.uploadHint}>
-          <View style={s.uploadDot} />
-          <Text style={s.uploadHintText}>Photos stay on device · never saved to camera roll</Text>
-        </View>
       </View>
 
       {/* Controls below viewfinder */}
@@ -158,8 +182,17 @@ export default function CaptureScreen({ route, navigation }: Props) {
 
         {/* Shutter row */}
         <View style={s.shutterRow}>
-          <TouchableOpacity style={s.sideBtn} onPress={handlePickFromLibrary} disabled={busy}>
-            <Text style={s.sideBtnLabel}>Library</Text>
+          <TouchableOpacity
+            style={s.libraryBtn}
+            onPress={handlePickFromLibrary}
+            disabled={busy}
+            accessibilityLabel="Open photo library"
+          >
+            {photos.length > 0 ? (
+              <Image source={{ uri: photos[photos.length - 1].uri }} style={s.libraryThumb} />
+            ) : (
+              <Icon name="image" size={22} color="#fff" />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -216,14 +249,6 @@ const s = StyleSheet.create({
   topDate: { color: '#bbb', fontSize: 13, fontFamily: 'Courier' },
   viewfinder: { flex: 1, position: 'relative', backgroundColor: '#222' },
   flash: { ...StyleSheet.absoluteFillObject, backgroundColor: '#fff', opacity: 0.9 },
-  uploadHint: {
-    position: 'absolute', top: 14, alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 999,
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 6, paddingHorizontal: 12,
-  },
-  uploadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80' },
-  uploadHintText: { color: '#fff', fontSize: 11 },
   controls: { backgroundColor: '#000' },
   mealRow: { paddingVertical: 10, flexGrow: 0 },
   mealChip: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)' },
@@ -234,6 +259,13 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 28, paddingVertical: 14,
   },
+  libraryBtn: {
+    width: 42, height: 42, borderRadius: 10,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  libraryThumb: { width: 42, height: 42 },
   sideBtn: { alignItems: 'center', gap: 4, minWidth: 60 },
   sideBtnLabel: { color: '#aaa', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8 },
   shutter: { width: 70, height: 70, borderRadius: 35, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },

@@ -12,6 +12,20 @@ export default [
     languageOptions: {
       parser: tsparser,
       parserOptions: { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } },
+      globals: {
+        AbortController: 'readonly',
+        clearInterval: 'readonly',
+        clearTimeout: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        process: 'readonly',
+        React: 'readonly',
+        require: 'readonly',
+        requestAnimationFrame: 'readonly',
+        Response: 'readonly',
+        setInterval: 'readonly',
+        setTimeout: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint,
@@ -22,6 +36,16 @@ export default [
       ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
+    },
+  },
+  {
+    files: ['metro.config.js'],
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+      },
     },
   },
   {

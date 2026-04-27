@@ -122,6 +122,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
         disabled={!runControls.canAnalyze}
         isLoading={runControls.isAnalyzing}
         leftIcon={<Sparkles className="h-4 w-4" />}
+        variant={runControls.nextAction === 'analyze' ? 'primary' : 'secondary'}
         className="w-full"
       >
         {runControls.analyzeLabel}
@@ -132,7 +133,7 @@ export function Navbar({ onLoadSample }: NavbarProps) {
           onClick={runControls.onLog}
           disabled={!runControls.canLog}
           isLoading={runControls.isLogging}
-          variant="secondary"
+          variant={runControls.nextAction === 'log' ? 'primary' : 'secondary'}
           className="w-full"
         >
           <CheckCircle className="mr-2 h-4 w-4" />

@@ -13,10 +13,6 @@ import type { RootStackParamList, TabParamList } from '../navigation';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TodayScreen() {
-  return <DraftsScreen todayOnly title="Today" />;
-}
-
 function CapturePlaceholder() {
   return <View style={{ flex: 1, backgroundColor: '#fafaf7' }} />;
 }
@@ -41,7 +37,6 @@ export default function TabsNavigator() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
         tabBarIcon: ({ color, size }) => {
           const iconMap: Record<string, IconName> = {
-            Today: 'home',
             CaptureTab: 'camera',
             Drafts: 'list',
             Settings: 'settings',
@@ -58,9 +53,8 @@ export default function TabsNavigator() {
         },
       }}
     >
-      <Tab.Screen name="Today" component={TodayScreen} />
-      <Tab.Screen name="CaptureTab" component={CapturePlaceholder} options={{ tabBarLabel: 'Capture' }} />
       <Tab.Screen name="Drafts" component={DraftsScreen} />
+      <Tab.Screen name="CaptureTab" component={CapturePlaceholder} options={{ tabBarLabel: 'Capture' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );

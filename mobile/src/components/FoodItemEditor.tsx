@@ -6,17 +6,9 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
 } from 'react-native';
 import type { FoodItem } from '../types';
+import { ICON_OPTIONS, SERVING_UNIT_OPTIONS } from '../lib/foodNormalize';
 
-const ICON_OPTIONS = [
-  'Sandwich', 'Salad', 'Pasta', 'Burger', 'Pizza', 'Soup', 'Steak', 'Chicken',
-  'Fish', 'Rice', 'Bread', 'Egg', 'Fruit', 'Vegetable', 'Dessert', 'Snack',
-  'Drink', 'Coffee', 'Smoothie', 'Default',
-];
-
-const SERVING_UNIT_OPTIONS = [
-  'Serving', 'Each', 'Piece', 'Slice', 'Cup', 'Bowl', 'Plate',
-  'Ounces', 'Grams', 'Fluid Ounce', 'Tablespoons', 'Teaspoons',
-];
+const BRAND_OPTIONS = ['Homemade'];
 
 interface Props {
   item: FoodItem;
@@ -40,8 +32,19 @@ export default function FoodItemEditor({ item, original, onSave, onCancel }: Pro
       </Field>
 
       <Field label="Brand">
+        <View style={s.chipRow}>
+          {BRAND_OPTIONS.map((o) => (
+            <TouchableOpacity
+              key={o}
+              style={[s.chip, edit.brand === o && s.chipActive]}
+              onPress={() => upd({ brand: o })}
+            >
+              <Text style={[s.chipText, edit.brand === o && s.chipTextActive]}>{o}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <TextInput
-          style={s.input}
+          style={[s.input, { marginTop: 8 }]}
           value={edit.brand}
           onChangeText={(v) => upd({ brand: v })}
         />

@@ -20,6 +20,7 @@ export const ICON_MAP = {
   home: 'home',
   x: 'x',
   copy: 'copy',
+  image: 'image',
 } as const;
 
 export type IconName = keyof typeof ICON_MAP;

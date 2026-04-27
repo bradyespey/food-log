@@ -3,6 +3,7 @@ import {
   Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback,
   StyleSheet, ScrollView, Dimensions,
 } from 'react-native';
+import { useTheme, type AppTheme } from '../context/ThemeContext';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -15,6 +16,9 @@ interface SheetProps {
 }
 
 export default function Sheet({ open, onClose, title, children, heightFraction = 0.7 }: SheetProps) {
+  const { theme } = useTheme();
+  const s = styles(theme);
+
   return (
     <Modal
       visible={open}
@@ -43,17 +47,17 @@ export default function Sheet({ open, onClose, title, children, heightFraction =
   );
 }
 
-const s = StyleSheet.create({
+const styles = (theme: AppTheme) => StyleSheet.create({
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: theme.overlay,
   },
   sheet: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     overflow: 'hidden',
@@ -62,7 +66,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#ddd',
+    backgroundColor: theme.border,
     alignSelf: 'center',
     marginTop: 8,
     marginBottom: 4,
@@ -74,8 +78,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0eee8',
+    borderBottomColor: theme.borderSoft,
   },
-  title: { fontWeight: '600', fontSize: 17, color: '#111' },
-  done: { color: '#c06030', fontSize: 15, fontWeight: '600' },
+  title: { fontWeight: '600', fontSize: 17, color: theme.text },
+  done: { color: theme.primary, fontSize: 15, fontWeight: '600' },
 });

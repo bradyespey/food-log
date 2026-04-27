@@ -10,6 +10,7 @@ import Pill from './Pill';
 import Sheet from './Sheet';
 import Spinner from './Spinner';
 import FoodItemEditor from './FoodItemEditor';
+import { useTheme, type AppTheme } from '../context/ThemeContext';
 import type { FoodItem, ItemVerificationStatus } from '../types';
 
 interface Props {
@@ -25,6 +26,8 @@ interface Props {
 export default function FoodItemCard({
   item, original, onEdit, onDelete, onMultiply, verification, isLogging,
 }: Props) {
+  const { theme } = useTheme();
+  const s = styles(theme);
   const [editing, setEditing] = useState(false);
   const [multiplyVal, setMultiplyVal] = useState('');
 
@@ -48,7 +51,7 @@ export default function FoodItemCard({
         <Text style={s.dot}> · </Text>
         <Text style={s.metaText}>{item.meal}</Text>
         <Text style={s.dot}> · </Text>
-        <Text style={[s.metaText, { color: '#555', fontWeight: '500' }]} numberOfLines={1}>{item.brand}</Text>
+        <Text style={[s.metaText, { color: theme.textMuted, fontWeight: '500' }]} numberOfLines={1}>{item.brand}</Text>
       </View>
 
       {/* Serving + actions */}
@@ -59,10 +62,10 @@ export default function FoodItemCard({
         </Text>
         <View style={s.actionBtns}>
           <TouchableOpacity style={s.iconBtn} onPress={() => setEditing(true)}>
-            <Icon name="edit" size={15} color="#555" />
+            <Icon name="edit" size={15} color={theme.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={[s.iconBtn, { borderColor: '#f0bdb8' }]} onPress={onDelete}>
-            <Icon name="trash" size={15} color="#c0392b" />
+          <TouchableOpacity style={[s.iconBtn, { borderColor: theme.destructive }]} onPress={onDelete}>
+            <Icon name="trash" size={15} color={theme.destructive} />
           </TouchableOpacity>
         </View>
       </View>
@@ -79,13 +82,14 @@ export default function FoodItemCard({
         <TextInput
           style={s.multInput}
           placeholder="1.5"
+          placeholderTextColor={theme.textSubtle}
           keyboardType="decimal-pad"
           value={multiplyVal}
           onChangeText={setMultiplyVal}
           onSubmitEditing={() => applyMultiply(parseFloat(multiplyVal))}
           onBlur={() => multiplyVal ? applyMultiply(parseFloat(multiplyVal)) : null}
         />
-        <Text style={{ color: '#aaa', fontSize: 11 }}>or</Text>
+        <Text style={{ color: theme.textSubtle, fontSize: 11 }}>or</Text>
         {[0.5, 1.5, 2].map((x) => (
           <TouchableOpacity key={x} style={s.multBtn} onPress={() => onMultiply(x)}>
             <Text style={s.multBtnText}>{x}×</Text>
@@ -109,8 +113,8 @@ export default function FoodItemCard({
       {item.hydration?.isLiquid && (item.hydration.fluidOz ?? 0) > 0 && (
         <View style={s.hydrationRow}>
           <Icon name="droplet" size={14} color="#3b82f6" />
-          <Text style={{ color: '#666', fontSize: 12, marginLeft: 6 }}>Hydration</Text>
-          <Text style={{ fontWeight: '600', color: '#111', marginLeft: 'auto', fontSize: 12 }}>
+          <Text style={{ color: theme.textMuted, fontSize: 12, marginLeft: 6 }}>Hydration</Text>
+          <Text style={{ fontWeight: '600', color: theme.text, marginLeft: 'auto', fontSize: 12 }}>
             {item.hydration.fluidOz} fl oz
           </Text>
         </View>
@@ -133,6 +137,8 @@ export default function FoodItemCard({
 }
 
 function NutCell({ label, v }: { label: string; v: string }) {
+  const { theme } = useTheme();
+  const s = styles(theme);
   return (
     <View style={s.nutCell}>
       <Text style={s.nutLabel}>{label}</Text>
@@ -145,11 +151,13 @@ function VerificationBadge({ verification, isLogging }: {
   verification?: ItemVerificationStatus;
   isLogging: boolean;
 }) {
+  const { theme } = useTheme();
+  const s = styles(theme);
   if (isLogging && !verification?.verificationComplete) {
     return (
-      <View style={[s.verBox, { backgroundColor: '#f5f5f5' }]}>
-        <Spinner size={12} color="#888" />
-        <Text style={[s.verText, { color: '#888' }]}> Verifying with Lose It!…</Text>
+      <View style={[s.verBox, { backgroundColor: theme.surfaceAlt }]}>
+        <Spinner size={12} color={theme.textSubtle} />
+        <Text style={[s.verText, { color: theme.textSubtle }]}> Verifying with Lose It!...</Text>
       </View>
     );
   }
@@ -158,9 +166,9 @@ function VerificationBadge({ verification, isLogging }: {
   const level = verification.verificationLevel;
   if (level === 'verified' || level === 'accepted') {
     return (
-      <View style={[s.verBox, { backgroundColor: '#edfaf3' }]}>
-        <Icon name="check" size={14} color="#1d7a4a" strokeWidth={2.4} />
-        <Text style={[s.verText, { color: '#1d7a4a' }]}>
+      <View style={[s.verBox, { backgroundColor: theme.mode === 'dark' ? '#173424' : '#edfaf3' }]}>
+        <Icon name="check" size={14} color={theme.success} strokeWidth={2.4} />
+        <Text style={[s.verText, { color: theme.success }]}>
           {level === 'verified' ? ' All fields verified' : ' Logged to Lose It!'}
         </Text>
       </View>
@@ -168,80 +176,80 @@ function VerificationBadge({ verification, isLogging }: {
   }
   if (level === 'mismatch') {
     return (
-      <View style={[s.verBox, { backgroundColor: '#fefaec', flexDirection: 'column', alignItems: 'flex-start', padding: 8 }]}>
+      <View style={[s.verBox, { backgroundColor: theme.mode === 'dark' ? '#372d12' : '#fefaec', flexDirection: 'column', alignItems: 'flex-start', padding: 8 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Icon name="alert" size={14} color="#8a6a00" strokeWidth={2.2} />
-          <Text style={[s.verText, { color: '#8a6a00', fontWeight: '600' }]}>Nutrient mismatch</Text>
+          <Icon name="alert" size={14} color={theme.warning} strokeWidth={2.2} />
+          <Text style={[s.verText, { color: theme.warning, fontWeight: '600' }]}>Nutrient mismatch</Text>
         </View>
         {verification.mismatches?.map((m, i) => (
-          <Text key={i} style={{ fontSize: 11, color: '#8a6a00', paddingLeft: 20, marginTop: 2 }}>{m}</Text>
+          <Text key={i} style={{ fontSize: 11, color: theme.warning, paddingLeft: 20, marginTop: 2 }}>{m}</Text>
         ))}
       </View>
     );
   }
   return (
-    <View style={[s.verBox, { backgroundColor: '#fdf0ee' }]}>
-      <Icon name="alert" size={14} color="#c0392b" strokeWidth={2.2} />
-      <Text style={[s.verText, { color: '#c0392b' }]}> Log failed</Text>
+    <View style={[s.verBox, { backgroundColor: theme.mode === 'dark' ? '#3a1f1f' : '#fdf0ee' }]}>
+      <Icon name="alert" size={14} color={theme.destructive} strokeWidth={2.2} />
+      <Text style={[s.verText, { color: theme.destructive }]}> Log failed</Text>
     </View>
   );
 }
 
-const s = StyleSheet.create({
+const styles = (theme: AppTheme) => StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ebe9e2',
+    borderColor: theme.border,
     padding: 14,
     marginBottom: 10,
   },
   row1: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 },
-  name: { fontWeight: '600', fontSize: 15, color: '#111', flex: 1, lineHeight: 20 },
+  name: { fontWeight: '600', fontSize: 15, color: theme.text, flex: 1, lineHeight: 20 },
   metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' },
-  metaText: { color: '#888', fontSize: 12 },
-  dot: { color: '#bbb', fontSize: 12 },
+  metaText: { color: theme.textSubtle, fontSize: 12 },
+  dot: { color: theme.textSubtle, fontSize: 12 },
   servingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  servingLabel: { color: '#666', fontSize: 13 },
+  servingLabel: { color: theme.textMuted, fontSize: 13 },
   actionBtns: { flexDirection: 'row', gap: 4 },
   iconBtn: {
     width: 30, height: 30, borderRadius: 8,
-    backgroundColor: '#f5f3ec', borderWidth: 1, borderColor: '#e6e3d9',
+    backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border,
     alignItems: 'center', justifyContent: 'center',
   },
   calBox: {
-    backgroundColor: '#faf8f1', borderWidth: 1, borderColor: '#ebe9e2',
+    backgroundColor: theme.surfaceSoft, borderWidth: 1, borderColor: theme.border,
     borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginBottom: 10,
   },
-  calNum: { fontSize: 32, fontWeight: '700', color: '#111', lineHeight: 36 },
-  calLabel: { fontSize: 10, color: '#888', textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 2, fontWeight: '600' },
+  calNum: { fontSize: 32, fontWeight: '700', color: theme.text, lineHeight: 36 },
+  calLabel: { fontSize: 10, color: theme.textSubtle, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 2, fontWeight: '600' },
   multStrip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#fafaf6', borderWidth: 1, borderColor: '#ebe9e2',
+    backgroundColor: theme.surfaceSoft, borderWidth: 1, borderColor: theme.border,
     borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, marginBottom: 10,
   },
-  multLabel: { color: '#888', fontSize: 11 },
+  multLabel: { color: theme.textSubtle, fontSize: 11 },
   multInput: {
     width: 50, paddingVertical: 4, paddingHorizontal: 6,
-    borderWidth: 1, borderColor: '#ddd', borderRadius: 6,
-    fontSize: 12, textAlign: 'center', backgroundColor: '#fff',
+    borderWidth: 1, borderColor: theme.border, borderRadius: 6,
+    fontSize: 12, textAlign: 'center', backgroundColor: theme.input, color: theme.text,
   },
   multBtn: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd',
+    backgroundColor: theme.input, borderWidth: 1, borderColor: theme.border,
     borderRadius: 6, paddingVertical: 3, paddingHorizontal: 8,
   },
-  multBtnText: { fontSize: 11, fontWeight: '600', color: '#444' },
+  multBtnText: { fontSize: 11, fontWeight: '600', color: theme.textMuted },
   nutGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   nutCell: {
     width: '50%', flexDirection: 'row', justifyContent: 'space-between',
     paddingVertical: 2, paddingRight: 14,
   },
-  nutLabel: { color: '#888', fontSize: 12 },
-  nutVal: { color: '#111', fontWeight: '600', fontSize: 12 },
+  nutLabel: { color: theme.textSubtle, fontSize: 12 },
+  nutVal: { color: theme.text, fontWeight: '600', fontSize: 12 },
   hydrationRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingTop: 8, marginTop: 8,
-    borderTopWidth: 1, borderTopColor: '#f0eee8',
+    borderTopWidth: 1, borderTopColor: theme.borderSoft,
   },
   verBox: {
     flexDirection: 'row', alignItems: 'center',

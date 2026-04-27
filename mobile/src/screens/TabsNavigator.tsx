@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDrafts } from '../context/DraftsContext';
+import { useTheme } from '../context/ThemeContext';
 import DraftsScreen from './DraftsScreen';
 import SettingsScreen from './SettingsScreen';
 import Icon, { type IconName } from '../components/Icon';
@@ -14,26 +15,28 @@ import type { RootStackParamList, TabParamList } from '../navigation';
 const Tab = createBottomTabNavigator<TabParamList>();
 
 function CapturePlaceholder() {
-  return <View style={{ flex: 1, backgroundColor: '#fafaf7' }} />;
+  const { theme } = useTheme();
+  return <View style={{ flex: 1, backgroundColor: theme.bg }} />;
 }
 
 export default function TabsNavigator() {
   const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { newDraft } = useDrafts();
+  const { theme, resolvedAppearance } = useTheme();
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: 'rgba(255,255,255,0.96)',
-          borderTopColor: '#ebe9e2',
+          backgroundColor: resolvedAppearance === 'dark' ? 'rgba(28,27,24,0.96)' : 'rgba(255,255,255,0.96)',
+          borderTopColor: theme.border,
           paddingBottom: 20,
           paddingTop: 8,
           height: 76,
         },
-        tabBarActiveTintColor: '#111',
-        tabBarInactiveTintColor: '#888',
+        tabBarActiveTintColor: theme.text,
+        tabBarInactiveTintColor: theme.textSubtle,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
         tabBarIcon: ({ color, size }) => {
           const iconMap: Record<string, IconName> = {

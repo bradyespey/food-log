@@ -141,10 +141,9 @@ firebase deploy --only firestore:rules,firestore:indexes
 Login (Google OAuth)
   │
   └── Tabs
-        ├── Today    — drafts captured today
-        ├── Capture  — camera + library picker
         ├── Drafts   — all pending drafts
-        └── Settings — account, Lose It! cookie, sign out
+        ├── Capture  — camera + library picker
+        └── Settings — account, appearance, Lose It! cookie, sign out
 
 Capture flow (full-screen, no tab bar):
   Capture → Draft Detail → Analyzing → Review results → Log to Lose It!
@@ -155,6 +154,8 @@ Capture flow (full-screen, no tab bar):
 **Draft Detail** — fill in date (calendar picker), meal, brand, and description, then tap **Analyze with AI**. Brand and description are optional if you have a photo.
 
 **Review** — edit food items, use the multiplier, delete items, toggle water logging, then **Log to Lose It!** with per-item verification.
+
+**Appearance** — Settings defaults to **System** appearance and can be changed to Light or Dark. The preference is stored locally on the iPhone.
 
 ---
 

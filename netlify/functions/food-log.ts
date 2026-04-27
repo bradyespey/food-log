@@ -436,12 +436,14 @@ async function logWaterForDate(
   // Read current total for this date
   let currentOz = 0
   try {
+    const wgetCtrl = new AbortController()
+    const wgetTimer = setTimeout(() => wgetCtrl.abort(), 15000)
     const getResp = await fetch(LOSEIT_SERVICE_URL, {
       method:  'POST',
       headers: gwtHeaders,
       body:    buildWaterGetBody(dayNum),
-      signal:  AbortSignal.timeout(15000),
-    })
+      signal:  wgetCtrl.signal,
+    }).finally(() => clearTimeout(wgetTimer))
     const getText = await getResp.text()
     if (getText.startsWith('//OK')) currentOz = parseCurrentWaterOz(getText)
   } catch {
@@ -450,12 +452,14 @@ async function logWaterForDate(
 
   const newTotal = Math.round((currentOz + addOz) * 10) / 10
   try {
+    const wsaveCtrl = new AbortController()
+    const wsaveTimer = setTimeout(() => wsaveCtrl.abort(), 15000)
     const saveResp = await fetch(LOSEIT_SERVICE_URL, {
       method:  'POST',
       headers: gwtHeaders,
       body:    buildWaterSaveBody(dayNum, newTotal),
-      signal:  AbortSignal.timeout(15000),
-    })
+      signal:  wsaveCtrl.signal,
+    }).finally(() => clearTimeout(wsaveTimer))
     const saveText = await saveResp.text()
     if (saveText.startsWith('//OK')) {
       outputLines.push(`  💧 Water: ${dateStr} ${currentOz}→${newTotal} fl oz (+${addOz})`)
@@ -592,12 +596,17 @@ export const handler: Handler = async (event) => {
 
     try {
       const { body: gwtBody, foodBytes } = buildSaveFoodBody(foodItem)
-      const resp = await fetch(LOSEIT_SERVICE_URL, {
-        method:  'POST',
-        headers: gwtHeaders,
-        body:    gwtBody,
-        signal:  AbortSignal.timeout(20000),
-      })
+      const saveCtrl = new AbortController()
+      const saveTimer = setTimeout(() => saveCtrl.abort(), 20000)
+      let resp: Response
+      try {
+        resp = await fetch(LOSEIT_SERVICE_URL, {
+          method:  'POST',
+          headers: gwtHeaders,
+          body:    gwtBody,
+          signal:  saveCtrl.signal,
+        })
+      } finally { clearTimeout(saveTimer) }
 
       const respText  = await resp.text()
       const gwtResult = parseGwtResponse(respText)
@@ -609,12 +618,14 @@ export const handler: Handler = async (event) => {
         // Read back from diary and verify actual stored values
         let readback: GetFoodResult | null = null
         try {
+          const getCtrl = new AbortController()
+          const getTimer = setTimeout(() => getCtrl.abort(), 15000)
           const getResp = await fetch(LOSEIT_SERVICE_URL, {
             method:  'POST',
             headers: gwtHeaders,
             body:    buildGetFoodBody(foodBytes),
-            signal:  AbortSignal.timeout(15000),
-          })
+            signal:  getCtrl.signal,
+          }).finally(() => clearTimeout(getTimer))
           readback = parseGetFoodResponse(await getResp.text())
         } catch { /* non-fatal — fall back to accepted-only verification */ }
 

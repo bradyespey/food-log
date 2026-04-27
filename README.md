@@ -298,10 +298,16 @@ FoodLog/
 │   │   ├── FoodLogPage.tsx   — AI analysis page
 │   │   └── ManualPage.tsx    — Manual entry page
 │   └── types/                — TypeScript types
+├── mobile/                   — iOS companion app (React Native / Expo SDK 54)
+│   └── README.md             — Mobile setup, build, and update instructions
 ├── docs/
 │   ├── har_files/            — HAR captures used to reverse-engineer the GWT protocol
 │   ├── archive/              — Old Selenium architecture docs
 │   └── FoodLog - Lose It! API Migration Plan.md
+├── firebase.json             — Firebase CLI config (Firestore + Storage rules)
+├── firestore.rules           — Firestore security rules (includes mealDrafts subcollection)
+├── firestore.indexes.json    — Firestore composite index definitions
+├── storage.rules             — Firebase Storage rules (meal draft photos)
 ├── netlify.toml
 └── .env.example
 ```

@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "FoodLog",
+    "slug": "foodlog-mobile",
+    "scheme": "foodlog",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fafaf7"
+    },
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.theespeys.foodlog",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FoodLog uses the camera to capture meal photos for nutritional analysis. Photos are uploaded directly and never saved to your camera roll.",
+        "NSPhotoLibraryUsageDescription": "FoodLog can optionally pick existing meal photos from your library if you choose 'From Library'.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.theespeys.foodlog"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FoodLog uses the camera to capture meal photos for nutritional analysis."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FoodLog can optionally pick existing meal photos from your library."
+        }
+      ],
+      "expo-asset",
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}

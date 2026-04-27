@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+.env
+.env.*
+!.env.example
+
+# Native build output (managed workflow shouldn't produce these, but just in case)
+ios/
+android/
+
+# Log/junk
+*.log
+.DS_Store

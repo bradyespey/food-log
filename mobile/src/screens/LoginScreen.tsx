@@ -2,9 +2,12 @@ import {
   View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, SafeAreaView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme, type AppTheme } from '../context/ThemeContext';
 
 export default function LoginScreen() {
   const { signIn, signingIn, error } = useAuth();
+  const { theme } = useTheme();
+  const s = styles(theme);
 
   return (
     <SafeAreaView style={s.root}>
@@ -22,7 +25,7 @@ export default function LoginScreen() {
           accessibilityRole="button"
         >
           {signingIn ? (
-            <ActivityIndicator color="#1d1d1b" />
+            <ActivityIndicator color={theme.text} />
           ) : (
             <>
               <GoogleGlyph />
@@ -46,26 +49,26 @@ function GoogleGlyph() {
   );
 }
 
-const s = StyleSheet.create({
+const styles = (theme: AppTheme) => StyleSheet.create({
   root: {
-    flex: 1, backgroundColor: '#fff',
+    flex: 1, backgroundColor: theme.surface,
     alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 32, paddingTop: 60, paddingBottom: 80,
   },
   brand: { alignItems: 'center', marginTop: 40 },
   logo: { fontSize: 70, marginBottom: 18 },
-  brandName: { fontSize: 36, fontWeight: '700', color: '#1d1d1b', letterSpacing: -0.5 },
-  tagline: { fontSize: 15, color: '#888', marginTop: 8, textAlign: 'center', lineHeight: 22, maxWidth: 240 },
+  brandName: { fontSize: 36, fontWeight: '700', color: theme.text, letterSpacing: -0.5 },
+  tagline: { fontSize: 15, color: theme.textSubtle, marginTop: 8, textAlign: 'center', lineHeight: 22, maxWidth: 240 },
   bottom: { width: '100%', alignItems: 'center', gap: 12 },
   btn: {
     width: '100%', maxWidth: 320, height: 50,
-    borderWidth: 1, borderColor: '#ddd', borderRadius: 12,
-    backgroundColor: '#fff', flexDirection: 'row',
+    borderWidth: 1, borderColor: theme.border, borderRadius: 12,
+    backgroundColor: theme.input, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 1 }, shadowRadius: 2,
+    shadowColor: theme.shadow, shadowOpacity: 0.08, shadowOffset: { width: 0, height: 1 }, shadowRadius: 2,
   },
   btnDisabled: { opacity: 0.7 },
-  btnText: { color: '#1d1d1b', fontSize: 16, fontWeight: '600' },
-  error: { color: '#c00', textAlign: 'center', fontSize: 13 },
-  fineprint: { fontSize: 11, color: '#aaa' },
+  btnText: { color: theme.text, fontSize: 16, fontWeight: '600' },
+  error: { color: theme.destructive, textAlign: 'center', fontSize: 13 },
+  fineprint: { fontSize: 11, color: theme.textSubtle },
 });

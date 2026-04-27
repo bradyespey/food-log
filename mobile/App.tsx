@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DraftsProvider } from './src/context/DraftsContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import LoginScreen from './src/screens/LoginScreen';
 import TabsNavigator from './src/screens/TabsNavigator';
 import CaptureScreen from './src/screens/CaptureScreen';
@@ -21,11 +22,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function Root() {
   const { user, loading } = useAuth();
+  const { theme } = useTheme();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bg }}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -61,15 +63,22 @@ function Root() {
   );
 }
 
+function ThemedStatusBar() {
+  const { resolvedAppearance } = useTheme();
+  return <StatusBar style={resolvedAppearance === 'dark' ? 'light' : 'dark'} />;
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <Root />
-          <StatusBar style="auto" />
-        </NavigationContainer>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <Root />
+            <ThemedStatusBar />
+          </NavigationContainer>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

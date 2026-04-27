@@ -10,6 +10,7 @@ import { CameraView, useCameraPermissions, type CameraCapturedPicture } from 'ex
 import * as ImagePicker from 'expo-image-picker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDrafts } from '../context/DraftsContext';
+import { useTheme } from '../context/ThemeContext';
 import Icon from '../components/Icon';
 import type { RootStackParamList } from '../navigation';
 import type { Meal } from '../types';
@@ -21,6 +22,7 @@ const MEALS: Meal[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 export default function CaptureScreen({ route, navigation }: Props) {
   const { draftId } = route.params;
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const { drafts, localPhotos, updateDraft, addPhoto, deleteDraft, loadSampleDrafts } = useDrafts();
   const draft = drafts.find((d) => d.id === draftId);
   const photos = localPhotos[draftId] ?? [];
@@ -124,17 +126,17 @@ export default function CaptureScreen({ route, navigation }: Props) {
     }
   };
 
-  if (!permission) return <View style={s.center}><ActivityIndicator /></View>;
+  if (!permission) return <View style={[s.center, { backgroundColor: theme.bg }]}><ActivityIndicator color={theme.primary} /></View>;
 
   if (!permission.granted) {
     return (
-      <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={s.permText}>Camera permission required</Text>
-        <TouchableOpacity style={s.permBtn} onPress={requestPermission}>
-          <Text style={s.permBtnText}>Grant permission</Text>
+      <View style={[s.center, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
+        <Text style={[s.permText, { color: theme.text }]}>Camera permission required</Text>
+        <TouchableOpacity style={[s.permBtn, { backgroundColor: theme.chipActive }]} onPress={requestPermission}>
+          <Text style={[s.permBtnText, { color: theme.chipActiveText }]}>Grant permission</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.permBtn, s.permBtnSecondary]} onPress={handlePickFromLibrary}>
-          <Text style={s.permBtnText}>Pick from library instead</Text>
+        <TouchableOpacity style={[s.permBtn, { backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border }]} onPress={handlePickFromLibrary}>
+          <Text style={[s.permBtnText, { color: theme.text }]}>Pick from library instead</Text>
         </TouchableOpacity>
       </View>
     );

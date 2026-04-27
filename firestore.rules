@@ -1,7 +1,30 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Per-user settings (Lose It! cookie, preferences, etc.)
     match /users/{userId}/settings/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Per-user meal drafts — written by mobile app, readable by web.
+    match /users/{userId}/mealDrafts/{draftId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.status in ['pending', 'analyzed', 'logged', 'discarded']
+        && request.resource.data.source in ['mobile', 'web'];
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.status in ['pending', 'analyzed', 'logged', 'discarded'];
+
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User document (created on first sign-in by AuthContext on web + mobile).
+    match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }

@@ -72,3 +72,13 @@ export async function deleteLocalDraftPhotos(draftId: string): Promise<void> {
     // Best-effort.
   }
 }
+
+/** Delete one local photo after it is removed from a draft. */
+export async function deleteLocalPhoto(uri: string): Promise<void> {
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.exists) await FileSystem.deleteAsync(uri, { idempotent: true });
+  } catch {
+    // Best-effort.
+  }
+}

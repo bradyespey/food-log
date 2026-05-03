@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Image, Alert, ActivityIndicator, Keyboard, Platform,
+  StyleSheet, Image, Alert, ActivityIndicator, Keyboard, Platform, Modal, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -23,6 +23,7 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
   const { draftId } = route.params;
   const { drafts, draftsLoaded, localPhotos, updateDraft, removePhoto, runAnalyze } = useDrafts();
   const { theme } = useTheme();
+  const { width, height } = useWindowDimensions();
   const s = styles(theme);
   const draft = drafts.find((d) => d.id === draftId);
   const photos = localPhotos[draftId] ?? [];
@@ -32,6 +33,8 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
   const noteRef = useRef<TextInput>(null);
   const [brand, setBrand] = useState('');
   const [note, setNote] = useState('');
+  const [previewPhotoId, setPreviewPhotoId] = useState<string | null>(null);
+  const previewPhoto = photos.find((p) => p.id === previewPhotoId) ?? null;
 
   useEffect(() => {
     setBrand(draft?.brand ?? '');
@@ -100,6 +103,19 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
     navigation.navigate('Tabs');
   };
 
+  const handleRemovePhoto = (photoId: string) => {
+    if (previewPhotoId === photoId) setPreviewPhotoId(null);
+    removePhoto(draftId, photoId);
+  };
+
+  const confirmRemovePreviewPhoto = () => {
+    if (!previewPhoto) return;
+    Alert.alert('Delete photo?', 'Remove this photo from the meal draft.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => handleRemovePhoto(previewPhoto.id) },
+    ]);
+  };
+
   return (
     <View style={s.root}>
       <SafeAreaView edges={['top']} style={s.headerWrap}>
@@ -117,8 +133,15 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.photoStrip}>
           {photos.map((p) => (
             <View key={p.id} style={s.photoTile}>
-              <Image source={{ uri: p.uri }} style={s.photoImg} />
-              <TouchableOpacity style={s.photoRemove} onPress={() => removePhoto(draftId, p.id)}>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                accessibilityRole="imagebutton"
+                accessibilityLabel="Open photo preview"
+                onPress={() => setPreviewPhotoId(p.id)}
+              >
+                <Image source={{ uri: p.uri }} style={s.photoImg} />
+              </TouchableOpacity>
+              <TouchableOpacity style={s.photoRemove} onPress={() => handleRemovePhoto(p.id)}>
                 <Icon name="x" size={11} color="#fff" strokeWidth={2.4} />
               </TouchableOpacity>
             </View>
@@ -213,6 +236,47 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
         />
       </ScrollView>
 
+      <Modal
+        visible={!!previewPhoto}
+        animationType="fade"
+        transparent={false}
+        onRequestClose={() => setPreviewPhotoId(null)}
+      >
+        <View style={s.modalRoot}>
+          <SafeAreaView edges={['top']} style={s.modalHeaderWrap}>
+            <View style={s.modalHeader}>
+              <TouchableOpacity style={s.modalIconBtn} onPress={() => setPreviewPhotoId(null)}>
+                <Icon name="x" size={22} color="#fff" />
+              </TouchableOpacity>
+              <Text style={s.modalTitle}>
+                {previewPhoto ? `${photos.findIndex((p) => p.id === previewPhoto.id) + 1} of ${photos.length}` : ''}
+              </Text>
+              <TouchableOpacity style={[s.modalIconBtn, s.modalDeleteBtn]} onPress={confirmRemovePreviewPhoto}>
+                <Icon name="trash" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+
+          {previewPhoto && (
+            <ScrollView
+              style={s.previewScroll}
+              contentContainerStyle={[s.previewContent, { minHeight: height }]}
+              maximumZoomScale={4}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              bouncesZoom
+            >
+              <Image
+                source={{ uri: previewPhoto.uri }}
+                style={[s.previewImage, { width, height: height - 120 }]}
+                resizeMode="contain"
+              />
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
+
       <SafeAreaView edges={['bottom']} style={s.footerWrap}>
         <TouchableOpacity style={s.saveBtn} onPress={handleSaveForLater}>
           <Text style={s.saveBtnText}>Save for later</Text>
@@ -246,6 +310,15 @@ const styles = (theme: AppTheme) => StyleSheet.create({
   photoImg: { width: 86, height: 86 },
   photoRemove: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   photoAdd: { width: 86, height: 86, borderRadius: 10, backgroundColor: theme.surfaceAlt, borderWidth: 1.5, borderColor: theme.border, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  modalRoot: { flex: 1, backgroundColor: '#050505' },
+  modalHeaderWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10 },
+  modalIconBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' },
+  modalDeleteBtn: { backgroundColor: 'rgba(192,57,43,0.78)' },
+  modalTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  previewScroll: { flex: 1 },
+  previewContent: { alignItems: 'center', justifyContent: 'center' },
+  previewImage: { backgroundColor: '#050505' },
   fieldLabel: { fontSize: 11, fontWeight: '700', color: theme.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginTop: 14, textAlign: 'center' },
   input: { padding: 11, borderRadius: 9, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.input, fontSize: 15, color: theme.text, textAlign: 'center' },
   textarea: { minHeight: 90, textAlignVertical: 'top' },

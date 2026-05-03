@@ -19,6 +19,7 @@ import {
   loadPhotoIndex,
   savePhotoIndex,
   copyPhotoToDocDir,
+  deleteLocalPhoto,
   deleteLocalDraftPhotos,
 } from '../lib/localPhotoStorage';
 import { analyzeFood, logFood } from '../lib/api';
@@ -152,10 +153,14 @@ export function DraftsProvider({ children }: { children: React.ReactNode }) {
   }, [addPhoto]);
 
   const removePhoto = useCallback((draftId: string, photoId: string) => {
-    setLocalPhotos((prev) => ({
-      ...prev,
-      [draftId]: (prev[draftId] ?? []).filter((p) => p.id !== photoId),
-    }));
+    setLocalPhotos((prev) => {
+      const photo = (prev[draftId] ?? []).find((p) => p.id === photoId);
+      if (photo) void deleteLocalPhoto(photo.uri);
+      return {
+        ...prev,
+        [draftId]: (prev[draftId] ?? []).filter((p) => p.id !== photoId),
+      };
+    });
   }, []);
 
   const deleteDraft = useCallback(async (id: string) => {

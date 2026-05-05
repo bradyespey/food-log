@@ -6,6 +6,7 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
+    "update:iphone": "bash scripts/update-iphone.sh",
     "android": "expo run:android",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"

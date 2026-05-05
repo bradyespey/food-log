@@ -90,15 +90,16 @@ This app is installed on the iPhone as a standalone Release build through Xcode.
 
 ### JavaScript, TypeScript, screen, style, or logic changes
 
-Run both commands:
+Run the update helper:
 
 ```bash
 cd mobile
-npx expo export:embed --platform ios --dev false --bundle-output ios/FoodLog/main.jsbundle --assets-dest ios/FoodLog
-npx expo run:ios --device --configuration Release
+npm run update:iphone
 ```
 
-The first command bundles the updated JavaScript into the native app. The second command recompiles and reinstalls the Release app on the connected iPhone. Subsequent builds are much faster (~3–5 min) because Xcode caches the native layer.
+The helper bundles the updated JavaScript into the native app, recompiles, and reinstalls the Release app on the connected iPhone. Subsequent builds are much faster (~3–5 min) because Xcode caches the native layer.
+
+With a free Apple ID, iOS may require trusting the refreshed development certificate again after the weekly provisioning profile expires. If FoodLog installs but will not open, go to iPhone Settings → General → VPN & Device Management → Apple Development: baespey@gmail.com → Trust.
 
 ### Native config, package, or Expo library changes
 
@@ -107,8 +108,7 @@ If you change `app.json`, `package.json`, or add a package with native code, run
 ```bash
 cd mobile
 npx expo prebuild --platform ios
-npx expo export:embed --platform ios --dev false --bundle-output ios/FoodLog/main.jsbundle --assets-dest ios/FoodLog
-npx expo run:ios --device --configuration Release
+npm run update:iphone
 ```
 
 Use this path when adding native libraries such as `expo-camera` or `@react-native-community/datetimepicker`.
@@ -131,7 +131,7 @@ cd ..
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-**Note on free Apple ID provisioning:** The installed app expires every 7 days. Re-run the build command to renew it. A paid Apple Developer account ($99/year) eliminates this limit.
+**Note on free Apple ID provisioning:** The installed app expires every 7 days. Re-run `npm run update:iphone` to renew it. A paid Apple Developer account ($99/year) eliminates this weekly limit.
 
 ---
 

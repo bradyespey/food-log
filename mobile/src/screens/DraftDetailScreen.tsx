@@ -5,7 +5,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Image, Alert, ActivityIndicator, Keyboard, Platform, Modal, useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDrafts } from '../context/DraftsContext';
@@ -24,6 +24,7 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
   const { drafts, draftsLoaded, localPhotos, updateDraft, removePhoto, runAnalyze } = useDrafts();
   const { theme } = useTheme();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const s = styles(theme);
   const draft = drafts.find((d) => d.id === draftId);
   const photos = localPhotos[draftId] ?? [];
@@ -35,6 +36,7 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
   const [note, setNote] = useState('');
   const [previewPhotoId, setPreviewPhotoId] = useState<string | null>(null);
   const previewPhoto = photos.find((p) => p.id === previewPhotoId) ?? null;
+  const previewHeight = Math.max(260, height - insets.top - insets.bottom - 92);
 
   useEffect(() => {
     setBrand(draft?.brand ?? '');
@@ -243,7 +245,7 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
         onRequestClose={() => setPreviewPhotoId(null)}
       >
         <View style={s.modalRoot}>
-          <SafeAreaView edges={['top']} style={s.modalHeaderWrap}>
+          <View style={[s.modalShell, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10 }]}>
             <View style={s.modalHeader}>
               <TouchableOpacity style={s.modalIconBtn} onPress={() => setPreviewPhotoId(null)}>
                 <Icon name="x" size={22} color="#fff" />
@@ -255,25 +257,25 @@ export default function DraftDetailScreen({ route, navigation }: Props) {
                 <Icon name="trash" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
-          </SafeAreaView>
 
-          {previewPhoto && (
-            <ScrollView
-              style={s.previewScroll}
-              contentContainerStyle={[s.previewContent, { minHeight: height }]}
-              maximumZoomScale={4}
-              minimumZoomScale={1}
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={false}
-              bouncesZoom
-            >
-              <Image
-                source={{ uri: previewPhoto.uri }}
-                style={[s.previewImage, { width, height: height - 120 }]}
-                resizeMode="contain"
-              />
-            </ScrollView>
-          )}
+            {previewPhoto && (
+              <ScrollView
+                style={s.previewScroll}
+                contentContainerStyle={[s.previewContent, { minHeight: previewHeight }]}
+                maximumZoomScale={4}
+                minimumZoomScale={1}
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
+                bouncesZoom
+              >
+                <Image
+                  source={{ uri: previewPhoto.uri }}
+                  style={[s.previewImage, { width, height: previewHeight }]}
+                  resizeMode="contain"
+                />
+              </ScrollView>
+            )}
+          </View>
         </View>
       </Modal>
 
@@ -311,8 +313,8 @@ const styles = (theme: AppTheme) => StyleSheet.create({
   photoRemove: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   photoAdd: { width: 86, height: 86, borderRadius: 10, backgroundColor: theme.surfaceAlt, borderWidth: 1.5, borderColor: theme.border, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   modalRoot: { flex: 1, backgroundColor: '#050505' },
-  modalHeaderWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2 },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10 },
+  modalShell: { flex: 1 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 30, paddingVertical: 10 },
   modalIconBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' },
   modalDeleteBtn: { backgroundColor: 'rgba(192,57,43,0.78)' },
   modalTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },

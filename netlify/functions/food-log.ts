@@ -477,7 +477,13 @@ async function logWaterForDate(
 
 function parseGwtResponse(text: string): { status: 'ok' | 'exception' | 'unknown' | 'auth_failed'; raw: string } {
   if (text.startsWith('//OK'))  return { status: 'ok',          raw: text }
-  if (text.startsWith('//EX')) return { status: 'exception',   raw: text }
+  if (text.startsWith('//EX')) {
+    // GWT exception — check specifically for auth failure before treating as generic exception
+    if (text.includes('UserAuthenticationFailedException')) {
+      return { status: 'auth_failed', raw: text.slice(0, 100) }
+    }
+    return { status: 'exception', raw: text }
+  }
   // Auth failure: Lose It! redirected to login page — response is HTML, not GWT
   if (text.trimStart().startsWith('<!') || text.trimStart().startsWith('<html')) {
     return { status: 'auth_failed', raw: text.slice(0, 100) }

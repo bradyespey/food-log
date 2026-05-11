@@ -346,7 +346,10 @@ function parseGetFoodResponse(responseText: string): GetFoodResult | null {
   // String table: food name + brand are quoted strings in the GWT response (confirmed HAR 17)
   const strings = new Set<string>()
   for (const m of responseText.matchAll(/"([^"]+)"/g)) strings.add(m[1])
-  if (Object.keys(nutrients).length === 0 && strings.size === 0) return null
+  // Require at least 3 nutrient values to trust the parse. Newly-created custom foods
+  // sometimes return a partial GWT response where the regex matches stray numbers (e.g.
+  // a single calories hit of "2") instead of real nutrient data, causing false mismatches.
+  if (Object.keys(nutrients).length < 3 && strings.size === 0) return null
   return { nutrients, strings }
 }
 

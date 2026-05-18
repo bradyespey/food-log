@@ -197,6 +197,48 @@ firebase deploy --only firestore:rules,firestore:indexes
 
 ---
 
+## Mac API Server (AdminPanel Integration)
+
+A lightweight local Node.js server (`scripts/mac-api.js`) runs on `localhost:5191` and enables browser-triggered actions from the AdminPanel Scripts page (`localhost:8888/scripts`).
+
+### Endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Health check |
+| `GET /scripts/foodlog-ios` | FoodLog iOS build — detects connected iPhone and runs `npx expo run:ios --device` |
+| `GET /scripts/fix-webcam` | Restarts VDCAssistant, AppleCameraAssistant, and coreaudiod |
+
+All endpoints stream output via Server-Sent Events (SSE).
+
+### Install as LaunchAgent (one-time)
+
+Installs the server as a macOS LaunchAgent so it starts automatically at every login:
+
+```bash
+bash scripts/install-mac-api.sh
+```
+
+After installation the server runs silently in the background. No Terminal needed for weekly iPhone rebuilds.
+
+**Logs:** `~/Library/Logs/brady-mac-api.log`
+**Plist:** `~/Library/LaunchAgents/com.bradyespey.mac-api.plist`
+
+### Manual start (without LaunchAgent)
+
+```bash
+cd ~/Projects/FoodLog/mobile && node scripts/mac-api.js
+```
+
+### Uninstall
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.bradyespey.mac-api.plist
+rm ~/Library/LaunchAgents/com.bradyespey.mac-api.plist
+```
+
+---
+
 ## Troubleshooting
 
 **Build fails with "No code signing certificates"** — Add your Apple ID in Xcode → Settings → Accounts, then Manage Certificates → + → Apple Development.

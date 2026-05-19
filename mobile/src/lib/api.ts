@@ -3,6 +3,7 @@
 // logFood: food-log (Lose It! GWT RPC)
 
 import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { auth } from './firebase';
 import type { FoodItem, ItemVerificationStatus, Meal } from '../types';
 import { deduplicateItems, ICON_LIST, normalizeFoodItem, SERVING_TYPES } from './foodNormalize';
@@ -22,17 +23,32 @@ async function authedHeaders(): Promise<Record<string, string>> {
 
 // ── Image helpers ──────────────────────────────────────────────────────────
 
+// Resize to 1280px max and compress to JPEG 0.8 — mirrors web app's compressImage().
+// Keeps payload well under Netlify's 6MB request body limit.
+const MAX_DIMENSION = 1280;
+
 async function uriToBase64(uri: string): Promise<string> {
-  // For network URIs (http/https), download to a temp file first
+  // For network URIs, download to a temp file first
+  let localUri = uri;
   if (uri.startsWith('http://') || uri.startsWith('https://')) {
     const tempPath = `${FileSystem.cacheDirectory}photo_${Date.now()}.jpg`;
     await FileSystem.downloadAsync(uri, tempPath);
-    const b64 = await FileSystem.readAsStringAsync(tempPath, { encoding: FileSystem.EncodingType.Base64 });
-    await FileSystem.deleteAsync(tempPath, { idempotent: true });
-    return b64;
+    localUri = tempPath;
   }
-  // Local file URI from camera or picker
-  return FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+
+  // Resize to MAX_DIMENSION on the longest side, then read as base64
+  const compressed = await ImageManipulator.manipulateAsync(
+    localUri,
+    [{ resize: { width: MAX_DIMENSION } }],
+    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+  );
+
+  // Clean up temp download file if we made one
+  if (localUri !== uri) {
+    await FileSystem.deleteAsync(localUri, { idempotent: true });
+  }
+
+  return compressed.base64 ?? '';
 }
 
 // ── System prompt (mirrors web app buildSystemPrompt) ──────────────────────

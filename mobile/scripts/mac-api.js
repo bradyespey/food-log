@@ -89,38 +89,71 @@ async function handleFoodLogIosBuild(req, res) {
     udid = device.udid
     send('log', `📱 Found: ${device.name} (${udid})\n`)
     send('log', `📁 ${PROJECT_ROOT}\n\n`)
-    send('log', '🚀 Starting build...\n\n')
+    send('log', '🚀 Bundling JS...\n\n')
   } catch (err) {
     send('error', `❌ ${err.message}`)
     res.end()
     return
   }
 
-  const proc = spawn('npx', ['expo', 'run:ios', '--device', udid], {
+  // Step 1: bundle JS (required — Debug builds without this crash on launch)
+  const bundle = spawn('npx', [
+    'expo', 'export:embed',
+    '--platform', 'ios',
+    '--dev', 'false',
+    '--bundle-output', 'ios/FoodLog/main.jsbundle',
+    '--assets-dest', 'ios/FoodLog',
+  ], {
     cwd: PROJECT_ROOT,
     env: { ...process.env, FORCE_COLOR: '0' },
     shell: true,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 
-  proc.stdout.on('data', (data) => send('log', data.toString()))
-  proc.stderr.on('data', (data) => send('log', data.toString()))
+  bundle.stdout.on('data', (data) => send('log', data.toString()))
+  bundle.stderr.on('data', (data) => send('log', data.toString()))
 
-  proc.on('close', (code) => {
-    if (code === 0) {
-      send('done', '✅ Build complete! Check your iPhone.')
-    } else {
-      send('error', `❌ Build failed (exit code ${code})`)
+  bundle.on('close', (bundleCode) => {
+    if (bundleCode !== 0) {
+      send('error', `❌ JS bundle failed (exit code ${bundleCode})`)
+      res.end()
+      return
     }
-    res.end()
+
+    send('log', '\n🔨 Building and installing (Release)...\n\n')
+
+    // Step 2: native build + install as Release
+    const proc = spawn('npx', ['expo', 'run:ios', '--device', udid, '--configuration', 'Release'], {
+      cwd: PROJECT_ROOT,
+      env: { ...process.env, FORCE_COLOR: '0' },
+      shell: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    proc.stdout.on('data', (data) => send('log', data.toString()))
+    proc.stderr.on('data', (data) => send('log', data.toString()))
+
+    proc.on('close', (code) => {
+      if (code === 0) {
+        send('done', '✅ Build complete! Check your iPhone.')
+      } else {
+        send('error', `❌ Build failed (exit code ${code})`)
+      }
+      res.end()
+    })
+
+    proc.on('error', (err) => {
+      send('error', `❌ Failed to start: ${err.message}`)
+      res.end()
+    })
+
+    req.on('close', () => proc.kill())
   })
 
-  proc.on('error', (err) => {
-    send('error', `❌ Failed to start: ${err.message}`)
+  bundle.on('error', (err) => {
+    send('error', `❌ Failed to start bundler: ${err.message}`)
     res.end()
   })
-
-  req.on('close', () => proc.kill())
 }
 
 function runCommand(cmd, args) {

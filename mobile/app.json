@@ -27,6 +27,13 @@
     },
     "plugins": [
       [
+        "@sentry/react-native/expo",
+        {
+          "organization": "espey-solutions",
+          "project": "foodlog-mobile"
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "FoodLog uses the camera to capture meal photos for nutritional analysis."

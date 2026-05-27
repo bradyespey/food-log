@@ -1,7 +1,16 @@
 // FoodLog Mobile — root entry point.
 // Root stack: Login (unauthenticated) | Tabs + capture flow (authenticated).
 
+import * as Sentry from '@sentry/react-native';
 import { ActivityIndicator, View } from 'react-native';
+
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    tracesSampleRate: 0,
+    integrations: [],
+  });
+}
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -68,7 +77,7 @@ function ThemedStatusBar() {
   return <StatusBar style={resolvedAppearance === 'dark' ? 'light' : 'dark'} />;
 }
 
-export default function App() {
+function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
@@ -82,3 +91,5 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+export default Sentry.wrap(App);

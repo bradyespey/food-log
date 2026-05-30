@@ -4,8 +4,8 @@
 
 [dev]
   command = "vite"
-  targetPort = 8888
-  port = 8889
+  targetPort = 5177
+  port = 8896
 
 [functions]
   directory = "netlify/functions"

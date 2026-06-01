@@ -84,6 +84,7 @@ venv/
 *.tmp
 
 docs/har_files/
+docs/
 
 # Dev scripts and temporary files
 temp/

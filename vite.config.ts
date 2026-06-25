@@ -22,10 +22,11 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          ui: ['lucide-react', 'framer-motion'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('firebase')) return 'firebase'
+          if (id.includes('lucide-react') || id.includes('framer-motion')) return 'ui'
+          if (id.includes('react') || id.includes('scheduler')) return 'vendor'
         },
       },
     },

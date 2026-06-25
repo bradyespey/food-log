@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@config "../tailwind.config.js";
 
 @layer base {
   :root {
@@ -135,7 +136,11 @@
   }
 
   .surface {
-    @apply border border-border bg-card/90 text-card-foreground shadow-sm backdrop-blur;
+    color: hsl(var(--card-foreground));
+    background-color: hsl(var(--card) / 0.9);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    backdrop-filter: blur(8px);
   }
 
   .mobile-safe-bottom {
@@ -143,6 +148,6 @@
   }
 
   .tap-target {
-    @apply min-h-10;
+    min-height: 2.5rem;
   }
 }

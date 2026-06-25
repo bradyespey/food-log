@@ -164,8 +164,7 @@ function App() {
         <LoseItProvider>
           <SampleDataProvider>
             <LoseItModalHost />
-            {/* unstable_useTransitions=false bypasses startTransition so navigation commits synchronously in React 19 */}
-            <RouterProvider router={router} unstable_useTransitions={false} />
+            <RouterProvider router={router} />
           </SampleDataProvider>
         </LoseItProvider>
       </AuthProvider>

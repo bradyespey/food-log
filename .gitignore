@@ -89,3 +89,8 @@ docs/
 # Dev scripts and temporary files
 temp/
 deno.lock
+
+# Backup data — keep encrypted files, ignore everything else
+data-backups/*
+!data-backups/.gitkeep
+!data-backups/*.encrypted.json

@@ -107,6 +107,8 @@ For initial setup, `LOSEIT_COOKIE` in the env var is still supported as a fallba
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
 | `npm run deploy:watch` | Push to GitHub and stream Netlify build logs until deploy completes |
+| `node scripts/backup.js` | Run manual Firestore backup |
+| `node scripts/decrypt-backup.js <file>` | Decrypt a backup file |
 
 `dev:all` runs both servers via `concurrently`. Vite proxies `/.netlify/functions/*` to the functions server at port 9999, so functions behave identically to production.
 

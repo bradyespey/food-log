@@ -1,0 +1,49 @@
+name: Weekly Data Backup (Encrypted)
+
+on:
+  schedule:
+    # Every Tuesday at 7:00 AM UTC (1:00 AM CT)
+    - cron: '0 7 * * 2'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install firebase-admin
+
+      - name: Run backup
+        id: run_backup
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: node scripts/backup.js
+
+      - name: Commit backup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data-backups/
+          git diff --cached --quiet || git commit -m "chore: weekly Firestore backup [skip ci]"
+          git push
+
+      - name: Log backup to AdminPanel
+        if: always()
+        env:
+          BACKUP_LOG_KEY: ${{ secrets.BACKUP_LOG_KEY }}
+        run: |
+          STATUS=$([[ "${{ steps.run_backup.outcome }}" == "success" ]] && echo "success" || echo "failure")
+          curl -s -X POST https://admin.theespeys.com/.netlify/functions/backup-log \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $BACKUP_LOG_KEY" \
+            -d "{\"runType\":\"db-backup\",\"scriptName\":\"backup.yml\",\"status\":\"$STATUS\",\"message\":\"FoodLog weekly Firestore backup\"}"
